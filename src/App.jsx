@@ -2968,7 +2968,7 @@ function VipCard({ chips, onOpen }) {
       </div>
       <div className="vc-title">The High Roller Room</div>
       {unlocked ? (
-        <div className="vc-foot"><span className="num">Blinds from 250 / 500</span><span className="vc-enter">Enter<Icon name="chevron" size={12} stroke={2.2} /></span></div>
+        <div className="vc-foot"><span className="num">Blinds from 250 / 500</span><span className="vc-enter"><span className="vc-enter-t">Enter</span><Icon name="chevron" size={12} stroke={2.2} /></span></div>
       ) : (
         <>
           <div className="vc-foot"><span className="num">Opens at {HIGH_ROLLER_MIN.toLocaleString()} chips</span><span className="num">{Math.floor(Math.min(100, (chips / HIGH_ROLLER_MIN) * 100))}%</span></div>
@@ -5886,7 +5886,8 @@ body.theme-montecarlo .pc-index { top: 11px; left: 11px; } body.theme-montecarlo
 .vc-crest { color: #D9B46A; display: flex; }
 .vc-title { font-family: 'Instrument Serif', Georgia, serif; font-style: italic; font-size: 27px; line-height: 1.1; margin: 10px 0 12px; background: linear-gradient(180deg, #F6E6BC 10%, #D9B46A 60%, #B48B45 100%); -webkit-background-clip: text; background-clip: text; color: transparent; letter-spacing: -0.005em; }
 .vc-foot { display: flex; justify-content: space-between; align-items: center; font-size: 11.5px; color: #B9AC92; }
-.vc-enter { display: inline-flex; align-items: center; gap: 4px; color: #E9CF95; font-family: 'Josefin Sans Variable', 'Josefin Sans', var(--t-body); text-transform: uppercase; letter-spacing: 0.18em; font-size: 10px; font-weight: 700; }
+.vc-enter { display: inline-flex; align-items: center; gap: 3px; line-height: 1; color: #E9CF95; font-family: 'Josefin Sans Variable', 'Josefin Sans', var(--t-body); text-transform: uppercase; letter-spacing: 0.18em; font-size: 10px; font-weight: 700; }
+.vc-enter-t { display: inline-block; line-height: 1; padding-top: 0.32em; margin-right: -0.18em; } /* Josefin caps ride high, and letter spacing leaves a gap after the last letter */
 .vc-bar { height: 3px; border-radius: 3px; background: rgba(217,180,106,0.14); margin-top: 9px; overflow: hidden; }
 .vc-bar > div { height: 100%; background: linear-gradient(90deg, #A7823F, #F1DCA6); }
 
