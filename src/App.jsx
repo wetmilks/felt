@@ -941,13 +941,98 @@ function SkillDial({ sr, size = 64 }) {
     </svg>
   );
 }
-function TierBadge({ tier, size = 28 }) {
+// Rank emblems grow as you climb: Bronze is a plain medallion, each tier adds a piece
+// (shield, wings, spikes, a crystal, a crown), and pips under it show the division.
+const BADGE_PAL = {
+  unranked: ["#D5DCE8", "#7E8FAB", "#3F4C63"],
+  bronze: ["#F6C08C", "#C8783F", "#6E3713"],
+  silver: ["#FFFFFF", "#B9C5D6", "#5F6E85"],
+  gold: ["#FFEB9C", "#F2B930", "#8C5E04"],
+  platinum: ["#B6FFF3", "#2EC4B6", "#0B5E57"],
+  diamond: ["#D9EBFF", "#5A9CFF", "#1B3FB8"],
+  champion: ["#FFD9FF", "#D45BFF", "#5B1599"],
+};
+const SHIELD = "M32 9 L49 15 V30 C49 41.5 41.5 49.5 32 55 C22.5 49.5 15 41.5 15 30 V15 Z";
+const SHIELD_IN = "M32 14 L44.5 18.5 V30 C44.5 39 39 45.5 32 49.8 C25 45.5 19.5 39 19.5 30 V18.5 Z";
+const CRYSTAL = "M32 6 L47 17 L47 37 L32 56 L17 37 L17 17 Z";
+const CRYSTAL_IN = "M32 11.5 L42.5 19.5 L42.5 35.5 L32 49.5 L21.5 35.5 L21.5 19.5 Z";
+const WING_1 = "M16 22 C9 20.5 3.5 24.5 2.5 31 C6.5 28.5 11 28.2 16 29.5 Z";
+const WING_2 = "M16 30 C10 30.5 5.5 35 5.2 41 C8.6 37.6 12.2 36.6 16.5 37 Z";
+const WING_3 = "M17.5 38 C13 39.5 10 43.5 10.3 48.5 C13 45.5 16 44.3 19.5 44 Z";
+function TierBadge({ tier, size = 28, div = null }) {
+  const k = tier.key in BADGE_PAL ? tier.key : "unranked";
+  const [hi, mid, lo] = BADGE_PAL[k];
+  const g = `tb-${k}`;
+  const lvl = ["unranked", "bronze", "silver", "gold", "platinum", "diamond", "champion"].indexOf(k);
+  const wings = lvl >= 3 ? (lvl >= 6 ? 3 : lvl >= 4 ? 2 : 1) : 0;
+  const body = lvl >= 5 ? CRYSTAL : lvl >= 2 || lvl === 0 ? SHIELD : null;
+  const inner = lvl >= 5 ? CRYSTAL_IN : SHIELD_IN;
+  const wingFill = lvl >= 6 ? "url(#tb-champion-wing)" : `url(#${g}-v)`;
+  const Wing = ({ flip }) => (
+    <g transform={flip ? "translate(64 0) scale(-1 1)" : undefined}>
+      {wings >= 1 && <path d={WING_1} fill={wingFill} stroke={lo} strokeWidth="1" />}
+      {wings >= 2 && <path d={WING_2} fill={wingFill} stroke={lo} strokeWidth="1" />}
+      {wings >= 3 && <path d={WING_3} fill={wingFill} stroke={lo} strokeWidth="1" />}
+    </g>
+  );
   return (
-    <svg width={size} height={size} viewBox="0 0 32 32" role="img" aria-label={tier.label} style={{ flexShrink: 0, display: "block" }}>
-      <path d="M16 2 28 9v14l-12 7-12-7V9z" fill={tier.color} />
-      <path d="M16 2 28 9 16 16 4 9z" fill="#FFFFFF" opacity="0.22" />
-      <path d="M16 6.5 24.5 11.5v9L16 25.5l-8.5-5v-9z" fill="none" stroke="rgba(11,20,38,0.3)" strokeWidth="1.2" />
-      <text x="16" y="20.3" textAnchor="middle" fontFamily="Fraunces, Georgia, serif" fontWeight="700" fontSize="11.5" fill="#0B1426">{tier.key === "unranked" ? "?" : tier.label[0]}</text>
+    <svg width={size} height={size} viewBox="0 0 64 64" role="img" aria-label={`${tier.label}${div ? ` ${ROMAN[div]}` : ""}`} style={{ flexShrink: 0, display: "block", overflow: "visible" }} className={lvl === 6 ? "tb-champ" : undefined}>
+      <defs>
+        <linearGradient id={`${g}-v`} x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor={hi} /><stop offset="0.55" stopColor={mid} /><stop offset="1" stopColor={lo} /></linearGradient>
+        <linearGradient id={`${g}-d`} x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor={lo} /><stop offset="1" stopColor={mid} /></linearGradient>
+        <radialGradient id={`${g}-glow`} cx="50%" cy="50%" r="50%"><stop offset="0" stopColor={mid} stopOpacity="0.75" /><stop offset="1" stopColor={mid} stopOpacity="0" /></radialGradient>
+        {lvl >= 6 && <linearGradient id="tb-champion-wing" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#FFF3C4" /><stop offset="0.5" stopColor="#F5C451" /><stop offset="1" stopColor="#B7791F" /></linearGradient>}
+      </defs>
+      {lvl >= 5 && <circle cx="32" cy="32" r="31" fill={`url(#${g}-glow)`} />}
+      <Wing /><Wing flip />
+      {/* platinum and up: spikes over the top */}
+      {lvl >= 4 && lvl < 6 && <path d="M24 13 L27 4 L30 11 Z M34 11 L37 4 L40 13 Z M30 10 L32 1 L34 10 Z" fill={`url(#${g}-v)`} stroke={lo} strokeWidth="1" />}
+      {/* the body: medallion for bronze, shield for silver to platinum, crystal for diamond and champion */}
+      {body ? (
+        <g>
+          <path d={body} fill={`url(#${g}-v)`} stroke={lo} strokeWidth="1.6" strokeLinejoin="round" />
+          <path d={inner} fill={`url(#${g}-d)`} opacity="0.9" />
+          {lvl >= 5 && <path d="M32 11.5 L32 49.5 M21.5 19.5 L42.5 35.5 M42.5 19.5 L21.5 35.5" stroke={hi} strokeOpacity="0.35" strokeWidth="1" />}
+          <path d={lvl >= 5 ? "M32 8 L45 17.5 L32 27 L19 17.5 Z" : "M32 10.5 L47 16 V24 C40 21 25 21 17 24 V16 Z"} fill="#FFFFFF" opacity="0.18" />
+        </g>
+      ) : (
+        <g>
+          <circle cx="32" cy="32" r="21" fill={`url(#${g}-v)`} stroke={lo} strokeWidth="1.6" />
+          <circle cx="32" cy="32" r="16" fill={`url(#${g}-d)`} />
+          <circle cx="32" cy="32" r="21" fill="none" stroke={hi} strokeOpacity="0.5" strokeWidth="1" strokeDasharray="2 3" />
+          <path d="M14 26 C20 14 44 14 50 26 C42 21 22 21 14 26 Z" fill="#FFFFFF" opacity="0.18" />
+        </g>
+      )}
+      {/* champion: a jeweled crown sitting on top of the crystal */}
+      {lvl >= 6 && (
+        <g>
+          <path d="M19.5 14 L21.5 1.5 L27.5 7.5 L32 -1.5 L36.5 7.5 L42.5 1.5 L44.5 14 Z" fill="url(#tb-champion-wing)" stroke="#8A5A0B" strokeWidth="1.2" strokeLinejoin="round" />
+          <path d="M19.5 14 H44.5" stroke="#8A5A0B" strokeWidth="1.6" />
+          <circle cx="32" cy="7" r="2.4" fill="#FF4F8B" stroke="#8A5A0B" strokeWidth="0.8" />
+          <circle cx="24" cy="9.5" r="1.6" fill="#5AD8FF" />
+          <circle cx="40" cy="9.5" r="1.6" fill="#5AD8FF" />
+        </g>
+      )}
+      {/* center emblem gets fancier each tier */}
+      {lvl === 0 && <text x="32" y="39" textAnchor="middle" fontSize="20" fontWeight="800" fill="#E6ECF5" fontFamily="Inter, -apple-system, sans-serif">?</text>}
+      {lvl === 1 && <path d="M24 36 L32 27 L40 36" fill="none" stroke={hi} strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />}
+      {lvl === 2 && <path d="M24 37 L32 28.5 L40 37 M24 30 L32 21.5 L40 30" fill="none" stroke={hi} strokeWidth="3.4" strokeLinecap="round" strokeLinejoin="round" />}
+      {(lvl === 3 || lvl === 4) && <path d="M32 19 L35.2 26.4 L43 27.1 L37 32.3 L38.9 40 L32 35.9 L25.1 40 L27 32.3 L21 27.1 L28.8 26.4 Z" fill={hi} stroke={lo} strokeWidth="1" strokeLinejoin="round" />}
+      {lvl === 4 && <circle cx="32" cy="30.5" r="2.6" fill={mid} />}
+      {lvl >= 5 && (
+        <g>
+          <path d="M32 20 L40 28 L32 40 L24 28 Z" fill={lvl >= 6 ? "#FF4F8B" : "#FFFFFF"} stroke={lo} strokeWidth="1.2" strokeLinejoin="round" />
+          <path d="M24 28 L40 28 M28 28 L32 40 L36 28 M28 28 L32 20 L36 28" fill="none" stroke={lo} strokeOpacity="0.45" strokeWidth="0.8" />
+        </g>
+      )}
+      {/* division pips */}
+      {div && (
+        <g>
+          {[0, 1, 2].map((i) => <path key={i} d={`M${23 + i * 9} 59 l3.5 -3.5 l3.5 3.5 l-3.5 3.5 Z`} fill={i < div ? hi : "rgba(255,255,255,0.12)"} stroke={i < div ? lo : "rgba(0,0,0,0.25)"} strokeWidth="0.8" />)}
+        </g>
+      )}
+      {/* champion sparkles */}
+      {lvl >= 6 && <g className="tb-sparkle"><path d="M56 12 l1.2 3 3 1.2 -3 1.2 -1.2 3 -1.2 -3 -3 -1.2 3 -1.2 Z" fill="#FFF3C4" /><path d="M8 46 l1 2.4 2.4 1 -2.4 1 -1 2.4 -1 -2.4 -2.4 -1 2.4 -1 Z" fill="#FFF3C4" /></g>}
     </svg>
   );
 }
@@ -2095,7 +2180,7 @@ function RankedResults({ result, rankedState, skill, tableLabel, canPlayAgain, o
       <div className="results" role="dialog" aria-label="Placement result">
         <div className="results-inner">
           <div className="results-kicker">Placements complete</div>
-          <div style={{ display: "flex", justifyContent: "center", margin: "18px 0 12px" }}><div className="badge-pop"><TierBadge tier={tier} size={96} /></div></div>
+          <div style={{ display: "flex", justifyContent: "center", margin: "18px 0 12px" }}><div className="badge-pop"><TierBadge tier={tier} size={110} div={divisionOf(assess.rating)} /></div></div>
           <div className="results-kicker">You placed</div>
           <h1 className="results-head" style={{ color: tier.color, fontSize: 46, marginTop: 4 }}>{rankName(assess.rating)}</h1>
           <div className="results-sub num">{assess.rating.toLocaleString()} RP</div>
@@ -2156,7 +2241,7 @@ function RatedResults({ result, headline, sub, tableLabel, stats, buttons }) {
         <div className="results-sub">{sub}</div>
         <div className="results-delta num" style={{ color: result.delta >= 0 ? "#34D399" : "#FF6B6B" }}>{signed(result.delta)}<span>RP</span></div>
         <div className="results-tier">
-          <TierBadge tier={tierNow} size={42} />
+          <TierBadge tier={tierNow} size={50} div={divisionOf(shown)} />
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
               <span style={{ fontWeight: 700, color: tierNow.color }}>{rankName(shown)}</span>
@@ -2248,7 +2333,7 @@ function RankLadderModal({ ranked, onClose, onPrestige }) {
   return (
     <Modal title="Ranks" onClose={onClose} width={420}>
       <div className="ladder-me" style={{ borderColor: `${myTier.color}66`, background: `linear-gradient(135deg, ${myTier.color}22, rgba(22,38,68,0.9))` }}>
-        <TierBadge tier={myTier} size={44} />
+        <TierBadge tier={myTier} size={52} div={placed ? divisionOf(ranked.rating) : null} />
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 6, fontFamily: DISPLAY_FONT, fontSize: 20, fontWeight: 600, color: myTier.color }}>{placed ? rankName(ranked.rating) : "Unranked"}<PrestigeBadge n={ranked.prestige} size={18} /></div>
           <div className="num" style={{ fontSize: 12, color: "#A9B8D0", marginTop: 2 }}>{placed ? `${rating.toLocaleString()} RP${prog.nextLabel ? `, ${prog.toNext} to ${prog.nextLabel}` : ""}` : `${(ranked.placementGames || []).length} of ${PLACEMENT_MATCHES} placement matches played`}</div>
@@ -2264,7 +2349,7 @@ function RankLadderModal({ ranked, onClose, onPrestige }) {
           return (
             <div key={t.key} className="ladder-tier" style={{ borderColor: `${t.color}40` }}>
               <div className="ladder-tier-head">
-                <TierBadge tier={t} size={30} />
+                <TierBadge tier={t} size={38} />
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 15, fontWeight: 700, color: t.color }}>{t.label}</div>
                   <div style={{ fontSize: 11, color: "#7587A6" }}>{isChamp ? "1,500 RP and up" : `${t.min.toLocaleString()} to ${(t.min + 299).toLocaleString()} RP`}{t.min > 0 ? (owned ? ", frame unlocked" : ", unlocks a frame") : ""}</div>
@@ -2276,7 +2361,7 @@ function RankLadderModal({ ranked, onClose, onPrestige }) {
                   const passed = placed && rating >= dv.min && !here;
                   return (
                     <div key={dv.label} ref={here ? meRef : null} className={`ladder-div${here ? " here" : ""}${passed ? " passed" : ""}`} style={here ? { borderColor: t.color, background: `${t.color}1F` } : undefined}>
-                      <span style={{ fontWeight: here ? 700 : 500 }}>{dv.label}</span>
+                      <span style={{ fontWeight: here ? 700 : 500, display: "flex", alignItems: "center", gap: 8 }}><TierBadge tier={t} size={24} div={isChamp ? null : [3, 2, 1][divs.indexOf(dv)]} />{dv.label}</span>
                       <span className="num" style={{ color: "#7587A6" }}>{here ? <b style={{ color: t.color }}>You</b> : passed ? <Icon name="check" size={13} stroke={2.4} style={{ color: "#34D399" }} /> : `${dv.min.toLocaleString()} RP`}</span>
                     </div>
                   );
@@ -2324,7 +2409,7 @@ function RankedCard({ ranked, chips, onPlay, onPrestige, onInfo }) {
         <span>{month} season ends in {daysLeftInSeason()} days</span>
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 14, margin: "16px 0 14px" }}>
-        <button className="ranked-badge-btn" onClick={onInfo} aria-label="See all ranks"><TierBadge tier={tier} size={54} /></button>
+        <button className="ranked-badge-btn" onClick={onInfo} aria-label="See all ranks"><TierBadge tier={tier} size={58} div={placed ? divisionOf(ranked.rating) : null} /></button>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontFamily: DISPLAY_FONT, fontSize: 25, fontWeight: 600, color: tier.color, lineHeight: 1.05, display: "flex", alignItems: "center", gap: 8 }}>{placed ? rankName(ranked.rating) : "Unranked"}<PrestigeBadge n={ranked.prestige} size={20} /></div>
           <div className="num" style={{ fontSize: 13, color: "#A9B8D0", marginTop: 4 }}>{placed ? `${Math.round(ranked.rating).toLocaleString()} RP` : `${games.length} of ${PLACEMENT_MATCHES} placement matches`}</div>
@@ -2347,7 +2432,7 @@ function RankedCard({ ranked, chips, onPlay, onPrestige, onInfo }) {
           <div style={{ fontSize: 12, color: "#7587A6", marginTop: 10, textAlign: "center" }}>Play {PLACEMENT_MATCHES} matches and we'll read your game to set your rank.</div>
         </>
       )}
-      {canPrestige(ranked) && onPrestige && <button className="btn prestige-btn" style={{ width: "100%", marginTop: 14 }} onClick={onPrestige}>Prestige to Bronze for a badge and {PRESTIGE_REWARD.toLocaleString()} chips</button>}
+      {canPrestige(ranked) && onPrestige && <button className="btn prestige-btn" style={{ width: "100%", marginTop: 14 }} onClick={onPrestige}>Prestige for a badge and {PRESTIGE_REWARD / 1000}k chips</button>}
       <button className="btn btn-raise shine" style={{ width: "100%", marginTop: canPrestige(ranked) ? 8 : 18 }} disabled={locked} onClick={onPlay}>
         {locked ? `You need ${RANKED_BUYIN.toLocaleString()} chips to buy in` : placed ? "Play ranked" : `Play placement match ${games.length + 1}`}
       </button>
@@ -2991,7 +3076,7 @@ function LeaderboardScreen({ data }) {
     return (
       <div key={(pinned ? "pin-" : "") + p.name + (p.isYou ? "-you" : "")} ref={p.isYou && !pinned ? meRef : null} className={`lb-row${pinned ? " lb-pinned" : ""}`} style={{ background: p.isYou ? "rgba(52,211,153,0.1)" : "#14223D", borderColor: p.isYou ? "rgba(52,211,153,0.4)" : "rgba(244,247,252,0.06)" }}>
         <div className="num" style={{ width: 26, fontSize: 13.5, fontWeight: 700, color: i < 3 ? medal[i] : "#5E7196" }}>{i + 1}</div>
-        {tier && <TierBadge tier={tier} size={26} />}
+        {tier && <TierBadge tier={tier} size={30} />}
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 14, fontWeight: 600, color: p.isYou ? "#34D399" : "#F4F7FC", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.isYou && p.name !== "You" ? `${p.name} (you)` : p.name}{p.prestige ? <PrestigeBadge n={p.prestige} size={15} /> : null}</div>
           {(tier || (p.title && p.title !== "rookie")) && <div style={{ fontSize: 11, display: "flex", gap: 8, alignItems: "baseline", whiteSpace: "nowrap", overflow: "hidden" }}>{tier && <span style={{ color: tier.color }}>{rankName(p.rating)}</span>}{p.title && p.title !== "rookie" && <TitleTag k={p.title} size={10.5} />}</div>}
@@ -3160,7 +3245,7 @@ function ProfileScreen({ data, onUpdateName, onSelectAvatar, onSelectFrame, onAd
         <button className="title-btn" onClick={() => setPickingTitle(true)} aria-label="Change title"><TitleTag k={tt.equipped} size={12.5} /><Icon name="chevron" size={11} style={{ color: "#5E7196", transform: "rotate(90deg)" }} /></button>
         <div style={{ display: "flex", justifyContent: "center", gap: 8, marginTop: 8 }}>
           <span className="chip-pill num"><span className="chip-dot" />{data.chips.toLocaleString()}</span>
-          <span className="chip-pill" style={{ color: tier.color }}><TierBadge tier={tier} size={14} />{placed ? rankName(rk.rating) : "Unranked"}</span>
+          <span className="chip-pill" style={{ color: tier.color }}><TierBadge tier={tier} size={16} />{placed ? rankName(rk.rating) : "Unranked"}</span>
           {skillNow && data.skill.hands >= 10 && <span className="chip-pill num">SR {skillNow.sr}</span>}
         </div>
       </div>
@@ -3168,7 +3253,7 @@ function ProfileScreen({ data, onUpdateName, onSelectAvatar, onSelectFrame, onAd
       <SectionLabel right={<button className="ranked-info" onClick={() => setLadder(true)}>{placed && rk.peakRating > rk.rating ? `Peak ${rankName(rk.peakRating)}, ` : ""}all ranks<Icon name="chevron" size={11} /></button>}>Ranked</SectionLabel>
       <section className="panel" style={{ marginBottom: 26 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <TierBadge tier={tier} size={40} />
+          <TierBadge tier={tier} size={46} div={placed ? divisionOf(rk.rating) : null} />
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 15, fontWeight: 700, color: tier.color }}>{placed ? rankName(rk.rating) : "Unranked"}</div>
             <div className="num" style={{ fontSize: 12, color: "#7587A6", marginTop: 1 }}>{placed ? `${Math.round(rk.rating).toLocaleString()} RP${prog.nextLabel ? `, ${prog.toNext} to ${prog.nextLabel}` : ""}` : `${(rk.placementGames || []).length} of ${PLACEMENT_MATCHES} placements played`}</div>
@@ -4178,6 +4263,9 @@ input[type=range] { accent-color: #F5B83D; }
 .ladder-h { font-size: 13.5px; font-weight: 700; margin-bottom: 6px; }
 .ladder-p { font-size: 12px; line-height: 1.45; color: #8FA1BE; margin-bottom: 6px; }
 .prestige-box { border: 1px solid rgba(227,107,255,0.3); border-radius: 14px; padding: 12px; background: linear-gradient(135deg, rgba(227,107,255,0.08), rgba(124,58,237,0.08)); }
+/* ---- rank emblems ---- */
+.tb-champ .tb-sparkle { animation: tbTwinkle 2.4s ease-in-out infinite; transform-origin: 32px 32px; }
+@keyframes tbTwinkle { 0%, 100% { opacity: 1; } 50% { opacity: 0.25; } }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; transition-duration: 0.01ms !important; }
 }
