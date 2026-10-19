@@ -3389,16 +3389,26 @@ function ShopScreen({ data, onClaimChips, onBuyAvatar, onClaimDaily, onBuyCosmet
 /* =========================================================================
    LEADERBOARD TAB
    ========================================================================= */
-function LeaderboardScreen({ data, account, onOpenAuth }) {
+function LeaderboardScreen({ data, account, online = {}, onOpenAuth }) {
   const [tab, setTab] = useState("ranked");
   const [fl, setFl] = useState(null); const [openF, setOpenF] = useState(null);
+  // real players from everyone's accounts; the sample list only shows if that can't load
+  const [real, setReal] = useState({});
+  useEffect(() => {
+    if (!cloudEnabled() || tab === "friends") return;
+    let on = true;
+    cloud.top(tab === "ranked" ? "ranked" : "index").then((list) => on && setReal((r) => ({ ...r, [tab]: list }))).catch(() => on && setReal((r) => ({ ...r, [tab]: false })));
+    return () => { on = false; };
+  }, [tab]);
   useEffect(() => { if (tab !== "friends" || !account) return; cloud.friends(account).then((r) => setFl(r.friends)).catch(() => setFl([])); }, [tab, account]);
   const placed = isPlaced(data.ranked);
   const month = new Date().toLocaleString("en-US", { month: "long" });
   const myIndex = tournamentIndex((data.skill || {}).tourneys);
   // sample players stand in until online play exists, so the boards have company
-  const others = MOCK_PLAYERS.map((m) => ({ name: m.name, isYou: false, title: hashStr(m.name) % 5 < 2 ? TITLES[1 + (hashStr(m.name + "t") % (TITLES.length - 1))].key : null, rating: Math.round(Math.min(1680, m.wins * 9 + m.chips / 80)), index: Math.round(m.wins * 7 + m.chips / 150) }));
-  const you = { name: data.name, isYou: true, prestige: data.ranked.prestige || 0, title: (data.titles || defaultTitles()).equipped, rating: placed ? Math.round(data.ranked.rating) : null, index: myIndex };
+  const realList = real[tab];
+  const live = Array.isArray(realList);
+  const others = live ? realList.filter((p) => !account || p.id !== account.id).map((p) => ({ id: p.id, name: p.display_name, profile: p, isYou: false, prestige: p.prestige || 0, title: p.title, rating: p.placed ? p.rating : null, index: (p.stats || {}).tIndex || 0 })).filter((p) => (tab === "ranked" ? p.rating != null : true)) : MOCK_PLAYERS.map((m) => ({ name: m.name, isYou: false, title: hashStr(m.name) % 5 < 2 ? TITLES[1 + (hashStr(m.name + "t") % (TITLES.length - 1))].key : null, rating: Math.round(Math.min(1680, m.wins * 9 + m.chips / 80)), index: Math.round(m.wins * 7 + m.chips / 150) }));
+  const you = { name: data.name, isYou: true, profile: { ...publicProfile(data), id: account ? account.id : "me" }, prestige: data.ranked.prestige || 0, title: (data.titles || defaultTitles()).equipped, rating: placed ? Math.round(data.ranked.rating) : null, index: myIndex };
   const isRanked = tab === "ranked";
   const key = isRanked ? "rating" : "index";
   const pool = [...others, ...(you[key] != null ? [you] : [])].sort((a, b) => b[key] - a[key]);
@@ -3421,9 +3431,10 @@ function LeaderboardScreen({ data, account, onOpenAuth }) {
   const renderRow = (p, i, pinned = false) => {
     const tier = isRanked ? tierForRating(p.rating) : null;
     return (
-      <div key={(pinned ? "pin-" : "") + p.name + (p.isYou ? "-you" : "")} ref={p.isYou && !pinned ? meRef : null} className={`lb-row${pinned ? " lb-pinned" : ""}`} style={{ background: p.isYou ? "rgba(52,211,153,0.1)" : "var(--t-panel)", borderColor: p.isYou ? "rgba(52,211,153,0.4)" : "rgba(244,247,252,0.06)" }}>
+      <div key={(pinned ? "pin-" : "") + (p.id || p.name) + (p.isYou ? "-you" : "")} ref={p.isYou && !pinned ? meRef : null} className={`lb-row${pinned ? " lb-pinned" : ""}${p.profile && !p.isYou ? " tap" : ""}`} onClick={p.profile && !p.isYou ? () => setOpenF(p.id) : undefined} style={{ background: p.isYou ? "rgba(52,211,153,0.1)" : "var(--t-panel)", borderColor: p.isYou ? "rgba(52,211,153,0.4)" : "rgba(244,247,252,0.06)" }}>
         <div className="num" style={{ width: 26, fontSize: 13.5, fontWeight: 700, color: i < 3 ? medal[i] : "var(--t-faint)" }}>{i + 1}</div>
         {tier && <TierBadge tier={tier} size={30} />}
+        {live && p.profile && <PlayerAvatar p={p.profile} size={30} live={!p.isYou && !!online[p.id]} />}
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 14, fontWeight: 600, color: p.isYou ? "var(--t-good)" : "var(--t-text)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.isYou && p.name !== "You" ? `${p.name} (you)` : p.name}{p.prestige ? <PrestigeBadge n={p.prestige} size={15} /> : null}</div>
           {(tier || (p.title && p.title !== "rookie")) && <div style={{ fontSize: 11, display: "flex", gap: 8, alignItems: "baseline", whiteSpace: "nowrap", overflow: "hidden" }}>{tier && <span style={{ color: tier.color }}>{rankName(p.rating)}</span>}{p.title && p.title !== "rookie" && <TitleTag k={p.title} size={10.5} />}</div>}
@@ -3450,7 +3461,7 @@ function LeaderboardScreen({ data, account, onOpenAuth }) {
             {rows.map((p, i) => (
               <div key={p.id} className={`friend-row${p.isYou ? "" : " tap"}`} style={p.isYou ? { borderColor: "rgba(52,211,153,0.4)", background: "rgba(52,211,153,0.08)" } : undefined} onClick={p.isYou ? undefined : () => setOpenF(p.id)}>
                 <div className="num" style={{ width: 22, fontSize: 13.5, fontWeight: 700, color: i < 3 ? ["var(--t-accent)", "#C9D4E2", "#D9894E"][i] : "var(--t-faint)" }}>{i + 1}</div>
-                <PlayerAvatar p={p} size={34} />
+                <PlayerAvatar p={p} size={34} live={!p.isYou && !!online[p.id]} />
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 13.5, fontWeight: 650, color: p.isYou ? "var(--t-good)" : "var(--t-text)", display: "flex", alignItems: "center", gap: 5 }}>{p.display_name}{p.isYou ? " (you)" : ""}<PrestigeBadge n={p.prestige} size={14} /></div>
                   <div style={{ fontSize: 11, color: p.placed ? tierForRating(p.rating).color : "var(--t-mut)" }}>{p.placed ? rankName(p.rating) : "Unranked"}</div>
@@ -3461,7 +3472,7 @@ function LeaderboardScreen({ data, account, onOpenAuth }) {
             {fl.length === 0 && <div className="empty">Add friends from your Profile tab and they'll show up here.</div>}
           </div>
         )}
-        {openF && <FriendProfileModal friendId={openF} onClose={() => setOpenF(null)} />}
+        {openF && <FriendProfileModal friendId={openF} online={online} onClose={() => setOpenF(null)} />}
       </div>
     );
   }
@@ -3478,7 +3489,7 @@ function LeaderboardScreen({ data, account, onOpenAuth }) {
       </div>
       <div className="list" style={{ gap: 6, flex: 1 }}>
         {visible.map((p, i) => renderRow(p, i))}
-        <div style={{ fontSize: 11, color: "var(--t-faint)", textAlign: "center", padding: "8px 0 4px" }}>Other players are samples until online play is added.</div>
+        <div style={{ fontSize: 11, color: "var(--t-faint)", textAlign: "center", padding: "8px 0 4px" }}>{live ? (pool.length <= 1 ? "No one else is on the board yet. Get your friends on felt." : "Everyone with a felt account. Tap a player to see their profile.") : realList === undefined && cloudEnabled() ? "Loading players…" : "Other players are samples until online play is added."}</div>
       </div>
       {/* your spot stays visible at the bottom, even when you're off the list */}
       <div className="lb-dock">
@@ -3489,6 +3500,7 @@ function LeaderboardScreen({ data, account, onOpenAuth }) {
           </div>
         ) : myPos >= 0 && !meVisible ? renderRow(pool[myPos], myPos, true) : null}
       </div>
+      {openF && tab !== "friends" && <FriendProfileModal friendId={openF} online={online} account={account} onClose={() => setOpenF(null)} />}
     </div>
   );
 }
@@ -3496,10 +3508,16 @@ function LeaderboardScreen({ data, account, onOpenAuth }) {
 /* =========================================================================
    ACCOUNTS AND FRIENDS
    ========================================================================= */
-function PlayerAvatar({ p, size = 40 }) {
-  const style = { width: size, height: size, borderRadius: "50%", flexShrink: 0, overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--t-panel2)", fontSize: size * 0.48 };
-  return <div style={style}>{p && p.photo ? <img src={p.photo} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} /> : (p && p.avatar) || "🙂"}</div>;
+function PlayerAvatar({ p, size = 40, live = false }) {
+  const style = { width: size, height: size, borderRadius: "50%", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--t-panel2)", fontSize: size * 0.48 };
+  return (
+    <div style={{ position: "relative", flexShrink: 0, width: size, height: size }}>
+      <div style={style}>{p && p.photo ? <img src={p.photo} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} /> : (p && p.avatar) || "🙂"}</div>
+      {live && <span className="live-dot" style={{ width: Math.max(9, size * 0.26), height: Math.max(9, size * 0.26) }} aria-label="Online" />}
+    </div>
+  );
 }
+const presenceLine = (p, online) => (online && online[p.id] ? online[p.id] : p.updated_at ? `Seen ${timeAgo(new Date(p.updated_at).getTime())}` : "Offline");
 function AuthModal({ mode, setMode, onClose, onAuthed, account, data }) {
   const [username, setUsername] = useState(""); const [email, setEmail] = useState(""); const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false); const [err, setErr] = useState("");
@@ -3536,20 +3554,27 @@ function AuthModal({ mode, setMode, onClose, onAuthed, account, data }) {
     </Modal>
   );
 }
-function FriendProfileModal({ friendId, onClose, onRemove }) {
-  const [p, setP] = useState(null); const [confirm, setConfirm] = useState(false);
+function FriendProfileModal({ friendId, online = {}, onClose, onRemove, account = null, onAdded }) {
+  const [p, setP] = useState(null); const [confirm, setConfirm] = useState(false); const [addMsg, setAddMsg] = useState(null);
+  const [rel, setRel] = useState(null); // friend | incoming | outgoing | none
   useEffect(() => { let on = true; cloud.getProfile(friendId).then((x) => on && setP(x || false)).catch(() => on && setP(false)); return () => { on = false; }; }, [friendId]);
+  useEffect(() => {
+    if (!account || onRemove) return; let on = true;
+    cloud.friends(account).then((r) => { if (!on) return; const has = (l) => l.some((x) => x.id === friendId); setRel(has(r.friends) ? "friend" : has(r.incoming) ? "incoming" : has(r.outgoing) ? "outgoing" : "none"); }).catch(() => on && setRel("none"));
+    return () => { on = false; };
+  }, [account, friendId, onRemove]);
   if (p === null) return <Modal title="Profile" onClose={onClose}><div className="empty">Loading…</div></Modal>;
   if (!p) return <Modal title="Player" onClose={onClose}><div className="empty">Couldn't load this player.</div></Modal>;
   const st = p.stats || {}; const tier = p.placed ? tierForRating(p.rating) : UNRANKED;
   const winRate = st.handsPlayed ? Math.round((st.handsWon / st.handsPlayed) * 100) : 0;
-  const seen = p.updated_at ? timeAgo(new Date(p.updated_at).getTime()) : null;
+  const live = online[p.id];
   return (
     <Modal title="Profile" onClose={onClose} width={380}>
       <div className="fp-head">
-        <PlayerAvatar p={p} size={84} />
+        <PlayerAvatar p={p} size={84} live={!!live} />
         <div className="fp-name">{p.display_name}<PrestigeBadge n={p.prestige} size={20} /></div>
-        <div className="fp-user">@{p.username}{seen ? ` · active ${seen}` : ""}</div>
+        <div className="fp-user">@{p.username}</div>
+        <div className={`fp-status${live ? " on" : ""}`}>{presenceLine(p, online)}</div>
         {p.title && p.title !== "rookie" && <TitleTag k={p.title} size={12.5} style={{ marginTop: 4 }} />}
       </div>
       <div className="fp-rank">
@@ -3568,6 +3593,9 @@ function FriendProfileModal({ friendId, onClose, onRemove }) {
         <div><b className="num">{st.bestWinStreak || 0}</b><span>Best streak</span></div>
         <div><b className="num">{st.achievements || 0}</b><span>Achievements</span></div>
       </div>
+      {account && !onRemove && account.id !== p.id && rel && (
+        <button className={`btn${rel === "friend" || rel === "outgoing" ? "" : " btn-raise"}`} style={{ width: "100%", marginTop: 14 }} disabled={!!addMsg || rel === "friend" || rel === "outgoing"} onClick={async () => { try { const r = await cloud.addFriend(account, p.username); setAddMsg(r.status === "sent" ? "Request sent" : r.status === "accepted" ? "You're friends now" : r.status === "already" ? "Already friends" : "Request pending"); if (onAdded) onAdded(); } catch (e) { setAddMsg(e.message); } }}>{addMsg || (rel === "friend" ? "Friends" : rel === "outgoing" ? "Request sent" : rel === "incoming" ? "Accept friend request" : "Add friend")}</button>
+      )}
       {onRemove && <button className="btn" style={{ width: "100%", marginTop: 14, color: confirm ? "var(--t-bad)" : "var(--t-mut)" }} onClick={() => { if (confirm) { onRemove(p.id); onClose(); } else setConfirm(true); }}>{confirm ? "Tap again to remove" : "Remove friend"}</button>}
     </Modal>
   );
@@ -3576,7 +3604,7 @@ function timeAgo(t) {
   const m = Math.round((Date.now() - t) / 60000);
   if (m < 2) return "just now"; if (m < 60) return `${m}m ago`; const h = Math.round(m / 60); if (h < 24) return `${h}h ago`; const d = Math.round(h / 24); return d < 30 ? `${d}d ago` : "a while ago";
 }
-function FriendsSection({ account, onOpenAuth, sound }) {
+function FriendsSection({ account, online = {}, onOpenAuth, sound }) {
   const [lists, setLists] = useState(null); const [input, setInput] = useState(""); const [msg, setMsg] = useState(null); const [busy, setBusy] = useState(false); const [open, setOpen] = useState(null);
   const refresh = useCallback(() => { if (!account) return; cloud.friends(account).then(setLists).catch(() => setLists((l) => l || { friends: [], incoming: [], outgoing: [], offline: true })); }, [account]);
   useEffect(() => { refresh(); if (!account) return; const t = setInterval(refresh, 20000); return () => clearInterval(t); }, [refresh, account]);
@@ -3605,19 +3633,21 @@ function FriendsSection({ account, onOpenAuth, sound }) {
     setBusy(false);
   };
   const act = async (fn) => { try { await fn(); if (sound) sound.tap(); } catch (e) { setMsg({ ok: false, text: e.message }); } refresh(); };
-  const L = lists || { friends: [], incoming: [], outgoing: [] };
-  const row = (p, right, onTap) => (
+  const L0 = lists || { friends: [], incoming: [], outgoing: [] };
+  const L = { ...L0, friends: [...L0.friends].sort((a, b) => (online[b.id] ? 1 : 0) - (online[a.id] ? 1 : 0)) };
+  const liveCount = L.friends.filter((p) => online[p.id]).length;
+  const row = (p, right, onTap, showLive = false) => (
     <div key={p.id} className={`friend-row${onTap ? " tap" : ""}`} onClick={onTap || undefined} role={onTap ? "button" : undefined} tabIndex={onTap ? 0 : undefined}>
-      <PlayerAvatar p={p} size={36} />
+      <PlayerAvatar p={p} size={36} live={showLive && !!online[p.id]} />
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 13.5, fontWeight: 650, display: "flex", alignItems: "center", gap: 5, whiteSpace: "nowrap", overflow: "hidden" }}>{p.display_name}<PrestigeBadge n={p.prestige} size={14} /></div>
-        <div style={{ fontSize: 11, color: "var(--t-mut)" }}>@{p.username}{p.placed ? <span style={{ color: tierForRating(p.rating).color }}> · {rankName(p.rating)}</span> : " · Unranked"}</div>
+        <div style={{ fontSize: 13.5, fontWeight: 650, display: "flex", alignItems: "center", gap: 5, whiteSpace: "nowrap", overflow: "hidden" }}>{p.display_name}<PrestigeBadge n={p.prestige} size={14} />{p.placed && <span style={{ fontSize: 11, fontWeight: 600, color: tierForRating(p.rating).color }}>{rankName(p.rating)}</span>}</div>
+        <div style={{ fontSize: 11, color: showLive && online[p.id] ? "var(--t-good)" : "var(--t-mut)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{showLive ? presenceLine(p, online) : `@${p.username}`}</div>
       </div>
       {right}
     </div>
   );
   return (<>
-    <SectionLabel right={`@${account.username || "you"}`}>Friends</SectionLabel>
+    <SectionLabel right={liveCount ? `${liveCount} online` : `@${account.username || "you"}`}>Friends</SectionLabel>
     <form onSubmit={add} style={{ display: "flex", gap: 8, marginBottom: 8 }}>
       <div className="auth-at" style={{ flex: 1 }}><b>@</b><input value={input} onChange={(e) => setInput(e.target.value)} placeholder="Add by username" className="input" autoCapitalize="none" autoCorrect="off" spellCheck={false} aria-label="Friend's username" /></div>
       <button type="submit" className="btn btn-sm" disabled={busy || !input.trim()}>{busy ? "…" : "Add"}</button>
@@ -3632,7 +3662,7 @@ function FriendsSection({ account, onOpenAuth, sound }) {
     <div className="list" style={{ gap: 6 }}>
       {lists === null && <div className="empty">Loading friends…</div>}
       {lists && L.friends.length === 0 && <div className="empty">No friends yet. Tell yours your username: @{account.username}</div>}
-      {L.friends.map((p) => row(p, <Icon name="chevron" size={14} style={{ color: "var(--t-faint)" }} />, () => setOpen(p.id)))}
+      {L.friends.map((p) => row(p, <Icon name="chevron" size={14} style={{ color: "var(--t-faint)" }} />, () => setOpen(p.id), true))}
     </div>
     {L.outgoing.length > 0 && (<>
       <div className="friend-sub" style={{ marginTop: 10 }}>Waiting on them</div>
@@ -3640,7 +3670,7 @@ function FriendsSection({ account, onOpenAuth, sound }) {
         {L.outgoing.map((p) => row(p, <button className="btn btn-sm" onClick={() => act(() => cloud.remove(account, p.id))}>Cancel</button>))}
       </div>
     </>)}
-    {open && <FriendProfileModal friendId={open} onClose={() => setOpen(null)} onRemove={(id) => act(() => cloud.remove(account, id))} />}
+    {open && <FriendProfileModal friendId={open} online={online} onClose={() => setOpen(null)} onRemove={(id) => act(() => cloud.remove(account, id))} />}
   </>);
 }
 
@@ -3730,7 +3760,7 @@ function BestHands({ list, suitColor }) {
   );
 }
 
-function ProfileScreen({ data, account, onOpenAuth, onSignOut, sound, onUpdateName, onSelectAvatar, onSetPhoto, onUsePhoto, onSelectFrame, onAddFriend, onUpdateSettings, onExportData, onImportData, onResetProfile, onEquipTitle, onPrestige }) {
+function ProfileScreen({ data, account, online, onOpenAuth, onSignOut, sound, onUpdateName, onSelectAvatar, onSetPhoto, onUsePhoto, onSelectFrame, onAddFriend, onUpdateSettings, onExportData, onImportData, onResetProfile, onEquipTitle, onPrestige }) {
   const importRef = useRef(null);
   const [ladder, setLadder] = useState(false);
   const [transfer, setTransfer] = useState(false);
@@ -3881,7 +3911,7 @@ function ProfileScreen({ data, account, onOpenAuth, onSignOut, sound, onUpdateNa
         })}
       </div>
 
-      <FriendsSection account={account} onOpenAuth={onOpenAuth} sound={sound} />
+      <FriendsSection account={account} online={online} onOpenAuth={onOpenAuth} sound={sound} />
 
       {ladder && <RankLadderModal ranked={rk} onClose={() => setLadder(false)} onPrestige={() => { onPrestige(); setLadder(false); }} />}
       {transfer && (
@@ -4056,7 +4086,7 @@ function publicProfile(d) {
     display_name: (d.name || "Player").slice(0, 24), avatar: d.avatar || "🫵", photo: d.usePhoto && d.photo ? d.photo : null,
     title: (d.titles || {}).equipped || null, rating: Math.round(rk.rating || 0), peak: Math.round(rk.peakRating || rk.rating || 0),
     prestige: rk.prestige || 0, placed: isPlaced(rk), chips: Math.round(d.chips || 0),
-    stats: { handsPlayed: st.handsPlayed || 0, handsWon: st.handsWon || 0, biggestPot: st.biggestPot || 0, bestWinStreak: st.bestWinStreak || 0, rankedWins: rk.wins || 0, rankedLosses: rk.losses || 0, achievements: (d.achievements || []).length },
+    stats: { handsPlayed: st.handsPlayed || 0, handsWon: st.handsWon || 0, biggestPot: st.biggestPot || 0, bestWinStreak: st.bestWinStreak || 0, rankedWins: rk.wins || 0, rankedLosses: rk.losses || 0, achievements: (d.achievements || []).length, tIndex: tournamentIndex((d.skill || {}).tourneys) || 0 },
   };
 }
 
@@ -4074,6 +4104,7 @@ export default function App() {
   const [previewTheme, setPreviewTheme] = useState(null);
   const [account, setAccount] = useState(null); // { id, email, username } when signed in
   const [authOpen, setAuthOpen] = useState(null); // "signup" | "signin" | "username"
+  const [online, setOnline] = useState({}); // user id -> what they're doing, for everyone in the app right now
   const toastTimer = useRef(null);
   const sound = useSound(soundOn);
 
@@ -4110,6 +4141,19 @@ export default function App() {
     pushRef.current = setTimeout(() => { cloud.pushSave(account, data, publicProfile(data)).catch(() => {}); }, 2500);
     return () => clearTimeout(pushRef.current);
   }, [data, account, loaded]);
+  // tell friends you're here and what you're playing
+  const presenceRef = useRef(null);
+  const myStatus = !inTable || !session ? "In the lobby" : session.vip ? "At the High Roller table" : session.mode === "ranked" ? "Playing ranked" : session.mode === "tournament" ? "In a tournament" : session.mode === "practice" ? "Practicing" : "Playing cash";
+  useEffect(() => {
+    if (!account || !account.username) return;
+    let gone = false, h = null;
+    cloud.presence(account, (m) => !gone && setOnline(m)).then((x) => { if (gone) { x.leave(); return; } h = x; presenceRef.current = x; x.set(statusRef.current); }).catch(() => {});
+    const vis = () => { const x = presenceRef.current; if (!x) return; if (document.hidden) x.hide(); else x.set(statusRef.current); };
+    document.addEventListener("visibilitychange", vis);
+    return () => { gone = true; document.removeEventListener("visibilitychange", vis); if (h) h.leave(); presenceRef.current = null; setOnline({}); };
+  }, [account]);
+  const statusRef = useRef(myStatus); statusRef.current = myStatus;
+  useEffect(() => { if (presenceRef.current && !document.hidden) presenceRef.current.set(myStatus); }, [myStatus]);
   const handleAuthed = async (me, mode) => {
     setAccount(me); setAuthOpen(me.username ? null : "username");
     if (mode === "signin") {
@@ -4461,9 +4505,9 @@ export default function App() {
         <div key={tab} style={{ width: "100%", maxWidth: 460, height: "100%" }}>
           {tab === "shop" && <ShopScreen data={data} onClaimChips={handleClaimChips} onBuyAvatar={handleBuyAvatar} onClaimDaily={handleClaimDaily} onBuyCosmetic={handleBuyCosmetic} onEquipCosmetic={handleEquipCosmetic} onBuyTitle={handleBuyTitle} onBuyTheme={handleBuyTheme} onEquipTheme={handleEquipTheme} onPreviewTheme={handlePreviewTheme} previewTheme={previewTheme} />}
           {tab === "home" && <HomeMenu onPlayAI={handlePlayAI} data={data} chips={data.chips} ranked={data.ranked} onClaimDaily={handleClaimDaily} onClaimChallenge={handleClaimChallenge} onSpin={handleSpin} onPrestige={handlePrestige} sound={sound} goShop={() => setTab("shop")} />}
-          {tab === "leaderboard" && <LeaderboardScreen data={data} account={account} onOpenAuth={setAuthOpen} />}
+          {tab === "leaderboard" && <LeaderboardScreen data={data} account={account} online={online} onOpenAuth={setAuthOpen} />}
           {tab === "coach" && <CoachScreen data={data} />}
-          {tab === "profile" && <ProfileScreen data={data} account={account} onOpenAuth={setAuthOpen} onSignOut={handleSignOut} sound={sound} onUpdateName={handleUpdateName} onSelectAvatar={handleSelectAvatar} onSetPhoto={handleSetPhoto} onUsePhoto={handleUsePhoto} onSelectFrame={handleSelectFrame} onAddFriend={handleAddFriend} onUpdateSettings={handleUpdateSettings} onExportData={handleExportData} onImportData={handleImportData} onResetProfile={handleResetProfile} onEquipTitle={handleEquipTitle} onPrestige={handlePrestige} />}
+          {tab === "profile" && <ProfileScreen data={data} account={account} online={online} onOpenAuth={setAuthOpen} onSignOut={handleSignOut} sound={sound} onUpdateName={handleUpdateName} onSelectAvatar={handleSelectAvatar} onSetPhoto={handleSetPhoto} onUsePhoto={handleUsePhoto} onSelectFrame={handleSelectFrame} onAddFriend={handleAddFriend} onUpdateSettings={handleUpdateSettings} onExportData={handleExportData} onImportData={handleImportData} onResetProfile={handleResetProfile} onEquipTitle={handleEquipTitle} onPrestige={handlePrestige} />}
         </div>
       </main>
       <BottomNav tab={tab} setTab={(t) => { sound.tap(); setTab(t); if (t !== "shop") setPreviewTheme(null); }} />
@@ -5240,6 +5284,11 @@ body.theme-montecarlo .pc-index { top: 11px; left: 11px; } body.theme-montecarlo
 .fp-stats > div { display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 10px 4px; border-radius: 12px; background: rgba(244,247,252,0.04); border: 1px solid rgba(244,247,252,0.06); }
 .fp-stats b { font-size: 15px; font-weight: 750; }
 .fp-stats span { font-size: 10.5px; color: var(--t-mut); }
+.live-dot { position: absolute; right: -1px; bottom: -1px; border-radius: 50%; background: #34D399; box-shadow: 0 0 0 2px var(--t-panel), 0 0 8px rgba(52,211,153,0.6); }
+.fp-status { font-size: 12px; color: var(--t-mut); margin-top: 3px; }
+.fp-status.on { color: var(--t-good); font-weight: 600; }
+.lb-row.tap { cursor: pointer; }
+.lb-row.tap:active { transform: scale(0.985); }
 /* ---------- High Roller Room: black lacquer, emerald baize, champagne gold ---------- */
 .vip-card { width: 100%; display: flex; flex-direction: column; gap: 0; padding: 16px 18px 15px; border-radius: 18px; cursor: pointer; text-align: left; color: #F3EDE0; background-color: #0C0B09; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4' height='4'%3E%3Cpath d='M0 4L4 0' stroke='%23FFFFFF' stroke-opacity='0.025'/%3E%3C/svg%3E"), radial-gradient(120% 90% at 85% 0%, rgba(217,180,106,0.16), transparent 55%), linear-gradient(160deg, #1A1713 0%, #0B0A08 60%, #121009 100%); border: 1px solid rgba(217,180,106,0.32); position: relative; overflow: hidden; transition: transform .14s ease, box-shadow .3s ease; box-shadow: inset 0 1px 0 rgba(255,240,210,0.08), 0 10px 26px rgba(0,0,0,0.35); }
 .vip-card::before { content: ""; position: absolute; top: 5px; right: 5px; bottom: 5px; left: 5px; border-radius: 14px; border: 1px solid rgba(217,180,106,0.14); pointer-events: none; }

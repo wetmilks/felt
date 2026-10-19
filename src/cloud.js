@@ -101,6 +101,35 @@ const real = {
     const { data } = await c.from("profiles").select(PUBLIC_COLS).in("id", ids);
     return data || [];
   },
+  async top(kind) {
+    const c = await sb();
+    let q = c.from("profiles").select(PUBLIC_COLS).limit(50);
+    q = kind === "ranked" ? q.eq("placed", true).order("rating", { ascending: false }) : q.order("stats->tIndex", { ascending: false, nullsFirst: false });
+    const { data, error } = await q;
+    if (!error) return data || [];
+    if (kind === "ranked") throw new Error(friendly(error));
+    // fall back to sorting here if the server can't order by the stats field
+    const { data: all, error: e2 } = await c.from("profiles").select(PUBLIC_COLS).limit(200);
+    if (e2) throw new Error(friendly(e2));
+    return (all || []).sort((x, y) => ((y.stats || {}).tIndex || 0) - ((x.stats || {}).tIndex || 0)).slice(0, 50);
+  },
+  // who's in the app right now, shared over a live channel. Nothing is stored, it vanishes when you leave.
+  async presence(me, onSync) {
+    const c = await sb();
+    const ch = c.channel("felt-online", { config: { presence: { key: me.id } } });
+    let status = null, joined = false;
+    ch.on("presence", { event: "sync" }, () => {
+      const st = ch.presenceState(); const out = {};
+      Object.keys(st).forEach((k) => { const arr = st[k] || []; const last = arr[arr.length - 1]; if (last) out[k] = last.status || "In the lobby"; });
+      onSync(out);
+    });
+    ch.subscribe((s) => { if (s === "SUBSCRIBED") { joined = true; if (status) ch.track({ status, at: Date.now() }); } });
+    return {
+      set(next) { status = next; if (joined) ch.track({ status: next, at: Date.now() }); },
+      hide() { status = null; if (joined) ch.untrack(); },
+      leave() { try { c.removeChannel(ch); } catch (e) { /* already gone */ } },
+    };
+  },
   async insertLink(me, other) { const c = await sb(); const { error } = await c.from("friendships").insert({ requester: me.id, addressee: other, status: "pending" }); if (error && !/duplicate/i.test(error.message)) throw new Error(friendly(error)); },
   async acceptLink(me, other) { const c = await sb(); const { error } = await c.from("friendships").update({ status: "accepted" }).eq("requester", other).eq("addressee", me.id); if (error) throw new Error(friendly(error)); },
   async deleteLinks(me, other) {
@@ -137,6 +166,19 @@ const mock = {
   async getProfile(id) { await wait(); return mload().profiles[id] || null; },
   async links(me) { await wait(); return mload().links.filter((l) => l.requester === me.id || l.addressee === me.id); },
   async profiles(ids) { const db = mload(); return ids.map((i) => db.profiles[i]).filter(Boolean); },
+  async top(kind) { await wait(); const all = Object.values(mload().profiles); return (kind === "ranked" ? all.filter((p) => p.placed).sort((a, b) => b.rating - a.rating) : all.sort((a, b) => ((b.stats || {}).tIndex || 0) - ((a.stats || {}).tIndex || 0))).slice(0, 50); },
+  async presence(me, onSync) {
+    const KEY = "felt-mock-presence";
+    const read = () => { try { return JSON.parse(localStorage.getItem(KEY)) || {}; } catch (e) { return {}; } };
+    const write = (m) => localStorage.setItem(KEY, JSON.stringify(m));
+    const tick = () => { const m = read(); const out = {}; Object.keys(m).forEach((k) => { if (Date.now() - m[k].at < 30000) out[k] = m[k].status; }); onSync(out); };
+    const t = setInterval(tick, 1500); setTimeout(tick, 50);
+    return {
+      set(st) { const m = read(); m[me.id] = { status: st, at: Date.now() }; write(m); tick(); },
+      hide() { const m = read(); delete m[me.id]; write(m); tick(); },
+      leave() { clearInterval(t); const m = read(); delete m[me.id]; write(m); },
+    };
+  },
   async insertLink(me, other) { const db = mload(); if (!db.links.some((l) => l.requester === me.id && l.addressee === other)) db.links.push({ requester: me.id, addressee: other, status: "pending" }); mstore(db); },
   async acceptLink(me, other) { const db = mload(); db.links.forEach((l) => { if (l.requester === other && l.addressee === me.id) l.status = "accepted"; }); mstore(db); },
   async deleteLinks(me, other) { const db = mload(); db.links = db.links.filter((l) => !((l.requester === me.id && l.addressee === other) || (l.requester === other && l.addressee === me.id))); mstore(db); },
@@ -154,6 +196,8 @@ export const cloud = {
   loadSave: (me) => be().loadSave(me),
   pushSave: (me, save, profile) => be().pushSave(me, save, profile),
   getProfile: (id) => be().getProfile(id),
+  top: (kind) => be().top(kind),
+  presence: (me, onSync) => be().presence(me, onSync),
   // friends, split into accepted, waiting on me, and waiting on them
   async friends(me) {
     const links = await be().links(me);
