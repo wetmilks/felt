@@ -15,6 +15,7 @@ const DEAL_OFFSET = 0.42; // seconds: cards start flying once the shuffle finish
 const AVATAR_COLORS = ["#2F6FDE", "#12A36B", "#E0861E", "#8B5CF6", "#E0475B", "#0EA5B7", "#D9468F", "#7C8A1E"];
 const BOT_EMOJI = ["🧑‍💻", "😼", "🐯", "🦊", "🐼"];
 const BOT_NAMES = ["Marlo", "Yuki", "Renn", "Devon", "Kira", "Teo", "Sasha", "Bram"];
+const VIP_NAMES = ["Laurent", "Vivienne", "Sterling", "Margaux", "Aurelio", "Celeste", "Dmitri", "Isolde"];
 
 const AVATAR_CATALOG = [
   { emoji: "🫵", cost: 0 }, { emoji: "🙂", cost: 0 }, { emoji: "😎", cost: 0 }, { emoji: "🐱", cost: 0 },
@@ -400,13 +401,15 @@ const CHIP_DENOMS = [
   { v: 25000, c: "#2DD4BF" }, { v: 5000, c: "#D9468F" }, { v: 1000, c: "#F2C94C" }, { v: 500, c: "#8B5CF6" },
   { v: 100, c: "#2A2F3A" }, { v: 25, c: "#16A06A" }, { v: 5, c: "#E0475B" }, { v: 1, c: "#E8EEF7" },
 ];
-function chipColumns(amount, maxCols = 3, maxPer = 9) {
+// the high roller room plays with its own set: champagne, burgundy, gold, onyx, ivory, emerald
+const VIP_CHIP = { 25000: "#EBD39A", 5000: "#7A1E2C", 1000: "#C9A050", 500: "#8C6A3A", 100: "#ECE5D5", 25: "#11533F", 5: "#7A1E2C", 1: "#ECE5D5" };
+function chipColumns(amount, maxCols = 3, maxPer = 9, vip = false) {
   let left = Math.max(0, Math.round(amount)); const cols = [];
-  for (const d of CHIP_DENOMS) { const n = Math.floor(left / d.v); if (n > 0) { cols.push({ c: d.c, n: Math.min(maxPer, n) }); left -= n * d.v; } }
+  for (const d of CHIP_DENOMS) { const n = Math.floor(left / d.v); if (n > 0) { cols.push({ c: vip ? VIP_CHIP[d.v] : d.c, n: Math.min(maxPer, n) }); left -= n * d.v; } }
   return cols.slice(0, maxCols);
 }
-function ChipStack({ amount, small = false }) {
-  const cols = chipColumns(amount, small ? 2 : 3, small ? 5 : 9);
+function ChipStack({ amount, small = false, vip = false }) {
+  const cols = chipColumns(amount, small ? 2 : 3, small ? 5 : 9, vip);
   if (!cols.length) return null;
   return (
     <span className={`chipstack${small ? " sm" : ""}`} aria-hidden="true">
@@ -1094,10 +1097,10 @@ function TierBadge({ tier, size = 28, div = null }) {
     </svg>
   );
 }
-function Modal({ title, onClose, children, width = 360 }) {
+function Modal({ title, onClose, children, width = 360, className = "" }) {
   return (
-    <div className="scrim" onClick={onClose}>
-      <div className="sheet" style={{ maxWidth: width }} onClick={(e) => e.stopPropagation()} role="dialog" aria-label={title}>
+    <div className={`scrim${className ? ` ${className}-scrim` : ""}`} onClick={onClose}>
+      <div className={`sheet${className ? ` ${className}` : ""}`} style={{ maxWidth: width }} onClick={(e) => e.stopPropagation()} role="dialog" aria-label={title}>
         {title && (
           <div className="sheet-head">
             <div className="sheet-title">{title}</div>
@@ -1134,10 +1137,10 @@ const signed = (n) => `${n > 0 ? "+" : n < 0 ? "−" : ""}${Math.abs(n).toLocale
    SEATS / GAME CONSTANTS
    ========================================================================= */
 const SMALL_BLIND = 10, BIG_BLIND = 20;
-function makePlayers(name, avatar, stack, numSeats = 4) {
+function makePlayers(name, avatar, stack, numSeats = 4, names = BOT_NAMES) {
   const seats = [{ id: 0, name, isHuman: true, avatar }];
-  for (let i = 1; i < numSeats; i++) seats.push({ id: i, name: BOT_NAMES[i - 1], avatar: BOT_EMOJI[i - 1] });
-  return seats.map((s) => ({ ...s, stack, hole: [], folded: false, allIn: false, eliminated: false, contributed: 0, streetContributed: 0, hasActed: false }));
+  for (let i = 1; i < numSeats; i++) seats.push({ id: i, name: names[i - 1], avatar: BOT_EMOJI[i - 1] });
+  return seats.map((s) => ({ ...s, stack, hole: [], folded: false, allIn: false, eliminated: false, shown: false, contributed: 0, streetContributed: 0, hasActed: false }));
 }
 function computePots(players) {
   const contributors = players.filter((p) => p.contributed > 0);
@@ -1162,7 +1165,7 @@ function PokerTable({ startStack, name, avatar, soundOn, setSoundOn, onExit, onH
   const blindLevel = tournament ? Math.min(Math.floor(handsCount / (turbo ? 3 : 5)), BLIND_LEVEL_MULT.length - 1) : 0;
   const SB = Math.round((stakes?.sb ?? SMALL_BLIND) * BLIND_LEVEL_MULT[blindLevel]);
   const BB = Math.round((stakes?.bb ?? BIG_BLIND) * BLIND_LEVEL_MULT[blindLevel]);
-  const [players, setPlayers] = useState(() => makePlayers(name, avatar, startStack, numSeatsInit));
+  const [players, setPlayers] = useState(() => makePlayers(name, avatar, startStack, numSeatsInit, vip ? VIP_NAMES : BOT_NAMES));
   const [deck, setDeck] = useState([]);
   const [community, setCommunity] = useState([]);
   const [stage, setStage] = useState("idle");
@@ -1201,6 +1204,15 @@ function PokerTable({ startStack, name, avatar, soundOn, setSoundOn, onExit, onH
   const [coachNote, setCoachNote] = useState(null);
   // serious tables: your cards stay face down, you hold to look, and everyone sees you look
   const blindPeek = !!(ranked || tournament || vip);
+  // pro mode: no hand name and no win odds, you read the board yourself
+  const proMode = !!(ranked || vip);
+  // show or muck: when everyone folds to you, you pick whether the table sees your cards
+  const [showChoice, setShowChoice] = useState(null); // { eq, shown }
+  const imageRef = useRef({ bluff: 0, value: 0 }); // what the bots have seen you show
+  const lastAggRef = useRef(-1); // who made the last bet or raise this street
+  const heroEqRef = useRef(null);
+  const [vipIntro, setVipIntro] = useState(!!vip);
+  useEffect(() => { if (!vip) return; const t = setTimeout(() => mountedRef.current && setVipIntro(false), 2600); return () => clearTimeout(t); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, []);
   const [peekOpen, setPeekOpen] = useState(false);
   const [peekers, setPeekers] = useState({}); // seat id -> time they looked
   const peekRef = useRef({ hand: 0, looks: 0, streets: {} });
@@ -1264,8 +1276,8 @@ function PokerTable({ startStack, name, avatar, soundOn, setSoundOn, onExit, onH
     const numSeats = players.length;
     const nDealer = nextAliveFrom(dealerIdx < 0 ? -1 : dealerIdx, players);
     let ps = players.map((p) => (p.eliminated
-      ? { ...p, hole: [], folded: true, allIn: false, contributed: 0, streetContributed: 0, hasActed: true }
-      : { ...p, hole: Array.from({ length: hc }, () => d.pop()), folded: false, allIn: p.stack <= 0, contributed: 0, streetContributed: 0, hasActed: false }));
+      ? { ...p, hole: [], folded: true, shown: false, allIn: false, contributed: 0, streetContributed: 0, hasActed: true }
+      : { ...p, hole: Array.from({ length: hc }, () => d.pop()), folded: false, shown: false, allIn: p.stack <= 0, contributed: 0, streetContributed: 0, hasActed: false }));
     const sbIdx = nextAliveFrom(nDealer, ps); const bbIdx = nextAliveFrom(sbIdx, ps);
     // where the human sits this hand: button and cutoff are "late", blinds are "blinds", the rest "early"
     const liveCount = ps.filter((p) => !p.eliminated).length;
@@ -1278,6 +1290,8 @@ function PokerTable({ startStack, name, avatar, soundOn, setSoundOn, onExit, onH
     ps[bbIdx].contributed = ps[bbIdx].streetContributed = Math.min(BB, ps[bbIdx].stack); ps[bbIdx].stack -= ps[bbIdx].contributed;
     ps.forEach((p) => { if (!p.eliminated && p.stack === 0) p.allIn = true; });
     setDeck(d); setPlayers(ps); setCommunity([]); setCommunity2(null); setDealerIdx(nDealer); setPreAction(null); setHoleRevealed(!squeeze); setAllInShow(false); setAllInOdds(null); setDrama(false); setThinking(null); setCoachNote(null); setPeekOpen(false); setPeekers({});
+    setShowChoice(null); lastAggRef.current = -1; heroEqRef.current = null;
+    { const im = imageRef.current; im.bluff *= 0.75; im.value *= 0.75; } // the table slowly forgets
     setCurrentBet(BB); setMinRaise(BB); setStage("preflop"); setWinningIds(null); setWinnerBanner(null); setShowRaise(false); setCustomRaise(false); setConfirmFold(false);
     setStatusText(`Hand ${handsCount + 1}. Blinds ${SB}/${BB}.`);
     const firstToAct = nextAliveFrom(bbIdx, ps);
@@ -1298,7 +1312,7 @@ function PokerTable({ startStack, name, avatar, soundOn, setSoundOn, onExit, onH
 
   function goToNextStreet(ps, d, curStage, curCommunity, curDealer) {
     const resetPs = ps.map((p) => ({ ...p, hasActed: false }));
-    setPlayers(resetPs); setCurrentBet(0); setMinRaise(BB); setPreAction(null);
+    setPlayers(resetPs); setCurrentBet(0); setMinRaise(BB); setPreAction(null); lastAggRef.current = -1;
     let newCommunity = curCommunity; let newDeck = [...d]; let nextStage = curStage;
     const meta = handMetaRef.current;
     if (meta && !ps[0].folded) {
@@ -1391,7 +1405,14 @@ function PokerTable({ startStack, name, avatar, soundOn, setSoundOn, onExit, onH
       const winner = contenders[0]; const totalPot = pots.reduce((s, pp) => s + pp.amount, 0);
       finalPs = finalPs.map((p) => (p.id === winner.id ? { ...p, stack: p.stack + totalPot } : p)); awards[winner.id] = totalPot;
       const who = winner.isHuman ? "You win" : `${winner.name} wins`; lines.push(`${who} ${totalPot.toLocaleString()}. Everyone else folded.`); headline = `${who} ${totalPot.toLocaleString()}`;
-      if (winner.id === 0) { humanWon = true; potWonByHuman = totalPot; }
+      if (winner.id === 0) { humanWon = true; potWonByHuman = totalPot; setShowChoice({ eq: heroEqRef.current, shown: false }); }
+      else if (Math.random() < 0.16 + (1 - botSkill) * 0.1) {
+        // bots flash their cards now and then, sometimes the nuts, sometimes air
+        finalPs = finalPs.map((p) => (p.id === winner.id ? { ...p, shown: true } : p));
+        const cards = winner.hole.map((c) => `${rankLabel(c.r)}${SUIT_GLYPH[c.s]}`).join(" ");
+        const made = comm.length >= 3 ? describeCurrentHand(winner.hole, comm) : null;
+        headline2 = `${winner.name} shows ${cards}${made ? `, ${made.toLowerCase()}` : ""}`;
+      }
     } else {
       const boards = comm2 ? [comm, comm2] : [comm];
       const allWinnerIds = new Set();
@@ -1499,6 +1520,7 @@ function PokerTable({ startStack, name, avatar, soundOn, setSoundOn, onExit, onH
       score = eq >= Math.max(0.5, be + 0.05) ? 1 : eq >= be ? 0.6 : 0.15;
     }
     const weight = 1 + Math.min(4, (toCall + potNow) / (BB * 10));
+    heroEqRef.current = eqPct; // what you had when you last put chips in, for show or muck
     handDecisionsRef.current.push({ street: stage, type, score, weight });
   }
   const handleAction = useCallback((idx, type, amount = 0) => {
@@ -1519,7 +1541,7 @@ function PokerTable({ startStack, name, avatar, soundOn, setSoundOn, onExit, onH
       else if (type === "call") { const need = Math.min(currentBet - p.streetContributed, p.stack); p.stack -= need; p.contributed += need; p.streetContributed += need; if (p.stack === 0) p.allIn = true; label = `${p.name} ${p.allIn ? "calls all in" : "calls"} ${need}`; if (p.allIn) sound.allIn(vol); else sound.call(vol); flyBet(idx, need); }
       else if (type === "bet" || type === "raise") {
         const target = Math.min(amount, p.streetContributed + p.stack); const delta = target - p.streetContributed;
-        p.stack -= delta; p.contributed += delta; p.streetContributed = target; if (p.stack === 0) p.allIn = true; flyBet(idx, delta);
+        p.stack -= delta; p.contributed += delta; p.streetContributed = target; if (p.stack === 0) p.allIn = true; flyBet(idx, delta); lastAggRef.current = idx;
         setMinRaise(Math.max(BB, target - currentBet)); setCurrentBet(target);
         ps.forEach((pl) => { if (pl.id !== p.id) pl.hasActed = false; });
         label = `${p.name} ${p.allIn ? "is all in for" : type === "bet" ? "bets" : "raises to"} ${target}`; if (p.allIn) sound.allIn(vol); else sound.raise(vol);
@@ -1552,6 +1574,11 @@ function PokerTable({ startStack, name, avatar, soundOn, setSoundOn, onExit, onH
     }
     const bluffing = Math.random() < pers.bluff * (0.6 + skill * 0.6);
     const toCall = currentBet - p.streetContributed; const potNow = pot;
+    // you showed a bluff: they call you lighter. You showed the nuts: they give your bets more credit
+    if (toCall > 0 && lastAggRef.current === 0) {
+      const im = imageRef.current;
+      strength += (0.09 * Math.min(2, im.bluff) - 0.06 * Math.min(2, im.value)) * (0.5 + skill);
+    }
     const potOdds = toCall > 0 ? toCall / (potNow + toCall) : 0;
     const sizeBet = (frac) => Math.min(p.stack + p.streetContributed, currentBet + Math.max(minRaise, Math.round(potNow * frac)));
     const t = tendencyRef.current[activeIdx];
@@ -1686,13 +1713,27 @@ function PokerTable({ startStack, name, avatar, soundOn, setSoundOn, onExit, onH
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [humanTurn]);
   const revealHole = () => { if (!holeRevealed) { setHoleRevealed(true); sound.flip(1); } };
+  function showHand() {
+    if (!showChoice || showChoice.shown || !human) return;
+    const eq = showChoice.eq != null ? showChoice.eq / 100 : estimateStrength(human.hole, community);
+    const kind = eq < 0.4 ? "bluff" : eq >= 0.6 ? "value" : "meh";
+    const im = imageRef.current;
+    if (kind === "bluff") im.bluff += 1; else if (kind === "value") im.value += 1;
+    setShowChoice({ ...showChoice, shown: true, kind });
+    setPlayers((prev) => prev.map((p, i) => (i === 0 ? { ...p, shown: true } : p)));
+    const cards = human.hole.map((c) => `${rankLabel(c.r)}${SUIT_GLYPH[c.s]}`).join(" ");
+    setWinnerBanner((b) => (b ? { ...b, text2: kind === "bluff" ? `You show ${cards}. The table saw that bluff and they'll call you lighter for a while.` : kind === "value" ? `You show ${cards}. They'll give your bets more respect for a while.` : `You show ${cards}.` } : b));
+    sound.flip(2); vibrate(15);
+  }
 
   const coachAdv = tutorial && humanTurn && holeRevealed ? coachAdvice({ hole: human.hole, board: community, eq: equity, toCall: Math.max(0, humanToCall), pot, stack: human.stack, streetIn: human.streetContributed, currentBet, bb: BB, opps: Math.max(1, oppCount), position: handMetaRef.current ? handMetaRef.current.position : "early" }) : null;
   coachRef.current = coachAdv ? { adv: coachAdv, eq: equity, toCall: Math.max(0, humanToCall), pot } : null;
   const hiddenHand = blindPeek && !peekOpen && !allInShow;
-  const handLabel = human && human.hole.length > 0 && stage !== "idle" && stage !== "showdown" && (holeRevealed || blindPeek) && !hiddenHand ? describeCurrentHand(human.hole, community) : null;
+  const handLabel = human && human.hole.length > 0 && stage !== "idle" && stage !== "showdown" && (holeRevealed || blindPeek) && !hiddenHand && (!proMode || allInShow) ? describeCurrentHand(human.hole, community) : null;
   const dim = (id) => (stage === "showdown" && winningIds ? !winningIds.has(id) : false);
   const bots = players.slice(1);
+  const contested = players.filter((p) => !p.folded && !p.eliminated && p.hole.length > 0).length > 1;
+  const ringColor = vip ? "#D9B46A" : "#34D399";
   const busted = human && human.stack <= 0 && (stage === "idle" || stage === "showdown");
   const betweenHands = stage === "idle" || stage === "showdown";
   const rebuyAmount = startStack > 0 ? startStack : BB * 100;
@@ -1705,7 +1746,7 @@ function PokerTable({ startStack, name, avatar, soundOn, setSoundOn, onExit, onH
   }
   function newTable() {
     sound.shuffle();
-    const fresh = makePlayers(name, avatar, BB * 100, players.length);
+    const fresh = makePlayers(name, avatar, BB * 100, players.length, vip ? VIP_NAMES : BOT_NAMES);
     setPlayers(fresh.map((p, i) => (i === 0 ? { ...p, stack: human.stack } : p)));
     setTableCleared(false); setDealerIdx(-1); setStage("idle"); setCommunity([]); setWinnerBanner(null); setWinningIds(null);
     setStatusText("New table. Deal when you're ready.");
@@ -1768,7 +1809,7 @@ function PokerTable({ startStack, name, avatar, soundOn, setSoundOn, onExit, onH
     ? (tournamentOver ? "Tournament over" : `${gameTag || "Tournament"}, level ${blindLevel + 1}, blinds ${SB}/${BB}`)
     : ranked
       ? `${placementNo ? `Placement ${placementNo} of ${PLACEMENT_MATCHES}` : "Ranked"}, ${handsCount === 0 ? `${RANKED_MATCH_HANDS} hand match` : handsCount >= RANKED_MATCH_HANDS ? "final hand" : `hand ${handsCount} of ${RANKED_MATCH_HANDS}`}`
-      : tutorial ? "Practice, nothing at stake" : vip ? `High roller room, blinds ${SB.toLocaleString()}/${BB.toLocaleString()}` : `${gameTag ? `${gameTag} cash` : "Cash game"}, blinds ${SB}/${BB}`;
+      : tutorial ? "Practice, nothing at stake" : vip ? `${stakes?.label || "High Roller"} · ${SB.toLocaleString()} / ${BB.toLocaleString()}` : `${gameTag ? `${gameTag} cash` : "Cash game"}, blinds ${SB}/${BB}`;
 
   return (
     <div data-felt={felt ? felt.key : "green"} data-back={cardBack ? cardBack.key : "blue"} className={`table-wrap${drama ? " is-drama" : ""}${vip ? " vip" : ""}${bots.length >= 7 ? " crowded" : ""}`} style={{ ...(cardBack ? { "--back-a": cardBack.a, "--back-b": cardBack.b, "--back-ring": cardBack.ring } : {}), ...(felt ? { "--felt1": felt.c1, "--felt2": felt.c2, "--felt3": felt.c3, "--rail": felt.rail } : {}) }}>
@@ -1785,11 +1826,20 @@ function PokerTable({ startStack, name, avatar, soundOn, setSoundOn, onExit, onH
         </div>
       </div>
 
+      {vipIntro && (
+        <div className="vip-intro" onClick={() => setVipIntro(false)} aria-hidden="true">
+          <div className="vi-crest"><Icon name="crown" size={22} stroke={1.6} /></div>
+          <div className="vi-kicker">felt private room</div>
+          <div className="vi-title">{stakes?.label || "High Roller"}</div>
+          <div className="vi-rule" />
+          <div className="vi-sub num">Blinds {SB.toLocaleString()} / {BB.toLocaleString()}</div>
+        </div>
+      )}
       <div key={statusText} className="status">{stage !== "showdown" ? statusText : ""}</div>
 
       <div className={`seats${bots.length >= 7 ? " grid4" : ""}`}>
         {bots.map((p, i) => {
-          const realIdx = i + 1; const isActive = activeIdx === realIdx && stage !== "idle" && stage !== "showdown"; const revealed = (stage === "showdown" || allInShow) && !p.folded && !p.eliminated && p.hole.length > 0;
+          const realIdx = i + 1; const isActive = activeIdx === realIdx && stage !== "idle" && stage !== "showdown"; const revealed = (stage === "showdown" || allInShow) && !p.folded && !p.eliminated && p.hole.length > 0 && (contested || p.shown);
           const t = tendencyRef.current[realIdx]; const tendencyTag = t && t.total >= 4 ? (t.aggr / t.total >= 0.55 ? "Aggressive" : t.aggr / t.total <= 0.2 ? "Tight" : null) : null;
           const compact = bots.length >= 5; const tiny = bots.length >= 7;
           const avSize = tiny ? 28 : compact ? 32 : 36; const ringSize = tiny ? 34 : compact ? 38 : 42; const colWidth = tiny ? 76 : compact ? 62 : 78;
@@ -1802,7 +1852,7 @@ function PokerTable({ startStack, name, avatar, soundOn, setSoundOn, onExit, onH
               <div ref={(el) => { seatRefs.current[p.id] = el; }} style={{ position: "relative", width: ringSize, height: ringSize }}>
                 {isActive && (<svg width={ringSize} height={ringSize} style={{ position: "absolute", top: 0, left: 0, transform: "rotate(-90deg)" }}>
                   <circle cx={ringSize / 2} cy={ringSize / 2} r={ringSize / 2 - 2} fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="2.5" />
-                  <circle cx={ringSize / 2} cy={ringSize / 2} r={ringSize / 2 - 2} fill="none" stroke={timeLeft < 8 ? "#FF6B6B" : "#34D399"} strokeWidth="2.5" strokeDasharray={2 * Math.PI * (ringSize / 2 - 2)} strokeDashoffset={2 * Math.PI * (ringSize / 2 - 2) * (1 - timeLeft / turnSeconds)} style={{ transition: "stroke-dashoffset .25s linear" }} strokeLinecap="round" /></svg>)}
+                  <circle cx={ringSize / 2} cy={ringSize / 2} r={ringSize / 2 - 2} fill="none" stroke={timeLeft < 8 ? "#FF6B6B" : ringColor} strokeWidth="2.5" strokeDasharray={2 * Math.PI * (ringSize / 2 - 2)} strokeDashoffset={2 * Math.PI * (ringSize / 2 - 2) * (1 - timeLeft / turnSeconds)} style={{ transition: "stroke-dashoffset .25s linear" }} strokeLinecap="round" /></svg>)}
                 <div className="bot-av" style={{ width: avSize, height: avSize, background: AVATAR_COLORS[i], fontSize: compact ? 13 : 14 }}>{p.name[0]}</div>
                 {peekers[p.id] && <div className="peek-badge" aria-label={`${p.name} looks at their cards`}><Icon name="eye" size={11} stroke={2.4} /></div>}
                 {thinking === p.id && <div className="think-dots" aria-label={`${p.name} is thinking`}><i /><i /><i /></div>}
@@ -1824,7 +1874,7 @@ function PokerTable({ startStack, name, avatar, soundOn, setSoundOn, onExit, onH
               </div>
               <div style={{ height: 18 }}>
                 {allInOdds && allInOdds[p.id] != null && stage !== "showdown" ? <div className="odds-badge num" style={{ color: allInOdds[p.id] >= 50 ? "var(--t-good)" : "#FFB4B4" }}>{allInOdds[p.id]}%</div>
-                  : p.streetContributed > 0 && <div className={`chip-badge${collecting ? " collecting" : ""}`}>{!compact && <ChipStack amount={p.streetContributed} small />}{fmt(p.streetContributed)}</div>}
+                  : p.streetContributed > 0 && <div className={`chip-badge${collecting ? " collecting" : ""}`}>{!compact && <ChipStack amount={p.streetContributed} small vip={vip} />}{fmt(p.streetContributed)}</div>}
               </div>
             </div>
           );
@@ -1835,7 +1885,9 @@ function PokerTable({ startStack, name, avatar, soundOn, setSoundOn, onExit, onH
 
       <div className="felt-center">
         <div className={`felt-oval${drama ? " drama" : ""}`}>
-          <div className="felt-logo" aria-hidden="true" style={variant === "short" ? { fontSize: 44 } : undefined}>{vip ? "VIP" : variant === "holdem" ? "felt" : variant === "short" ? "short deck" : "omaha"}</div>
+          {vip ? (
+            <div className="felt-logo vip-logo" aria-hidden="true"><span className="vl-word">felt</span></div>
+          ) : <div className="felt-logo" aria-hidden="true" style={variant === "short" ? { fontSize: 44 } : undefined}>{variant === "holdem" ? "felt" : variant === "short" ? "short deck" : "omaha"}</div>}
           <div style={{ display: "flex", gap: "clamp(4px,1.4vw,6px)", position: "relative" }}>
             {community.map((c, i) => <div key={c.id} className={`card${dim(c.id) ? " dim" : ""}${winningIds && winningIds.has(c.id) ? " win" : ""}`} style={{ animation: `flipIn .45s cubic-bezier(.2,.8,.2,1) ${Math.max(0, i - boardBaseRef.current) * 0.12 * speedMult}s backwards` }}><div style={{ color: suitColor[c.s] }}>{rankLabel(c.r)}</div><div style={{ color: suitColor[c.s], fontSize: "0.9em" }}>{SUIT_GLYPH[c.s]}</div></div>)}
             {Array.from({ length: 5 - community.length }).map((_, i) => (<div key={i} className={`card-slot${drama && i === 0 ? " next" : ""}`} />))}
@@ -1847,7 +1899,7 @@ function PokerTable({ startStack, name, avatar, soundOn, setSoundOn, onExit, onH
             </div>
           )}
           <div className="pot-row" style={{ visibility: pot > 0 ? "visible" : "hidden" }}>
-            <ChipStack amount={pot} />
+            <ChipStack amount={pot} vip={vip} />
             <div ref={potRef} className={`pot-num num${potPulse ? " pulse" : ""}`}>Pot {potShown.toLocaleString()}</div>
           </div>
         </div>
@@ -1906,13 +1958,13 @@ function PokerTable({ startStack, name, avatar, soundOn, setSoundOn, onExit, onH
         <div className="coach note good"><div className="coach-head"><span className="coach-badge"><Icon name="cap" size={12} stroke={2.2} />Coach</span></div><div className="coach-why">Deal a hand. On every turn I'll tell you the best move and why.</div></div>
       )}
 
-      <div className="hero-seat" style={{ borderColor: turnPulse ? "rgba(52,211,153,0.6)" : "rgba(244,247,252,0.08)", boxShadow: turnPulse ? "0 0 22px rgba(52,211,153,0.25)" : "none" }}>
+      <div className="hero-seat" style={{ borderColor: turnPulse ? (vip ? "rgba(217,180,106,0.75)" : "rgba(52,211,153,0.6)") : (vip ? "rgba(217,180,106,0.2)" : "rgba(244,247,252,0.08)"), boxShadow: turnPulse ? (vip ? "0 0 26px rgba(217,180,106,0.28)" : "0 0 22px rgba(52,211,153,0.25)") : "none" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
           <div ref={(el) => { seatRefs.current[0] = el; }} style={{ position: "relative", width: 44, height: 44, flexShrink: 0 }}>
             {peekOpen && <div className="peek-badge hero" aria-label="You looked at your cards"><Icon name="eye" size={11} stroke={2.4} /></div>}
             {humanTurn && (<svg width="44" height="44" style={{ position: "absolute", top: 0, left: 0, transform: "rotate(-90deg)" }}>
               <circle cx="22" cy="22" r="20" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="2.5" />
-              <circle cx="22" cy="22" r="20" fill="none" stroke={timeLeft < 8 ? "#FF6B6B" : "#34D399"} strokeWidth="2.5" strokeDasharray={2 * Math.PI * 20} strokeDashoffset={2 * Math.PI * 20 * (1 - timeLeft / turnSeconds)} style={{ transition: "stroke-dashoffset .25s linear" }} strokeLinecap="round" /></svg>)}
+              <circle cx="22" cy="22" r="20" fill="none" stroke={timeLeft < 8 ? "#FF6B6B" : ringColor} strokeWidth="2.5" strokeDasharray={2 * Math.PI * 20} strokeDashoffset={2 * Math.PI * 20 * (1 - timeLeft / turnSeconds)} style={{ transition: "stroke-dashoffset .25s linear" }} strokeLinecap="round" /></svg>)}
             <div style={{ position: "absolute", top: 3, left: 3, width: 38, height: 38, borderRadius: "50%", background: "var(--t-panel2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, opacity: human?.folded ? 0.4 : 1, boxShadow: frameColor ? `0 0 0 2px ${frameColor}` : "none" }}>{human?.avatar}</div>
             {dealerIdx === 0 && <div className="dealer-chip" style={{ bottom: -1, right: -1 }}>D</div>}
           </div>
@@ -1920,10 +1972,11 @@ function PokerTable({ startStack, name, avatar, soundOn, setSoundOn, onExit, onH
             <div style={{ fontSize: 13.5, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", display: "flex", alignItems: "center", gap: 5 }}>{human?.name}<PrestigeBadge n={prestige} size={15} /></div>
             {title && title !== "rookie" && <TitleTag k={title} size={10.5} style={{ display: "block", marginTop: -1 }} />}
             <div className="num" style={{ fontSize: 12, color: "var(--t-mid)" }}>{(human?.stack ?? 0).toLocaleString()}{ranked && handsCount > 0 && !rankedResult && <span className="standing">{ordinal(rankedPlace)} of {players.length}</span>}</div>
-            {human?.streetContributed > 0 && <div className={`chip-badge${collecting ? " collecting" : ""}`} style={{ marginTop: 3 }}><ChipStack amount={human.streetContributed} small />{human.streetContributed.toLocaleString()}</div>}
+            {human?.streetContributed > 0 && <div className={`chip-badge${collecting ? " collecting" : ""}`} style={{ marginTop: 3 }}><ChipStack amount={human.streetContributed} small vip={vip} />{human.streetContributed.toLocaleString()}</div>}
           </div>
         </div>
-        <div style={{ display: "flex", gap: 6 }}>
+        <div style={{ display: "flex", gap: 6, position: "relative" }}>
+          {human?.shown && stage === "showdown" && <div className="shown-tag">Shown</div>}
           {human && human.hole.length > 0 ? (
             blindPeek && !human.folded && stage !== "showdown" && !allInShow ? (
               <PeekCards key={`pk${handsCount}`} cards={human.hole} suitColor={suitColor} omaha={human.hole.length > 2} delayFor={(i) => dealDelay(0, i)} open={peekOpen} setOpen={(v) => { setPeekOpen(v); if (v) { onHeroPeek(); sound.flip(1); } }} scale={cardScale} />
@@ -1988,6 +2041,11 @@ function PokerTable({ startStack, name, avatar, soundOn, setSoundOn, onExit, onH
               <button className="btn" onClick={() => onExit(0)}>Back to lobby</button>
               {!tournament && !ranked && <button className="btn btn-raise" onClick={rebuy}>Rebuy {rebuyAmount.toLocaleString()}</button>}
             </div>
+          </div>
+        ) : betweenHands && showChoice && stage === "showdown" && !(ranked && handsCount >= RANKED_MATCH_HANDS) ? (
+          <div style={{ display: "flex", width: "100%", gap: 8 }}>
+            <button className="btn show-btn" disabled={showChoice.shown} onClick={showHand}><Icon name="eye" size={14} stroke={2.2} />{showChoice.shown ? "Shown" : "Show cards"}</button>
+            <button className="btn btn-raise" onClick={startHand}>{showChoice.shown ? "Next hand" : "Muck, next hand"}</button>
           </div>
         ) : betweenHands ? (
           <button className="btn btn-raise" style={{ flex: "none", width: "100%" }} onClick={startHand}>{stage === "idle" ? "Deal" : "Next hand"}</button>
@@ -2792,17 +2850,19 @@ function VipCard({ chips, onOpen }) {
   const unlocked = chips >= HIGH_ROLLER_MIN;
   return (
     <button className={`vip-card${unlocked ? " open" : ""}`} onClick={onOpen}>
-      <div className="vip-ic"><Icon name="crown" size={20} stroke={2} /></div>
-      <div style={{ flex: 1, minWidth: 0, textAlign: "left" }}>
-        <div style={{ fontSize: 14.5, fontWeight: 800, color: "#F5D27A", letterSpacing: "0.02em" }}>High Roller Room</div>
-        {unlocked
-          ? <div style={{ fontSize: 11.5, color: "#C9B78A", marginTop: 1 }}>Blinds from 250/500. Sharp players only.</div>
-          : (<>
-              <div style={{ fontSize: 11.5, color: "#9C8E6C", marginTop: 1 }} className="num">Unlocks at {HIGH_ROLLER_MIN.toLocaleString()} chips</div>
-              <div className="bar" style={{ height: 5, marginTop: 7, background: "rgba(245,210,122,0.12)" }}><div style={{ width: `${Math.min(100, (chips / HIGH_ROLLER_MIN) * 100)}%`, background: "linear-gradient(90deg,#C9A24D,#F5D27A)" }} /></div>
-            </>)}
+      <div className="vc-top">
+        <span className="vc-kicker">felt · Private Room</span>
+        <span className="vc-crest"><Icon name={unlocked ? "crown" : "lock"} size={15} stroke={1.8} /></span>
       </div>
-      <Icon name={unlocked ? "chevron" : "lock"} size={15} style={{ color: unlocked ? "#F5D27A" : "#6E6248" }} />
+      <div className="vc-title">The High Roller Room</div>
+      {unlocked ? (
+        <div className="vc-foot"><span className="num">Blinds from 250 / 500</span><span className="vc-enter">Enter<Icon name="chevron" size={12} stroke={2.2} /></span></div>
+      ) : (
+        <>
+          <div className="vc-foot"><span className="num">Opens at {HIGH_ROLLER_MIN.toLocaleString()} chips</span><span className="num">{Math.floor(Math.min(100, (chips / HIGH_ROLLER_MIN) * 100))}%</span></div>
+          <div className="vc-bar"><div style={{ width: `${Math.min(100, (chips / HIGH_ROLLER_MIN) * 100)}%` }} /></div>
+        </>
+      )}
     </button>
   );
 }
@@ -2875,19 +2935,27 @@ function HomeMenu({ onPlayAI, data, chips, ranked, onClaimDaily, onClaimChalleng
         </Modal>
       )}
       {modal === "vip" && (
-        <Modal title="High Roller Room" onClose={close} width={380}>
-          <p className="sheet-body" style={{ marginTop: 0 }}>{chips >= HIGH_ROLLER_MIN ? "Big blinds and the sharpest bots in felt. Your whole bankroll comes to the table, so pick your spot." : `Get to ${HIGH_ROLLER_MIN.toLocaleString()} chips to get in. You have ${chips.toLocaleString()}.`}</p>
+        <Modal onClose={close} width={380} className="vip-sheet">
+          <div className="vs-head">
+            <button className="iconbtn vs-close" onClick={close} aria-label="Close"><Icon name="close" size={14} /></button>
+            <div className="vs-crest"><Icon name="crown" size={20} stroke={1.6} /></div>
+            <div className="vs-kicker">felt private room</div>
+            <div className="vs-title">The High Roller Room</div>
+            <p className="vs-body">{chips >= HIGH_ROLLER_MIN ? "Sharp players, big blinds, no hand odds. You read the table yourself. Your whole bankroll sits down with you." : `Members only. Get to ${HIGH_ROLLER_MIN.toLocaleString()} chips to get in. You have ${chips.toLocaleString()}.`}</p>
+          </div>
           <SizePicker value={size} onChange={setSize} />
           <div className="list" style={{ marginTop: 12 }}>
-            {HIGH_ROLLER_TABLES.map((t) => {
+            {HIGH_ROLLER_TABLES.map((t, i) => {
               const locked = chips < t.minBankroll;
               return (
-                <button key={t.key} disabled={locked} className="row vip-row" onClick={() => onPlayAI({ mode: "cash", tableSize: size, stakes: t, vip: true })}>
-                  <div style={{ textAlign: "left" }}>
-                    <div className="row-title" style={{ color: "#F5D27A" }}>{t.label}</div>
-                    <div className="row-sub num">Blinds {t.sb.toLocaleString()}/{t.bb.toLocaleString()}{locked ? `, needs ${t.minBankroll.toLocaleString()} chips` : ""}</div>
+                <button key={t.key} disabled={locked} className={`vip-row t-${t.key}`} onClick={() => onPlayAI({ mode: "cash", tableSize: size, stakes: t, vip: true })}>
+                  <div className="vr-no">{i === 0 ? "I" : "II"}</div>
+                  <div style={{ flex: 1, minWidth: 0, textAlign: "left" }}>
+                    <div className="vr-title">{t.label}</div>
+                    <div className="vr-sub num">Blinds {t.sb.toLocaleString()} / {t.bb.toLocaleString()}</div>
+                    <div className="vr-min num">{locked ? `Needs ${t.minBankroll.toLocaleString()} chips` : `Min ${t.minBankroll.toLocaleString()}`}</div>
                   </div>
-                  <Icon name={locked ? "lock" : "chevron"} size={15} style={{ color: "#9C8E6C", flexShrink: 0 }} />
+                  <Icon name={locked ? "lock" : "chevron"} size={15} style={{ flexShrink: 0 }} />
                 </button>
               );
             })}
@@ -4423,15 +4491,6 @@ input[type=range] { accent-color: var(--t-accent); }
 .wheel-pointer { position: absolute; top: -6px; left: 50%; margin-left: -13px; width: 0; height: 0; border-left: 13px solid transparent; border-right: 13px solid transparent; border-top: 24px solid #F5C451; z-index: 2; filter: drop-shadow(0 3px 4px rgba(0,0,0,0.5)); }
 .spin-result { text-align: center; margin-top: 14px; animation: badgePop .45s cubic-bezier(.3,1.4,.5,1) both; }
 
-.vip-card { width: 100%; display: flex; align-items: center; gap: 12px; padding: 14px; border-radius: 18px; cursor: pointer; text-align: left; color: var(--t-text); background: linear-gradient(135deg, #1A1C22 0%, #0C0D10 100%); border: 1px solid rgba(201,162,77,0.35); position: relative; overflow: hidden; transition: transform .14s ease; }
-.vip-card:active { transform: scale(0.98); }
-.vip-card.open { border-color: rgba(245,210,122,0.7); box-shadow: 0 10px 28px rgba(201,162,77,0.22); }
-.vip-card.open::after { content: ""; position: absolute; top: 0; bottom: 0; left: -60%; width: 40%; background: linear-gradient(100deg, transparent, rgba(245,210,122,0.18), transparent); transform: skewX(-20deg); animation: shimmer 5.5s ease-in-out infinite; pointer-events: none; }
-.vip-ic { width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: #F5D27A; background: rgba(201,162,77,0.14); border: 1px solid rgba(201,162,77,0.35); flex-shrink: 0; }
-.vip-row { background: linear-gradient(135deg, #1A1C22, #101114) !important; border-color: rgba(201,162,77,0.3) !important; }
-.table-wrap.vip .felt-oval { box-shadow: inset 0 0 0 2px rgba(0,0,0,0.3), inset 0 10px 30px rgba(0,0,0,0.45), 0 0 0 1px rgba(245,210,122,0.25), 0 14px 34px rgba(0,0,0,0.5), 0 0 60px rgba(201,162,77,0.18); }
-.table-wrap.vip .felt-logo { color: rgba(245,210,122,0.09); letter-spacing: 0.08em; }
-.table-wrap.vip .wordmark-sm { color: #F5D27A; }
 
 .prestige-badge { display: inline-block; flex-shrink: 0; vertical-align: middle; margin-left: 2px; overflow: visible; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.35)); }
 .prestige-btn { border-color: rgba(227,107,255,0.55); color: #F0C2FF; background: linear-gradient(135deg, rgba(227,107,255,0.16), rgba(124,58,237,0.16)); font-size: 13px; }
@@ -4741,6 +4800,94 @@ body.theme-montecarlo .play-fab span:last-child { margin-top: 2px !important; }
 @keyframes peekGlow { 0%, 100% { box-shadow: 0 0 0 3px rgba(245,184,61,0.25), 0 2px 6px rgba(0,0,0,0.4); } 50% { box-shadow: 0 0 0 6px rgba(245,184,61,0.12), 0 2px 6px rgba(0,0,0,0.4); } }
 .backs .card.mini { transition: transform .2s ease; }
 .backs.peeking .card.mini { transform: rotate(var(--r, 0deg)) translateY(-5px) scaleY(0.8); }
+/* ---------- High Roller Room: black lacquer, emerald baize, champagne gold ---------- */
+.vip-card { width: 100%; display: flex; flex-direction: column; gap: 0; padding: 16px 18px 15px; border-radius: 18px; cursor: pointer; text-align: left; color: #F3EDE0; background-color: #0C0B09; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4' height='4'%3E%3Cpath d='M0 4L4 0' stroke='%23FFFFFF' stroke-opacity='0.025'/%3E%3C/svg%3E"), radial-gradient(120% 90% at 85% 0%, rgba(217,180,106,0.16), transparent 55%), linear-gradient(160deg, #1A1713 0%, #0B0A08 60%, #121009 100%); border: 1px solid rgba(217,180,106,0.32); position: relative; overflow: hidden; transition: transform .14s ease, box-shadow .3s ease; box-shadow: inset 0 1px 0 rgba(255,240,210,0.08), 0 10px 26px rgba(0,0,0,0.35); }
+.vip-card::before { content: ""; position: absolute; top: 5px; right: 5px; bottom: 5px; left: 5px; border-radius: 14px; border: 1px solid rgba(217,180,106,0.14); pointer-events: none; }
+.vip-card:active { transform: scale(0.985); }
+.vip-card.open { border-color: rgba(217,180,106,0.6); box-shadow: inset 0 1px 0 rgba(255,240,210,0.1), 0 12px 32px rgba(0,0,0,0.4), 0 0 34px rgba(217,180,106,0.12); }
+.vip-card.open::after { content: ""; position: absolute; top: 0; bottom: 0; left: -60%; width: 34%; background: linear-gradient(100deg, transparent, rgba(241,220,166,0.13), transparent); transform: skewX(-20deg); animation: shimmer 7s ease-in-out infinite; pointer-events: none; }
+.vc-top { display: flex; justify-content: space-between; align-items: center; }
+.vc-kicker, .vs-kicker, .vi-kicker { font-family: 'Josefin Sans Variable', 'Josefin Sans', var(--t-body); text-transform: uppercase; letter-spacing: 0.24em; font-size: 9.5px; font-weight: 600; color: #A7905F; }
+.vc-crest { color: #D9B46A; display: flex; }
+.vc-title { font-family: 'Instrument Serif', Georgia, serif; font-style: italic; font-size: 27px; line-height: 1.1; margin: 10px 0 12px; background: linear-gradient(180deg, #F6E6BC 10%, #D9B46A 60%, #B48B45 100%); -webkit-background-clip: text; background-clip: text; color: transparent; letter-spacing: -0.005em; }
+.vc-foot { display: flex; justify-content: space-between; align-items: center; font-size: 11.5px; color: #B9AC92; }
+.vc-enter { display: inline-flex; align-items: center; gap: 4px; color: #E9CF95; font-family: 'Josefin Sans Variable', 'Josefin Sans', var(--t-body); text-transform: uppercase; letter-spacing: 0.18em; font-size: 10px; font-weight: 700; }
+.vc-bar { height: 3px; border-radius: 3px; background: rgba(217,180,106,0.14); margin-top: 9px; overflow: hidden; }
+.vc-bar > div { height: 100%; background: linear-gradient(90deg, #A7823F, #F1DCA6); }
+
+.vip-sheet-scrim { background: rgba(4,3,2,0.82) !important; backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px); }
+.sheet.vip-sheet { background: radial-gradient(120% 60% at 50% 0%, rgba(217,180,106,0.12), transparent 60%), linear-gradient(180deg, #15120E, #0C0A08) !important; border: 1px solid rgba(217,180,106,0.32) !important; border-radius: 20px !important; color: #F3EDE0; box-shadow: 0 30px 80px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,240,210,0.07) !important; position: relative; }
+.vs-head { text-align: center; position: relative; padding-top: 6px; margin-bottom: 14px; }
+.vs-close { position: absolute; top: -4px; right: -4px; background: transparent !important; border-color: rgba(217,180,106,0.3) !important; color: #D9B46A !important; }
+.vs-crest { color: #D9B46A; display: flex; justify-content: center; margin-bottom: 8px; }
+.vs-title { font-family: 'Instrument Serif', Georgia, serif; font-style: italic; font-size: 30px; line-height: 1.1; margin-top: 6px; color: #F1DCA6; }
+.vs-body { font-size: 12.5px; line-height: 1.55; color: #B9AC92; margin: 10px 8px 0; }
+.vip-sheet .seg { background: rgba(217,180,106,0.07) !important; border: 1px solid rgba(217,180,106,0.16) !important; border-radius: 12px !important; }
+.vip-sheet .segbtn { color: #B9AC92 !important; background: transparent !important; border: none !important; border-radius: 9px !important; }
+.vip-sheet .segbtn.on { background: linear-gradient(180deg, #F1DCA6, #C9A050) !important; color: #15110A !important; }
+.vip-row { display: flex; align-items: center; gap: 14px; width: 100%; text-align: left; cursor: pointer; padding: 15px 16px; border-radius: 14px; color: #D9B46A; background: linear-gradient(135deg, #1B1712, #0F0D0A); border: 1px solid rgba(217,180,106,0.28); transition: border-color .15s ease, transform .12s ease; position: relative; overflow: hidden; }
+.vip-row:active:not(:disabled) { transform: scale(0.985); }
+.vip-row:hover:not(:disabled) { border-color: rgba(217,180,106,0.55); }
+.vip-row:disabled { opacity: 0.45; cursor: not-allowed; }
+.vip-row.t-whale { background: linear-gradient(135deg, #17181B, #0A0A0C); border-color: rgba(214,220,230,0.28); color: #D6DCE6; }
+.vr-no { width: 34px; height: 34px; border-radius: 50%; border: 1px solid currentColor; display: flex; align-items: center; justify-content: center; font-family: 'Instrument Serif', Georgia, serif; font-size: 15px; flex-shrink: 0; opacity: 0.85; }
+.vr-title { font-family: 'Instrument Serif', Georgia, serif; font-style: italic; font-size: 21px; line-height: 1.1; color: #F1DCA6; }
+.vip-row.t-whale .vr-title { color: #EEF1F6; }
+.vr-sub { font-size: 12px; color: #C8BDA6; margin-top: 3px; }
+.vip-row.t-whale .vr-sub { color: #B8BFCB; }
+.vr-min { font-family: 'Josefin Sans Variable', 'Josefin Sans', var(--t-body); text-transform: uppercase; letter-spacing: 0.16em; font-size: 9px; font-weight: 600; color: #8C7B57; margin-top: 5px; }
+.vip-row.t-whale .vr-min { color: #7E8694; }
+
+.table-wrap.vip { --t-bg: #0A0907; --t-panel: #15120E; --t-panel2: #221D16; --t-text: #F3EDE0; --t-text2: #E2D9C6; --t-sub: #C8BDA6; --t-mid: #A89C85; --t-mut: #8C806B; --t-faint: #665C4C; --t-accent: #D9B46A; --t-good: #8FD0A6; --t-bad: #E08E80; --t-display: 'Instrument Serif', Georgia, serif;
+  background-color: #090807 !important; background-image: radial-gradient(60% 34% at 50% -4%, rgba(241,220,166,0.17), transparent 72%), radial-gradient(80% 50% at 50% 50%, rgba(18,72,56,0.22), transparent 72%), radial-gradient(140% 90% at 50% 50%, transparent 55%, rgba(0,0,0,0.6) 100%) !important; }
+.table-wrap.vip::before { opacity: 0.1; }
+.table-wrap.vip .wordmark-sm { font-family: 'Instrument Serif', Georgia, serif !important; font-style: italic; font-weight: 400 !important; font-size: 22px !important; background: linear-gradient(180deg, #F6E6BC 10%, #D9B46A 60%, #B48B45 100%); -webkit-background-clip: text; background-clip: text; color: transparent !important; }
+.table-wrap.vip .table-sub { font-family: 'Josefin Sans Variable', 'Josefin Sans', var(--t-body) !important; text-transform: uppercase; letter-spacing: 0.2em; font-size: 9.5px !important; font-weight: 600; color: #A7905F !important; margin-top: 2px; }
+.table-wrap.vip .iconbtn { background: transparent !important; border: 1px solid rgba(217,180,106,0.28) !important; color: #D9B46A !important; border-radius: 50% !important; }
+.table-wrap.vip .status { color: #C8BDA6; font-style: italic; font-family: 'Instrument Serif', Georgia, serif; font-size: 15px; letter-spacing: 0.01em; }
+.table-wrap.vip .bot-av { background: radial-gradient(circle at 35% 30%, #2A241C, #0E0C09 75%) !important; color: #E9CF95 !important; font-family: 'Instrument Serif', Georgia, serif !important; font-weight: 400 !important; font-size: 17px !important; box-shadow: inset 0 0 0 1px rgba(217,180,106,0.6), 0 3px 10px rgba(0,0,0,0.5) !important; border: none !important; }
+.table-wrap.vip .felt-oval { border: 10px solid #1A130C !important; background-color: #0B3328 !important; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='26' height='26'%3E%3Cpath d='M13 0L26 13L13 26L0 13Z' fill='none' stroke='%23E2C27E' stroke-opacity='0.07'/%3E%3Ccircle cx='13' cy='13' r='0.9' fill='%23E2C27E' fill-opacity='0.12'/%3E%3C/svg%3E"), radial-gradient(ellipse at 50% 35%, #17594A 0%, #0D3A2E 50%, #062019 100%) !important; box-shadow: inset 0 0 0 1px rgba(0,0,0,0.5), inset 0 14px 34px rgba(0,0,0,0.55), 0 0 0 1px rgba(217,180,106,0.55), 0 0 0 3px #0D0A07, 0 0 0 4px rgba(217,180,106,0.25), 0 18px 40px rgba(0,0,0,0.6), 0 0 80px rgba(217,180,106,0.08) !important; }
+.table-wrap.vip .felt-oval::after { content: ""; position: absolute; top: 7px; right: 7px; bottom: 7px; left: 7px; border-radius: 999px; border: 1px solid rgba(217,180,106,0.32); pointer-events: none; }
+.table-wrap.vip .felt-oval.drama { box-shadow: inset 0 0 0 1px rgba(0,0,0,0.5), inset 0 14px 34px rgba(0,0,0,0.55), 0 0 0 2px rgba(241,220,166,0.7), 0 0 60px rgba(217,180,106,0.4) !important; }
+.vip-logo { display: flex; flex-direction: column; align-items: center; gap: 2px; color: transparent !important; font-size: 0 !important; }
+.vip-logo .vl-word { font-family: 'Instrument Serif', Georgia, serif; font-style: italic; font-size: 58px; line-height: 0.95; color: rgba(241,220,166,0.1); letter-spacing: -0.01em; }
+.vip-logo .vl-sub { font-family: 'Josefin Sans Variable', 'Josefin Sans', sans-serif; text-transform: uppercase; letter-spacing: 0.42em; font-size: 8.5px; font-weight: 600; color: rgba(241,220,166,0.16); padding-left: 0.42em; }
+.table-wrap.vip .fchip.c0 { background: #C9A050; } .table-wrap.vip .fchip.c1 { background: #7A1E2C; } .table-wrap.vip .fchip.c2 { background: #1E1A15; }
+.table-wrap.vip .fchip { border-color: rgba(241,220,166,0.85); }
+.table-wrap.vip .card { background: #FBF6EA; }
+.table-wrap.vip .card.back, .table-wrap.vip .sq-cover { background-color: #0E0C09 !important; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='7' height='7'%3E%3Cpath d='M3.5 0L7 3.5L3.5 7L0 3.5Z' fill='none' stroke='%23D9B46A' stroke-opacity='0.55' stroke-width='0.7'/%3E%3C/svg%3E") !important; background-size: 7px 7px !important; box-shadow: inset 0 0 0 1.5px #D9B46A, inset 0 0 0 3.5px #0E0C09, inset 0 0 0 4.2px rgba(217,180,106,0.55), 0 3px 9px rgba(0,0,0,0.5) !important; }
+.table-wrap.vip .card.mini.back { box-shadow: inset 0 0 0 1px #D9B46A, inset 0 0 0 2.2px #0E0C09, 0 2px 5px rgba(0,0,0,0.5) !important; }
+.table-wrap.vip .card-slot { border: 1px solid rgba(217,180,106,0.2); background: rgba(0,0,0,0.12); }
+.table-wrap.vip .pot-num { background: rgba(6,5,4,0.62); border: 1px solid rgba(217,180,106,0.38); color: #F1DCA6; letter-spacing: 0.02em; }
+.table-wrap.vip .chip-badge { background: #0E0C09; border-color: rgba(217,180,106,0.5); color: #E9CF95; }
+.table-wrap.vip .dealer-chip { background: linear-gradient(180deg, #F1DCA6, #C9A050); color: #15110A; }
+.table-wrap.vip .hero-seat { background: linear-gradient(180deg, #17130F, #0D0B08) !important; border-radius: 18px !important; box-shadow: inset 0 1px 0 rgba(255,240,210,0.06), 0 10px 30px rgba(0,0,0,0.45); }
+.table-wrap.vip .btn { background: rgba(243,237,224,0.025) !important; border: 1px solid rgba(217,180,106,0.22) !important; color: #E2D9C6 !important; border-radius: 13px !important; font-family: var(--t-body); box-shadow: none !important; }
+.table-wrap.vip .btn-fold { color: #E08E80 !important; border-color: rgba(224,142,128,0.3) !important; }
+.table-wrap.vip .btn-go { color: #F1DCA6 !important; border-color: rgba(217,180,106,0.55) !important; background: rgba(217,180,106,0.07) !important; }
+.table-wrap.vip .btn-raise, .table-wrap.vip .preset-btn { background: linear-gradient(180deg, #F3DFAA, #C9A050) !important; color: #15110A !important; border-color: transparent !important; box-shadow: inset 0 1px 0 rgba(255,255,255,0.45), 0 8px 22px rgba(201,160,80,0.25) !important; }
+.table-wrap.vip .pre-btn { background: transparent !important; border-color: rgba(217,180,106,0.2) !important; color: #B9AC92 !important; }
+.table-wrap.vip .pre-btn.on { border-color: rgba(217,180,106,0.7) !important; color: #F1DCA6 !important; background: rgba(217,180,106,0.08) !important; }
+.table-wrap.vip .banner { background: rgba(10,9,7,0.75) !important; border-color: rgba(217,180,106,0.35) !important; }
+.table-wrap.vip .peek-badge { background: #F1DCA6; color: #15110A; box-shadow: 0 0 0 3px rgba(217,180,106,0.25), 0 2px 6px rgba(0,0,0,0.5); }
+.table-wrap.vip .sq-hint { color: #A7905F; }
+.table-wrap.vip input[type=range] { accent-color: #D9B46A; }
+.table-wrap.vip .bigwin-label { font-family: 'Instrument Serif', Georgia, serif; font-style: italic; font-weight: 400; color: #F1DCA6; }
+.table-wrap.vip .bigwin-amt { text-shadow: 0 6px 30px rgba(217,180,106,0.6); color: #FBF2DC; }
+
+.vip-intro { position: fixed; top: 0; right: 0; bottom: 0; left: 0; z-index: 40; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; background: radial-gradient(70% 45% at 50% 45%, #1B1610 0%, #070605 70%); animation: viFade 2.6s ease forwards; cursor: pointer; }
+.vi-crest { color: #D9B46A; margin-bottom: 14px; animation: viUp .9s cubic-bezier(.2,.8,.2,1) .1s both; }
+.vi-kicker { animation: viUp .9s cubic-bezier(.2,.8,.2,1) .25s both; }
+.vi-title { font-family: 'Instrument Serif', Georgia, serif; font-style: italic; font-size: 46px; line-height: 1.05; margin: 10px 0 14px; background: linear-gradient(180deg, #F6E6BC 10%, #D9B46A 60%, #B48B45 100%); -webkit-background-clip: text; background-clip: text; color: transparent; animation: viUp 1s cubic-bezier(.2,.8,.2,1) .35s both; padding: 0 0.1em; }
+.vi-rule { width: 120px; height: 1px; background: linear-gradient(90deg, transparent, #D9B46A, transparent); animation: viRule 1.1s cubic-bezier(.2,.8,.2,1) .55s both; }
+.vi-sub { margin-top: 14px; font-size: 12px; letter-spacing: 0.14em; color: #B9AC92; animation: viUp .9s cubic-bezier(.2,.8,.2,1) .7s both; }
+@keyframes viUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+@keyframes viRule { from { transform: scaleX(0); opacity: 0; } to { transform: scaleX(1); opacity: 1; } }
+@keyframes viFade { 0%, 78% { opacity: 1; } 100% { opacity: 0; visibility: hidden; } }
+
+/* show or muck */
+.show-btn { display: inline-flex; align-items: center; justify-content: center; gap: 7px; }
+.shown-tag { position: absolute; top: -9px; left: 50%; transform: translateX(-50%); z-index: 2; font-size: 9px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; padding: 2px 8px; border-radius: 20px; background: var(--t-accent); color: var(--t-bg); white-space: nowrap; animation: peekPop .22s cubic-bezier(.3,1.5,.5,1) both; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; transition-duration: 0.01ms !important; }
 }
