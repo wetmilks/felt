@@ -5943,19 +5943,19 @@ body.theme-montecarlo .pc-index { top: 11px; left: 11px; } body.theme-montecarlo
 .se-title { font-family: var(--t-display); font-size: 28px; font-weight: 700; margin-top: 4px; }
 .se-body { font-size: 13px; line-height: 1.5; color: var(--t-mid); margin-top: 8px; }
 /* ---------- High Roller Room: black lacquer, emerald baize, champagne gold ---------- */
-.vip-card { width: 100%; display: flex; flex-direction: column; gap: 0; padding: 16px 18px 15px; border-radius: 18px; cursor: pointer; text-align: left; color: #F3EDE0; background-color: #0C0B09; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4' height='4'%3E%3Cpath d='M0 4L4 0' stroke='%23FFFFFF' stroke-opacity='0.025'/%3E%3C/svg%3E"), radial-gradient(120% 90% at 85% 0%, rgba(217,180,106,0.16), transparent 55%), linear-gradient(160deg, #1A1713 0%, #0B0A08 60%, #121009 100%); border: 1px solid rgba(217,180,106,0.32); position: relative; overflow: hidden; transition: transform .14s ease, box-shadow .3s ease; box-shadow: inset 0 1px 0 rgba(255,240,210,0.08), 0 10px 26px rgba(0,0,0,0.35); }
+.vip-card { width: 100%; display: flex; flex-direction: column; align-items: stretch; gap: 0; padding: 16px 18px 15px; border-radius: 18px; cursor: pointer; text-align: left; color: #F3EDE0; background-color: #0C0B09; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4' height='4'%3E%3Cpath d='M0 4L4 0' stroke='%23FFFFFF' stroke-opacity='0.025'/%3E%3C/svg%3E"), radial-gradient(120% 90% at 85% 0%, rgba(217,180,106,0.16), transparent 55%), linear-gradient(160deg, #1A1713 0%, #0B0A08 60%, #121009 100%); border: 1px solid rgba(217,180,106,0.32); position: relative; overflow: hidden; transition: transform .14s ease, box-shadow .3s ease; box-shadow: inset 0 1px 0 rgba(255,240,210,0.08), 0 10px 26px rgba(0,0,0,0.35); }
 .vip-card::before { content: ""; position: absolute; top: 5px; right: 5px; bottom: 5px; left: 5px; border-radius: 14px; border: 1px solid rgba(217,180,106,0.14); pointer-events: none; }
 .vip-card:active { transform: scale(0.985); }
 .vip-card.open { border-color: rgba(217,180,106,0.6); box-shadow: inset 0 1px 0 rgba(255,240,210,0.1), 0 12px 32px rgba(0,0,0,0.4), 0 0 34px rgba(217,180,106,0.12); }
 .vip-card.open::after { content: ""; position: absolute; top: 0; bottom: 0; left: -60%; width: 34%; background: linear-gradient(100deg, transparent, rgba(241,220,166,0.13), transparent); transform: skewX(-20deg); animation: shimmer 7s ease-in-out infinite; pointer-events: none; }
-.vc-top { display: flex; justify-content: space-between; align-items: center; }
+.vc-top { display: flex; justify-content: space-between; align-items: center; width: 100%; gap: 10px; }
 .vc-kicker, .vs-kicker, .vi-kicker { font-family: 'Josefin Sans Variable', 'Josefin Sans', var(--t-body); text-transform: uppercase; letter-spacing: 0.24em; font-size: 9.5px; font-weight: 600; color: #A7905F; }
 .vc-crest { color: #D9B46A; display: flex; }
 .vc-title { font-family: 'Instrument Serif', Georgia, serif; font-style: italic; font-size: 27px; line-height: 1.1; margin: 10px 0 12px; background: linear-gradient(180deg, #F6E6BC 10%, #D9B46A 60%, #B48B45 100%); -webkit-background-clip: text; background-clip: text; color: transparent; letter-spacing: -0.005em; }
-.vc-foot { display: flex; justify-content: space-between; align-items: center; font-size: 11.5px; color: #B9AC92; }
+.vc-foot { display: flex; justify-content: space-between; align-items: center; width: 100%; gap: 10px; font-size: 11.5px; color: #B9AC92; }
 .vc-enter { display: inline-flex; align-items: center; gap: 3px; line-height: 1; color: #E9CF95; font-family: 'Josefin Sans Variable', 'Josefin Sans', var(--t-body); text-transform: uppercase; letter-spacing: 0.18em; font-size: 10px; font-weight: 700; }
 .vc-enter-t { display: inline-block; line-height: 1; padding-top: 0.32em; margin-right: -0.18em; } /* Josefin caps ride high, and letter spacing leaves a gap after the last letter */
-.vc-bar { height: 3px; border-radius: 3px; background: rgba(217,180,106,0.14); margin-top: 9px; overflow: hidden; }
+.vc-bar { width: 100%; height: 3px; border-radius: 3px; background: rgba(217,180,106,0.14); margin-top: 9px; overflow: hidden; }
 .vc-bar > div { height: 100%; background: linear-gradient(90deg, #A7823F, #F1DCA6); }
 
 .vip-sheet-scrim { background: rgba(4,3,2,0.82) !important; backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px); }
