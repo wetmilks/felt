@@ -1,6 +1,8 @@
 // What happens when a phone sends a move. Works against any `db` with the methods used below:
 // the real one talks to Supabase, a stand-in one keeps everything in memory for testing.
 import * as E from "./_engine.js";
+import { ensureWallet, syncSave } from "./_wallet.js";
+import { pushTo } from "./_push.js";
 
 export const STAKES = [[5, 10], [10, 20], [25, 50], [50, 100], [100, 200], [250, 500], [500, 1000], [1000, 2000]];
 const MIN_BB = 20, MAX_BB = 100;
@@ -14,15 +16,18 @@ async function playerInfo(db, uid) {
   if (!p) throw new Error("Make your username first.");
   return { uid, name: p.display_name || p.username, avatar: p.avatar, prestige: p.prestige }; // photos load separately so every update stays small
 }
-async function checkChips(db, uid, amount) {
-  const have = await db.getChips(uid);
-  if (have == null || have < amount) return `You need ${amount.toLocaleString()} chips for that. You have ${(have || 0).toLocaleString()}.`;
+// Take a buy-in out of the wallet up front. Returns an error message, or null when it's paid.
+async function debit(db, uid, amount) {
+  const w = await ensureWallet(db, uid, null);
+  const bal = await db.walletAdd(uid, -amount, false);
+  if (bal == null) return `You need ${amount.toLocaleString()} chips for that. You have ${Math.max(0, Number(w.chips) || 0).toLocaleString()}.`;
   return null;
 }
+const refund = (db, uid, amount) => db.walletAdd(uid, amount, true);
 function buyInRange(t) { return [t.bb * MIN_BB, t.bb * MAX_BB]; }
 
 // Load, change, save. If someone else saved first, start over with their version.
-async function mutate(db, tableId, fn) {
+async function mutate(db, tableId, fn, actor = null) {
   for (let attempt = 0; attempt < 6; attempt++) {
     const loaded = await db.load(tableId);
     if (!loaded) return fail("That table doesn't exist.", 404);
@@ -48,6 +53,11 @@ async function mutate(db, tableId, fn) {
       await db.putHoles(tableId, st.handNo, holes);
     }
     if (!row.friendly) for (const c of fx.cashouts) if (c.amount > 0) await db.payout(c.uid, c.amount, `Cashed out of table ${row.code}`);
+    // a nudge when it becomes your turn and you're not looking
+    const betting = ["preflop", "flop", "turn", "river"].includes(st.stage);
+    const was = row.state.turn >= 0 && row.state.seats[row.state.turn] ? `${row.state.handNo}:${row.state.seats[row.state.turn].uid}` : null;
+    const turnUid = betting && st.turn >= 0 && st.seats[st.turn] ? st.seats[st.turn].uid : null;
+    if (turnUid && `${st.handNo}:${turnUid}` !== was && turnUid !== actor) await pushTo(db, turnUid, { title: "Your turn", body: `Table ${row.code} · ${row.sb}/${row.bb}`, url: `/?table=${row.code}`, tag: `turn-${row.code}` }, { onlyIfAway: true });
     return { status: 200, body: { ok: true, state: st, version: row.version + 1, debit: fx.debit } };
   }
   return fail("The table's busy. Try again.", 409);
@@ -66,8 +76,8 @@ export async function handle(body, token, db) {
     const [lo, hi] = buyInRange({ bb });
     const buyIn = friendly ? bb * 100 : Math.floor(a.buyIn || 0);
     if (!friendly && (buyIn < lo || buyIn > hi)) return fail(`Buy in between ${lo.toLocaleString()} and ${hi.toLocaleString()}.`);
-    if (!friendly) { const e = await checkChips(db, uid, buyIn); if (e) return fail(e); }
     const me = await playerInfo(db, uid);
+    if (!friendly) { const e = await debit(db, uid, buyIn); if (e) return fail(e); }
     const st = E.newState(maxSeats); const now = Date.now();
     E.sit(st, 0, me, buyIn, now); st.at = now;
     for (let i = 0; i < 8; i++) {
@@ -75,6 +85,7 @@ export async function handle(body, token, db) {
       const row = await db.createTable({ code, host: uid, sb, bb, friendly, max_seats: maxSeats, state: st });
       if (row) return { status: 200, body: { ok: true, tableId: row.id, code, state: st, debit: friendly ? 0 : buyIn } };
     }
+    if (!friendly) await refund(db, uid, buyIn);
     return fail("Couldn't make a table code. Try again.");
   }
 
@@ -87,6 +98,16 @@ export async function handle(body, token, db) {
   }
 
   if (a.action === "admin") return admin(a, uid, db);
+
+  if (a.action === "save") return { status: 200, body: { ok: true, ...(await syncSave(db, uid, a.data, a.profile)) } };
+  if (a.action === "wallet") { const w = await ensureWallet(db, uid, a.data || null); return { status: 200, body: { ok: true, chips: Number(w.chips) || 0, rating: w.rating, prestige: w.prestige } }; }
+  if (a.action === "pushKey") return { status: 200, body: { ok: true, key: (await db.vapid()).publicKey } };
+  if (a.action === "pushSubscribe") {
+    const sub = a.sub; if (!sub || typeof sub.endpoint !== "string" || !sub.keys) return fail("Bad subscription.");
+    await db.savePushSub(uid, sub); return { status: 200, body: { ok: true } };
+  }
+  if (a.action === "pushUnsubscribe") { if (a.endpoint) await db.dropPushSub(String(a.endpoint)); return { status: 200, body: { ok: true } }; }
+  if (a.action === "here") { await db.touchPush(uid); return { status: 200, body: { ok: true } }; }
 
   if (a.action === "mine") return { status: 200, body: { ok: true, tables: await db.myTables(uid) } };
 
@@ -101,6 +122,8 @@ export async function handle(body, token, db) {
     if (!loaded || loaded.row.closed) return fail("That table has closed.");
     if (E.seatOf(loaded.row.state, uid) < 0 && loaded.row.host !== uid) return fail("Sit down first.");
     await db.invite(a.to, uid, a.tableId, loaded.row.code);
+    const me = await db.getProfile(uid);
+    await pushTo(db, a.to, { title: "Table invite", body: `${(me && (me.display_name || me.username)) || "A friend"} wants you at table ${loaded.row.code}`, url: `/?table=${loaded.row.code}`, tag: `inv-${loaded.row.code}` });
     return { status: 200, body: { ok: true } };
   }
 
@@ -108,39 +131,48 @@ export async function handle(body, token, db) {
   switch (a.action) {
     case "sit": {
       const me = await playerInfo(db, uid);
-      let need = 0;
-      const r = await mutate(db, tableId, async (st, cfg, now, fx, row) => {
-        const [lo, hi] = buyInRange(row);
-        const buyIn = row.friendly ? row.bb * 100 : Math.floor(a.buyIn || 0);
-        if (!row.friendly && (buyIn < lo || buyIn > hi)) return `Buy in between ${lo.toLocaleString()} and ${hi.toLocaleString()}.`;
-        if (!row.friendly && need !== buyIn) { const e = await checkChips(db, uid, buyIn); if (e) return e; need = buyIn; }
+      const loaded = await db.load(tableId);
+      if (!loaded || loaded.row.closed) return fail("That table has closed.");
+      const t = loaded.row; const [lo, hi] = buyInRange(t);
+      const buyIn = t.friendly ? t.bb * 100 : Math.floor(a.buyIn || 0);
+      if (!t.friendly && (buyIn < lo || buyIn > hi)) return fail(`Buy in between ${lo.toLocaleString()} and ${hi.toLocaleString()}.`);
+      if (!t.friendly) { const e = await debit(db, uid, buyIn); if (e) return fail(e); }
+      const r = await mutate(db, tableId, async (st, cfg, now, fx) => {
         const e = E.sit(st, Math.floor(a.seat), me, buyIn, now); if (e) return e;
-        fx.debit = row.friendly ? 0 : buyIn;
-        return null;
-      });
+        fx.debit = t.friendly ? 0 : buyIn; return null;
+      }, uid);
+      if (r.status !== 200 && !t.friendly) await refund(db, uid, buyIn);
       return r;
     }
-    case "rebuy": return mutate(db, tableId, async (st, cfg, now, fx, row) => {
-      const seat = E.seatOf(st, uid); if (seat < 0) return "You're not at this table.";
-      const s = st.seats[seat]; const [lo, hi] = buyInRange(row);
-      const amount = row.friendly ? row.bb * 100 : Math.floor(a.amount || 0);
-      if (!row.friendly && (amount < 1 || s.stack + amount > hi)) return `You can top up to ${hi.toLocaleString()} total.`;
-      if (row.friendly && s.stack > 0) return "Friendly tables only reload when you're out.";
-      if (!row.friendly) { const e = await checkChips(db, uid, amount); if (e) return e; }
-      const e = E.rebuy(st, seat, amount, now); if (e) return e;
-      fx.debit = row.friendly ? 0 : amount; return null;
-    });
+    case "rebuy": {
+      const loaded = await db.load(tableId);
+      if (!loaded || loaded.row.closed) return fail("That table has closed.");
+      const t = loaded.row; const [, hi] = buyInRange(t);
+      const amount = t.friendly ? t.bb * 100 : Math.floor(a.amount || 0);
+      if (!t.friendly && (amount < 1 || amount > hi)) return fail(`You can top up to ${hi.toLocaleString()} total.`);
+      if (!t.friendly) { const e = await debit(db, uid, amount); if (e) return fail(e); }
+      const r = await mutate(db, tableId, async (st, cfg, now, fx, row) => {
+        const seat = E.seatOf(st, uid); if (seat < 0) return "You're not at this table.";
+        const s = st.seats[seat];
+        if (!row.friendly && s.stack + amount > hi) return `You can top up to ${hi.toLocaleString()} total.`;
+        if (row.friendly && s.stack > 0) return "Friendly tables only reload when you're out.";
+        const e = E.rebuy(st, seat, amount, now); if (e) return e;
+        fx.debit = row.friendly ? 0 : amount; return null;
+      }, uid);
+      if (r.status !== 200 && !t.friendly) await refund(db, uid, amount);
+      return r;
+    }
     case "leave": return mutate(db, tableId, async (st, cfg, now, fx) => {
       const seat = E.seatOf(st, uid); if (seat < 0) return null;
       const { cashout } = E.leave(st, seat, now, cfg);
       fx.cashouts.push({ uid, amount: cashout }); fx.cashout = cashout;
       return null;
-    });
+    }, uid);
     case "act": return mutate(db, tableId, async (st, cfg, now) => {
       const seat = E.seatOf(st, uid); if (seat < 0) return "You're not at this table.";
       if (!cfg.sec) return "Hold on, dealing.";
       return E.act(st, cfg.sec, seat, a.move, a.amount, now, cfg);
-    });
+    }, uid);
     case "tick": return mutate(db, tableId, async (st, cfg, now, fx) => {
       const r = E.tick(st, cfg.sec, now, cfg);
       if (!r.changed) return "nothing";
@@ -173,7 +205,8 @@ async function admin(a, uid, db) {
   if (a.op === "lookup") {
     const p = await db.findProfile(String(a.username || "").trim().toLowerCase().replace(/^@/, ""));
     if (!p) return fail("No player with that username.");
-    return { status: 200, body: { ok: true, player: { ...p, chips: await db.getChips(p.id) } } };
+    const w = await db.getWallet(p.id);
+    return { status: 200, body: { ok: true, player: { ...p, chips: w ? Number(w.chips) : await db.getChips(p.id), flags: w ? w.flags : 0 } } };
   }
   if (a.op === "give") {
     const amount = Math.trunc(Number(a.amount) || 0);

@@ -1,10 +1,11 @@
 // POST /api/table — every online-table move goes through here.
 // Needs SUPABASE_SECRET_KEY set in Vercel. That key never reaches anyone's phone.
 import { createClient } from "@supabase/supabase-js";
+import webpush from "web-push";
 import { handle } from "./_handler.js";
 
 const URL = "https://pydehtkxthkzephgfhig.supabase.co";
-let admin = null;
+let admin = null; let vapidKeys = null;
 function client() {
   if (!admin) admin = createClient(URL, process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false, autoRefreshToken: false } });
   return admin;
@@ -12,8 +13,46 @@ function client() {
 
 const db = {
   async getUser(token) { const { data, error } = await client().auth.getUser(token); return error ? null : data.user; },
-  async getProfile(uid) { const { data } = await client().from("profiles").select("username, display_name, avatar, prestige").eq("id", uid).maybeSingle(); return data; },
-  async getChips(uid) { const { data } = await client().from("saves").select("data").eq("user_id", uid).maybeSingle(); return data && data.data ? Number(data.data.chips) || 0 : null; },
+  async getProfile(uid) { const { data } = await client().from("profiles").select("username, display_name, avatar, prestige, peak").eq("id", uid).maybeSingle(); return data; },
+  async getChips(uid) {
+    const w = await this.getWallet(uid); if (w && w.seeded) return Number(w.chips) || 0;
+    const { data } = await client().from("saves").select("data").eq("user_id", uid).maybeSingle(); return data && data.data ? Number(data.data.chips) || 0 : null;
+  },
+  // ---- the wallet: chips and rank the server vouches for ----
+  async getWallet(uid) { const { data } = await client().from("wallets").select("*").eq("user_id", uid).maybeSingle(); return data; },
+  async seedWallet(uid, { chips, rating, prestige, chipBucket, rpBucket }) {
+    const c = client();
+    await c.from("wallets").upsert({ user_id: uid }, { onConflict: "user_id", ignoreDuplicates: true });
+    const { data: claimed } = await c.from("wallets").update({ seeded: true, rating, prestige, chip_bucket: Math.floor(chipBucket), rp_bucket: Math.floor(rpBucket), bucket_at: new Date().toISOString() }).eq("user_id", uid).eq("seeded", false).select("user_id");
+    if (claimed && claimed.length && chips > 0) await this.walletAdd(uid, chips, true); // keeps anything already credited, like a table cash-out
+    return this.getWallet(uid);
+  },
+  async walletAdd(uid, delta, allowShort) {
+    const { data, error } = await client().rpc("wallet_add", { uid, delta: Math.round(delta), allow_short: !!allowShort });
+    if (error) throw new Error(error.message);
+    return data == null ? null : Number(data);
+  },
+  async updateWallet(uid, fields) { const { error } = await client().from("wallets").update({ ...fields, updated_at: new Date().toISOString() }).eq("user_id", uid); if (error) throw new Error(error.message); },
+  async getSaveData(uid) { const { data } = await client().from("saves").select("data").eq("user_id", uid).maybeSingle(); return data ? data.data : null; },
+  async putSave(uid, d) { const { error } = await client().from("saves").upsert({ user_id: uid, data: d, updated_at: new Date().toISOString() }); if (error) throw new Error(error.message); },
+  async updateProfile(uid, fields) { const { error } = await client().from("profiles").update(fields).eq("id", uid); if (error) throw new Error(error.message); },
+  // ---- notifications ----
+  async vapid() {
+    if (vapidKeys) return vapidKeys;
+    const c = client();
+    let { data } = await c.from("server_config").select("value").eq("key", "vapid").maybeSingle();
+    if (!data) { const k = webpush.generateVAPIDKeys(); await c.from("server_config").upsert({ key: "vapid", value: k }, { onConflict: "key", ignoreDuplicates: true }); ({ data } = await c.from("server_config").select("value").eq("key", "vapid").maybeSingle()); }
+    vapidKeys = data.value; return vapidKeys;
+  },
+  async sendPush(sub, payload) {
+    const k = await this.vapid();
+    try { await webpush.sendNotification(sub, JSON.stringify(payload), { TTL: 300, vapidDetails: { subject: "https://felt-coral.vercel.app", publicKey: k.publicKey, privateKey: k.privateKey } }); return "ok"; }
+    catch (e) { return e && (e.statusCode === 404 || e.statusCode === 410) ? "gone" : "error"; }
+  },
+  async pushSubs(uid) { const { data } = await client().from("push_subs").select("endpoint, sub, active_at").eq("user_id", uid); return data || []; },
+  async savePushSub(uid, sub) { const { error } = await client().from("push_subs").upsert({ endpoint: sub.endpoint, user_id: uid, sub, active_at: new Date().toISOString() }); if (error) throw new Error(error.message); },
+  async dropPushSub(endpoint) { await client().from("push_subs").delete().eq("endpoint", endpoint); },
+  async touchPush(uid) { await client().from("push_subs").update({ active_at: new Date().toISOString() }).eq("user_id", uid); },
   async createTable(row) {
     const { data, error } = await client().from("poker_tables").insert(row).select("id").single();
     if (error) { if (/duplicate|unique/i.test(error.message)) return null; throw new Error(error.message); }
@@ -48,14 +87,17 @@ const db = {
     if (rows.length) { const { error } = await client().from("poker_holes").upsert(rows); if (error) throw new Error(error.message); }
   },
   async getHoles(id, uid) { const { data } = await client().from("poker_holes").select("hand_no, cards").eq("table_id", id).eq("user_id", uid).maybeSingle(); return data; },
-  async payout(uid, amount, reason) { const { error } = await client().from("chip_payouts").insert({ user_id: uid, amount, reason }); if (error) throw new Error(error.message); },
+  // chips land in the wallet right away; the payout row is how the phone hears about it
+  async payout(uid, amount, reason) {
+    await this.walletAdd(uid, amount, true);
+    const { error } = await client().from("chip_payouts").insert({ user_id: uid, amount, reason }); if (error) throw new Error(error.message);
+  },
   async invite(to, from, tableId, code) { await client().from("table_invites").insert({ to_user: to, from_user: from, table_id: tableId, code }); },
   async findProfile(username) { const { data } = await client().from("profiles").select("id, username, display_name, rating, placed, prestige").eq("username", username).maybeSingle(); return data; },
   async payoutAll(amount, reason) {
     const { data } = await client().from("profiles").select("id");
-    const rows = (data || []).map((p) => ({ user_id: p.id, amount, reason }));
-    for (let i = 0; i < rows.length; i += 500) { const { error } = await client().from("chip_payouts").insert(rows.slice(i, i + 500)); if (error) throw new Error(error.message); }
-    return rows.length;
+    for (const p of data || []) await this.payout(p.id, amount, reason);
+    return (data || []).length;
   },
   async openTables() {
     const { data } = await client().from("poker_tables").select("id, code, sb, bb, friendly, state, updated_at").eq("closed", false).order("updated_at", { ascending: false }).limit(30);

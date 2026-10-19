@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { cloud, cloudEnabled, cleanUsername, api } from "./cloud.js";
+import { cloud, cloudEnabled, cleanUsername, api, pushSupported, isStandalone, isIOS, registerSW, enablePush, pushEnabled } from "./cloud.js";
 
 /* =========================================================================
    SHARED HELPERS
@@ -3136,7 +3136,7 @@ function VipCard({ chips, onOpen }) {
   );
 }
 
-function HomeMenu({ onPlayAI, onFriendsTable, onEquipPass, data, chips, ranked, legendNo, onClaimDaily, onClaimChallenge, onSpin, onPrestige, sound }) {
+function HomeMenu({ onPlayAI, onFriendsTable, onEquipPass, topCards, data, chips, ranked, legendNo, onClaimDaily, onClaimChallenge, onSpin, onPrestige, sound }) {
   const [modal, setModal] = useState(null); // "ranked" | "cash" | "tournament" | "pass"
   const [passFocus, setPassFocus] = useState(null);
   const [size, setSize] = useState(TABLE_SIZES[1]);
@@ -3161,6 +3161,7 @@ function HomeMenu({ onPlayAI, onFriendsTable, onEquipPass, data, chips, ranked, 
         </div>
       </header>
 
+      {topCards}
       <StreakBanner streak={data.streak} onClaim={onClaimDaily} />
       <div style={{ marginBottom: 14 }}><SpinCard ready={spinReady(data)} onOpen={() => setModal("spin")} /></div>
 
@@ -3720,6 +3721,13 @@ function OnlineTable({ tableId, account, data, sound, soundOn, setSoundOn, onExi
   }, [tableId, apply, onDebit]);
 
   useEffect(() => {
+    if (typeof Notification === "undefined" || Notification.permission !== "granted") return;
+    const ping = () => { if (!document.hidden) api("here").catch(() => {}); };
+    ping(); const t = setInterval(ping, 20000);
+    document.addEventListener("visibilitychange", ping);
+    return () => { clearInterval(t); document.removeEventListener("visibilitychange", ping); };
+  }, []);
+  useEffect(() => {
     mounted.current = true;
     let stop = null;
     api("get", { tableId }).then((r) => { apply({ state: r.state, version: r.version, closed: r.closed, ...r.table }); if (r.holes) setHoles(r.holes); }).catch((e) => flash(e.message));
@@ -4080,6 +4088,34 @@ function AdminModal({ onClose }) {
   );
 }
 
+// Get felt on the home screen like a real app, then let it ping you
+function InstallCard({ onDismiss, prompt }) {
+  return (
+    <div className="app-card">
+      <img src="/icon-192.png" alt="" className="app-card-ic" />
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: 14, fontWeight: 750 }}>Get the felt app</div>
+        <div style={{ fontSize: 11.5, color: "var(--t-sub)", marginTop: 2, lineHeight: 1.4 }}>{prompt ? "Full screen, one tap from your home screen, and notifications." : <>Tap <span className="share-ic"><Icon name="share" size={11} stroke={2.4} /></span> then <b>Add to Home Screen</b>. Full screen, plus notifications.</>}</div>
+      </div>
+      {prompt && <button className="btn btn-sm btn-raise" onClick={prompt}>Install</button>}
+      <button className="iconbtn" onClick={onDismiss} aria-label="Not now"><Icon name="close" size={12} /></button>
+    </div>
+  );
+}
+function NotifyCard({ onEnable, onDismiss, busy }) {
+  return (
+    <div className="app-card notify">
+      <div className="app-card-ic bell"><Icon name="flame" size={18} stroke={2} /></div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: 14, fontWeight: 750 }}>Turn on notifications</div>
+        <div style={{ fontSize: 11.5, color: "var(--t-sub)", marginTop: 2 }}>Know when a friend invites you and when it's your turn.</div>
+      </div>
+      <button className="btn btn-sm btn-raise" disabled={busy} onClick={onEnable}>{busy ? "…" : "Turn on"}</button>
+      <button className="iconbtn" onClick={onDismiss} aria-label="Not now"><Icon name="close" size={12} /></button>
+    </div>
+  );
+}
+
 // Home screen entry: make a table, join one with a code, or get back to one you're sitting at
 function FriendsTableCard({ onOpen }) {
   return (
@@ -4426,7 +4462,7 @@ function BestHands({ list, suitColor }) {
   );
 }
 
-function ProfileScreen({ data, account, online, legendNo, isAdmin, onOpenAdmin, onOpenAuth, onSignOut, sound, onUpdateName, onSelectAvatar, onSetPhoto, onUsePhoto, onSelectFrame, onAddFriend, onUpdateSettings, onExportData, onImportData, onResetProfile, onEquipTitle, onPrestige }) {
+function ProfileScreen({ data, account, online, legendNo, pushOn, pushBusy, onEnablePush, isAdmin, onOpenAdmin, onOpenAuth, onSignOut, sound, onUpdateName, onSelectAvatar, onSetPhoto, onUsePhoto, onSelectFrame, onAddFriend, onUpdateSettings, onExportData, onImportData, onResetProfile, onEquipTitle, onPrestige }) {
   const importRef = useRef(null);
   const [ladder, setLadder] = useState(false);
   const [transfer, setTransfer] = useState(false);
@@ -4633,6 +4669,11 @@ function ProfileScreen({ data, account, online, legendNo, isAdmin, onOpenAdmin, 
 
       {showSettings && (
         <Modal title="Settings" onClose={() => { setShowSettings(false); setConfirmReset(false); }}>
+          {account && (
+            <SettingRow label="Notifications" sub={pushOn ? "On for invites and your turn" : isIOS() && !isStandalone() ? "Add felt to your Home Screen first" : "Invites and your turn at friends tables"}>
+              {pushOn ? <span className="cos-tag eq">On</span> : <button className="btn btn-sm btn-raise" disabled={pushBusy || (isIOS() && !isStandalone())} onClick={onEnablePush}>Turn on</button>}
+            </SettingRow>
+          )}
           {isAdmin && (
             <SettingRow label="Admin" sub="Send chips, look up players, close tables">
               <button className="btn btn-sm btn-raise" onClick={() => { setShowSettings(false); onOpenAdmin(); }}>Open</button>
@@ -4787,6 +4828,28 @@ export default function App() {
   const [inviteNames, setInviteNames] = useState({});
   const [isAdmin, setIsAdmin] = useState(false); const [adminOpen, setAdminOpen] = useState(false);
   const [legendNo, setLegendNo] = useState(null);
+  // install + notifications
+  const [installPrompt, setInstallPrompt] = useState(null);
+  const [pushOn, setPushOn] = useState(false); const [pushBusy, setPushBusy] = useState(false);
+  const [hideInstall, setHideInstall] = useState(() => { try { return !!localStorage.getItem("felt-hide-install"); } catch (e) { return false; } });
+  const [hideNotify, setHideNotify] = useState(() => { try { return !!localStorage.getItem("felt-hide-notify"); } catch (e) { return false; } });
+  useEffect(() => {
+    registerSW();
+    const onPrompt = (e) => { e.preventDefault(); setInstallPrompt(e); };
+    window.addEventListener("beforeinstallprompt", onPrompt);
+    const onMsg = (e) => { const m = e.data || {}; if (m.type === "open" && m.url) { try { const code = new URL(m.url, window.location.origin).searchParams.get("table"); if (code) openTableCodeRef.current(code); } catch (err) { /* bad url */ } } };
+    if ("serviceWorker" in navigator) navigator.serviceWorker.addEventListener("message", onMsg);
+    return () => { window.removeEventListener("beforeinstallprompt", onPrompt); if ("serviceWorker" in navigator) navigator.serviceWorker.removeEventListener("message", onMsg); };
+  }, []);
+  useEffect(() => { if (!account) { setPushOn(false); return; } pushEnabled().then(setPushOn).catch(() => setPushOn(false)); }, [account]);
+  const turnOnPush = async () => {
+    setPushBusy(true);
+    try { await enablePush(); setPushOn(true); showToast({ title: "Notifications on", label: "You'll hear about invites and your turn" }, 2600); }
+    catch (e) { showToast({ title: "Notifications", label: e.message }, 3400); }
+    setPushBusy(false);
+  };
+  const dismiss = (key, set) => { set(true); try { localStorage.setItem(key, "1"); } catch (e) { /* private mode */ } };
+  const openTableCodeRef = useRef(() => {});
   const champRating = isPlaced(data.ranked) && data.ranked.rating >= 1500 ? Math.round(data.ranked.rating) : null;
   useEffect(() => {
     if (!account || champRating == null) { setLegendNo(null); return; }
@@ -4822,6 +4885,26 @@ export default function App() {
     })();
   }, []);
   const persist = (next) => { const n = { ...next, savedAt: Date.now() }; setData(n); saveData(n); };
+  // The server owns your chips and rank. After each save it sends back the real numbers, and anything
+  // you earned on this phone since that save stays on top of them.
+  const [syncFlag, setSyncFlag] = useState(false);
+  useEffect(() => {
+    cloud.onSync((r) => {
+      if (!r || r.chips == null) return;
+      setData((d) => {
+        const chips = Math.max(0, Math.round(r.chips + (d.chips - r.sentChips)));
+        const rk = d.ranked || {};
+        const rating = Math.max(0, Math.round(r.rating + ((rk.rating || 0) - r.sentRating)));
+        const prestige = Math.max(0, r.prestige + ((rk.prestige || 0) - r.sentPrestige));
+        if (chips === d.chips && (d.chipSync || {}).base === r.chips && rating === Math.round(rk.rating || 0) && prestige === (rk.prestige || 0)) return d;
+        const n = { ...d, chips, chipSync: { base: r.chips }, ranked: { ...rk, rating, prestige } };
+        saveData(n); return n;
+      });
+      if (r.flagged) setSyncFlag(true);
+    });
+    return () => cloud.onSync(null);
+  }, []);
+  useEffect(() => { if (syncFlag) { showToast({ title: "Chips checked", label: "Some chips or RP didn't add up, so the server kept the verified amount." }, 3600); setSyncFlag(false); } }, [syncFlag]); // eslint-disable-line react-hooks/exhaustive-deps
   // signed in: every change goes up to your account a couple of seconds later
   const pushRef = useRef(null);
   useEffect(() => {
@@ -4867,12 +4950,12 @@ export default function App() {
     if (!account) return;
     try {
       const r = await cloud.claimPayouts(account);
-      if (r.total !== 0) { const d = dataRef.current; persist({ ...d, chips: Math.max(0, d.chips + r.total) }); showToast({ title: `${r.total > 0 ? "+" : "-"}${Math.abs(r.total).toLocaleString()} chips`, label: r.reasons.length === 1 ? r.reasons[0] : "Chips from friends tables" }, 3000); if (r.total > 0) sound.coin(); }
+      if (r.total !== 0) { const d = dataRef.current; const base = d.chipSync && d.chipSync.base != null ? d.chipSync.base + r.total : undefined; persist({ ...d, chips: Math.max(0, d.chips + r.total), ...(base != null ? { chipSync: { base } } : {}) }); showToast({ title: `${r.total > 0 ? "+" : "-"}${Math.abs(r.total).toLocaleString()} chips`, label: r.reasons.length === 1 ? r.reasons[0] : "Chips from friends tables" }, 3000); if (r.total > 0) sound.coin(); }
     } catch (e) { /* try again later */ }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [account]);
   useEffect(() => { if (!account || !loaded) return; claimPayouts(); const t = setInterval(claimPayouts, 60000); return () => clearInterval(t); }, [account, loaded, claimPayouts]);
-  const handleDebit = useCallback((amount) => { const d = dataRef.current; persist({ ...d, chips: Math.max(0, d.chips - amount) }); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  const handleDebit = useCallback((amount) => { const d = dataRef.current; const base = d.chipSync && d.chipSync.base != null ? d.chipSync.base - amount : undefined; persist({ ...d, chips: Math.max(0, d.chips - amount), ...(base != null ? { chipSync: { base } } : {}) }); }, []); // eslint-disable-line react-hooks/exhaustive-deps
   // friends asking you to their table
   useEffect(() => {
     if (!account || !account.username) { setInvites([]); return; }
@@ -4882,6 +4965,7 @@ export default function App() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [account]);
   const openTable = (id) => { sound.tap(); setFtOpen(false); setOnlineTable(id); };
+  openTableCodeRef.current = (code) => { if (!account) return; api("join", { code }).then((r) => openTable(r.tableId)).catch((e) => showToast({ title: "Can't join", label: e.message }, 2600)); };
   const acceptInvite = async (iv) => { cloud.clearInvite(iv.id).catch(() => {}); setInvites((l) => l.filter((x) => x.id !== iv.id)); try { const r = await api("join", { code: iv.code }); openTable(r.tableId); } catch (e) { showToast({ title: "Can't join", label: e.message }, 2600); } };
   // a shared link like felt-coral.vercel.app/?table=ABCD drops you at that table
   useEffect(() => {
@@ -5247,10 +5331,13 @@ export default function App() {
       <main className="app-main">
         <div key={tab} style={{ width: "100%", maxWidth: 460, height: "100%" }}>
           {tab === "shop" && <ShopScreen data={data} onClaimChips={handleClaimChips} onBuyAvatar={handleBuyAvatar} onClaimDaily={handleClaimDaily} onBuyCosmetic={handleBuyCosmetic} onEquipCosmetic={handleEquipCosmetic} onBuyTitle={handleBuyTitle} onBuyTheme={handleBuyTheme} onEquipTheme={handleEquipTheme} onPreviewTheme={handlePreviewTheme} previewTheme={previewTheme} />}
-          {tab === "home" && <HomeMenu legendNo={legendNo} onEquipPass={handleEquipPass} onPlayAI={handlePlayAI} onFriendsTable={() => { sound.tap(); setFtOpen(true); }} data={data} chips={data.chips} ranked={data.ranked} onClaimDaily={handleClaimDaily} onClaimChallenge={handleClaimChallenge} onSpin={handleSpin} onPrestige={handlePrestige} sound={sound} goShop={() => setTab("shop")} />}
+          {tab === "home" && <HomeMenu topCards={<>
+            {!isStandalone() && !hideInstall && (installPrompt || isIOS()) && <div style={{ marginBottom: 14 }}><InstallCard prompt={installPrompt ? async () => { installPrompt.prompt(); try { await installPrompt.userChoice; } catch (e) { /* closed */ } setInstallPrompt(null); } : null} onDismiss={() => dismiss("felt-hide-install", setHideInstall)} /></div>}
+            {account && pushSupported() && !pushOn && !hideNotify && (isStandalone() || !isIOS()) && typeof Notification !== "undefined" && Notification.permission !== "denied" && <div style={{ marginBottom: 14 }}><NotifyCard busy={pushBusy} onEnable={turnOnPush} onDismiss={() => dismiss("felt-hide-notify", setHideNotify)} /></div>}
+          </>} legendNo={legendNo} onEquipPass={handleEquipPass} onPlayAI={handlePlayAI} onFriendsTable={() => { sound.tap(); setFtOpen(true); }} data={data} chips={data.chips} ranked={data.ranked} onClaimDaily={handleClaimDaily} onClaimChallenge={handleClaimChallenge} onSpin={handleSpin} onPrestige={handlePrestige} sound={sound} goShop={() => setTab("shop")} />}
           {tab === "leaderboard" && <LeaderboardScreen data={data} account={account} online={online} onOpenAuth={setAuthOpen} />}
           {tab === "coach" && <CoachScreen data={data} />}
-          {tab === "profile" && <ProfileScreen data={data} account={account} online={online} legendNo={legendNo} isAdmin={isAdmin} onOpenAdmin={() => setAdminOpen(true)} onOpenAuth={setAuthOpen} onSignOut={handleSignOut} sound={sound} onUpdateName={handleUpdateName} onSelectAvatar={handleSelectAvatar} onSetPhoto={handleSetPhoto} onUsePhoto={handleUsePhoto} onSelectFrame={handleSelectFrame} onAddFriend={handleAddFriend} onUpdateSettings={handleUpdateSettings} onExportData={handleExportData} onImportData={handleImportData} onResetProfile={handleResetProfile} onEquipTitle={handleEquipTitle} onPrestige={handlePrestige} />}
+          {tab === "profile" && <ProfileScreen data={data} account={account} online={online} legendNo={legendNo} pushOn={pushOn} pushBusy={pushBusy} onEnablePush={turnOnPush} isAdmin={isAdmin} onOpenAdmin={() => setAdminOpen(true)} onOpenAuth={setAuthOpen} onSignOut={handleSignOut} sound={sound} onUpdateName={handleUpdateName} onSelectAvatar={handleSelectAvatar} onSetPhoto={handleSetPhoto} onUsePhoto={handleUsePhoto} onSelectFrame={handleSelectFrame} onAddFriend={handleAddFriend} onUpdateSettings={handleUpdateSettings} onExportData={handleExportData} onImportData={handleImportData} onResetProfile={handleResetProfile} onEquipTitle={handleEquipTitle} onPrestige={handlePrestige} />}
         </div>
       </main>
       <BottomNav tab={tab} setTab={(t) => { sound.tap(); setTab(t); if (t !== "shop") setPreviewTheme(null); }} />
@@ -6162,6 +6249,12 @@ body.theme-montecarlo .pc-index { top: 11px; left: 11px; } body.theme-montecarlo
 .scope-toggle { display: flex; gap: 2px; padding: 2px; border-radius: 10px; background: rgba(244,247,252,0.07); flex-shrink: 0; }
 .scope-toggle button { display: inline-flex; align-items: center; gap: 4px; border: none; background: transparent; color: var(--t-mut); font-size: 11.5px; font-weight: 700; padding: 6px 9px; border-radius: 8px; cursor: pointer; }
 .scope-toggle button.on { background: var(--t-text); color: var(--t-bg); }
+/* install + notifications */
+.app-card { display: flex; align-items: center; gap: 12px; padding: 12px 10px 12px 12px; border-radius: 16px; background: var(--t-panel); border: 1px solid rgba(244,247,252,0.1); }
+.app-card.notify { border-color: rgba(245,184,61,0.35); background: linear-gradient(135deg, rgba(245,184,61,0.1), var(--t-panel)); }
+.app-card-ic { width: 42px; height: 42px; border-radius: 11px; flex-shrink: 0; object-fit: cover; box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+.app-card-ic.bell { display: flex; align-items: center; justify-content: center; background: rgba(245,184,61,0.16); color: var(--t-accent); box-shadow: none; }
+.share-ic { display: inline-flex; vertical-align: -2px; padding: 1px 3px; border-radius: 4px; background: rgba(111,168,255,0.18); color: #8CB8FF; }
 /* ---------- High Roller Room: black lacquer, emerald baize, champagne gold ---------- */
 .vip-card { width: 100%; display: flex; flex-direction: column; align-items: stretch; gap: 0; padding: 16px 18px 15px; border-radius: 18px; cursor: pointer; text-align: left; color: #F3EDE0; background-color: #0C0B09; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4' height='4'%3E%3Cpath d='M0 4L4 0' stroke='%23FFFFFF' stroke-opacity='0.025'/%3E%3C/svg%3E"), radial-gradient(120% 90% at 85% 0%, rgba(217,180,106,0.16), transparent 55%), linear-gradient(160deg, #1A1713 0%, #0B0A08 60%, #121009 100%); border: 1px solid rgba(217,180,106,0.32); position: relative; overflow: hidden; transition: transform .14s ease, box-shadow .3s ease; box-shadow: inset 0 1px 0 rgba(255,240,210,0.08), 0 10px 26px rgba(0,0,0,0.35); }
 .vip-card::before { content: ""; position: absolute; top: 5px; right: 5px; bottom: 5px; left: 5px; border-radius: 14px; border: 1px solid rgba(217,180,106,0.14); pointer-events: none; }

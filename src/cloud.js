@@ -24,6 +24,9 @@ function friendly(err) {
   return m || "Something went wrong. Try again.";
 }
 
+// the only profile fields a phone may write itself; rank, chips and stats come from the server
+const starter = (p) => { const o = {}; ["display_name", "avatar", "photo", "title"].forEach((k) => { if (p && p[k] != null) o[k] = p[k]; }); return o; };
+
 /* ---------------- Supabase ---------------- */
 let sbPromise = null;
 function sb() {
@@ -47,7 +50,7 @@ const real = {
     if (error) throw new Error(friendly(error));
     if (!data.session) throw new Error("Account made, but email confirmation is still on in Supabase. Turn it off and sign in.");
     const id = data.user.id;
-    const { error: pe } = await c.from("profiles").insert({ id, username: u, ...profile, updated_at: new Date().toISOString() });
+    const { error: pe } = await c.from("profiles").insert({ id, username: u, ...starter(profile) });
     if (pe) throw new Error(/duplicate|unique/i.test(pe.message) ? "That username is taken." : friendly(pe));
     return { id, email: data.user.email, username: u };
   },
@@ -60,7 +63,7 @@ const real = {
   },
   async claimUsername(me, username, profile) {
     const c = await sb(); const u = cleanUsername(username); checkUsername(u);
-    const { error } = await c.from("profiles").insert({ id: me.id, username: u, ...profile, updated_at: new Date().toISOString() });
+    const { error } = await c.from("profiles").insert({ id: me.id, username: u, ...starter(profile) });
     if (error) throw new Error(/duplicate|unique/i.test(error.message) ? "That username is taken." : friendly(error));
     return { ...me, username: u };
   },
@@ -234,6 +237,7 @@ const mock = {
 };
 
 const be = () => (isMock() ? mock : real);
+let syncListener = null;
 
 // every move at an online table goes to the game server, signed with your login
 export async function api(action, payload = {}) {
@@ -255,7 +259,15 @@ export const cloud = {
   claimUsername: (me, u, p) => be().claimUsername(me, u, p),
   signOut: () => be().signOut(),
   loadSave: (me) => be().loadSave(me),
-  pushSave: (me, save, profile) => be().pushSave(me, save, profile),
+  // saves go through the server, which checks the chips and rank and sends back the real numbers
+  async pushSave(me, save, profile) {
+    let r;
+    if (isMock()) { await mock.pushSave(me, save, profile); try { r = await api("save", { data: save, profile }); } catch (e) { return null; } }
+    else r = await api("save", { data: save, profile });
+    if (r && syncListener) syncListener(r);
+    return r;
+  },
+  onSync(fn) { syncListener = fn; },
   getProfile: (id) => be().getProfile(id),
   top: (kind, tz) => be().top(kind, tz),
   legendRank: (me, rating) => be().legendRank(me, rating),
@@ -298,3 +310,28 @@ export const cloud = {
   accept: (me, id) => be().acceptLink(me, id),
   remove: (me, id) => be().deleteLinks(me, id),
 };
+
+/* ---------------- notifications ---------------- */
+export const pushSupported = () => typeof window !== "undefined" && "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
+export const isStandalone = () => { try { return window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true; } catch (e) { return false; } };
+export const isIOS = () => /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+function b64ToBytes(b64) { const pad = "=".repeat((4 - (b64.length % 4)) % 4); const raw = atob((b64 + pad).replace(/-/g, "+").replace(/_/g, "/")); return Uint8Array.from(raw, (ch) => ch.charCodeAt(0)); }
+export function registerSW() { if (!("serviceWorker" in navigator)) return Promise.resolve(null); return navigator.serviceWorker.register("/sw.js").catch(() => null); }
+// Ask permission (needs a tap), subscribe this phone, and tell the server where to send things.
+export async function enablePush() {
+  if (!pushSupported()) throw new Error(isIOS() && !isStandalone() ? "Add felt to your Home Screen first, then turn these on from there." : "This browser can't do notifications.");
+  const perm = await Notification.requestPermission();
+  if (perm !== "granted") throw new Error("Notifications are blocked. You can allow them in your phone's settings.");
+  const reg = (await navigator.serviceWorker.getRegistration()) || (await registerSW());
+  if (!reg) throw new Error("Couldn't set up notifications.");
+  const { key } = await api("pushKey");
+  let sub = await reg.pushManager.getSubscription();
+  if (!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64ToBytes(key) });
+  await api("pushSubscribe", { sub: sub.toJSON() });
+  return true;
+}
+export async function pushEnabled() {
+  if (!pushSupported() || Notification.permission !== "granted") return false;
+  const reg = await navigator.serviceWorker.getRegistration(); if (!reg) return false;
+  return !!(await reg.pushManager.getSubscription());
+}
