@@ -3846,6 +3846,72 @@ function OnlineTable({ tableId, account, data, sound, soundOn, setSoundOn, onExi
   );
 }
 
+// Only shows for accounts on the server's admin list, and the server checks again on every action.
+function AdminModal({ onClose }) {
+  const [tab, setTab] = useState("chips");
+  const [username, setUsername] = useState(""); const [amount, setAmount] = useState(10000); const [note, setNote] = useState(""); const [everyone, setEveryone] = useState(false);
+  const [player, setPlayer] = useState(null); const [msg, setMsg] = useState(null); const [busy, setBusy] = useState(false); const [tables, setTables] = useState(null);
+  const run = async (fn) => { setBusy(true); setMsg(null); try { await fn(); } catch (e) { setMsg({ ok: false, text: e.message }); } setBusy(false); };
+  const lookup = () => run(async () => { const r = await api("admin", { op: "lookup", username }); setPlayer(r.player); });
+  const give = (sign) => run(async () => {
+    const amt = Math.abs(Math.trunc(Number(amount) || 0)) * sign;
+    const r = await api("admin", { op: "give", amount: amt, note, everyone, username });
+    setMsg({ ok: true, text: everyone ? `${amt > 0 ? "Sent" : "Took"} ${Math.abs(amt).toLocaleString()} ${amt > 0 ? "to" : "from"} ${r.count} players.` : `${amt > 0 ? "Sent" : "Took"} ${Math.abs(amt).toLocaleString()} chips ${amt > 0 ? "to" : "from"} @${r.player}. Lands within a minute.` });
+  });
+  const loadTables = () => run(async () => { const r = await api("admin", { op: "tables" }); setTables(r.tables); });
+  useEffect(() => { if (tab === "tables" && tables === null) loadTables(); }, [tab]); // eslint-disable-line react-hooks/exhaustive-deps
+  return (
+    <Modal title="Admin" onClose={onClose} width={400}>
+      <div className="seg" style={{ marginBottom: 12 }}>
+        <button className={`segbtn${tab === "chips" ? " on" : ""}`} onClick={() => setTab("chips")}>Chips</button>
+        <button className={`segbtn${tab === "player" ? " on" : ""}`} onClick={() => setTab("player")}>Look up</button>
+        <button className={`segbtn${tab === "tables" ? " on" : ""}`} onClick={() => setTab("tables")}>Tables</button>
+      </div>
+      {tab === "chips" && (<div className="auth-form">
+        <SettingRow label="Everyone" sub="Send to every player with an account"><Toggle on={everyone} onClick={() => setEveryone((x) => !x)} label="Everyone" /></SettingRow>
+        {!everyone && <div className="auth-at"><b>@</b><input className="input" value={username} onChange={(e) => setUsername(cleanUsername(e.target.value))} placeholder="username" autoCapitalize="none" autoCorrect="off" aria-label="Username" /></div>}
+        <div className="stake-grid">{[1000, 10000, 100000, 1000000].map((v) => <button key={v} className={`stake-btn${Number(amount) === v ? " on" : ""}`} onClick={() => setAmount(v)}>{shortNum(v)}</button>)}</div>
+        <input className="input num" type="number" inputMode="numeric" value={amount} onChange={(e) => setAmount(e.target.value)} aria-label="Amount" />
+        <input className="input" value={note} onChange={(e) => setNote(e.target.value)} maxLength={60} placeholder="Note they'll see (optional)" aria-label="Note" />
+        {msg && <div className={msg.ok ? "friend-msg ok" : "auth-err"}>{msg.text}</div>}
+        <div style={{ display: "flex", gap: 8 }}>
+          <button className="btn" disabled={busy || (!everyone && username.length < 3)} onClick={() => give(-1)}>Take</button>
+          <button className="btn btn-raise" disabled={busy || (!everyone && username.length < 3)} onClick={() => give(1)}>{busy ? "…" : "Send chips"}</button>
+        </div>
+      </div>)}
+      {tab === "player" && (<div className="auth-form">
+        <div style={{ display: "flex", gap: 8 }}>
+          <div className="auth-at" style={{ flex: 1 }}><b>@</b><input className="input" value={username} onChange={(e) => setUsername(cleanUsername(e.target.value))} placeholder="username" autoCapitalize="none" aria-label="Username" /></div>
+          <button className="btn btn-sm" disabled={busy || username.length < 3} onClick={lookup}>Find</button>
+        </div>
+        {msg && !msg.ok && <div className="auth-err">{msg.text}</div>}
+        {player && (
+          <div className="fp-stats" style={{ gridTemplateColumns: "repeat(2, 1fr)" }}>
+            <div><b>{player.display_name}</b><span>@{player.username}</span></div>
+            <div><b className="num">{player.chips == null ? "no save" : player.chips.toLocaleString()}</b><span>Chips</span></div>
+            <div><b>{player.placed ? rankName(player.rating) : "Unranked"}</b><span>{player.placed ? `${player.rating} RP` : "Rank"}</span></div>
+            <div><b className="num">{player.prestige || 0}</b><span>Prestige</span></div>
+          </div>
+        )}
+      </div>)}
+      {tab === "tables" && (<div>
+        {msg && !msg.ok && <div className="auth-err" style={{ marginBottom: 8 }}>{msg.text}</div>}
+        {tables === null ? <div className="empty">Loading…</div> : tables.length === 0 ? <div className="empty">No open tables.</div> : (
+          <div className="list" style={{ gap: 6, maxHeight: "50vh", overflowY: "auto" }}>
+            {tables.map((t) => (
+              <div key={t.id} className="friend-row">
+                <div style={{ flex: 1, minWidth: 0 }}><div style={{ fontSize: 13.5, fontWeight: 700 }}>{t.code} <span className="num" style={{ fontWeight: 500, color: "var(--t-mut)" }}>{t.sb}/{t.bb}{t.friendly ? " · friendly" : ""}</span></div><div style={{ fontSize: 11, color: "var(--t-mut)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{t.players.length ? t.players.join(", ") : "Empty"} · {timeAgo(new Date(t.updated_at).getTime())}</div></div>
+                <button className="btn btn-sm" disabled={busy} onClick={() => run(async () => { await api("admin", { op: "close", tableId: t.id }); setTables((l) => l.filter((x) => x.id !== t.id)); })}>Close</button>
+              </div>
+            ))}
+          </div>
+        )}
+        <div style={{ fontSize: 11, color: "var(--t-faint)", marginTop: 10 }}>Closing a table sends everyone's chips back to them.</div>
+      </div>)}
+    </Modal>
+  );
+}
+
 // Home screen entry: make a table, join one with a code, or get back to one you're sitting at
 function FriendsTableCard({ onOpen }) {
   return (
@@ -4192,7 +4258,7 @@ function BestHands({ list, suitColor }) {
   );
 }
 
-function ProfileScreen({ data, account, online, onOpenAuth, onSignOut, sound, onUpdateName, onSelectAvatar, onSetPhoto, onUsePhoto, onSelectFrame, onAddFriend, onUpdateSettings, onExportData, onImportData, onResetProfile, onEquipTitle, onPrestige }) {
+function ProfileScreen({ data, account, online, isAdmin, onOpenAdmin, onOpenAuth, onSignOut, sound, onUpdateName, onSelectAvatar, onSetPhoto, onUsePhoto, onSelectFrame, onAddFriend, onUpdateSettings, onExportData, onImportData, onResetProfile, onEquipTitle, onPrestige }) {
   const importRef = useRef(null);
   const [ladder, setLadder] = useState(false);
   const [transfer, setTransfer] = useState(false);
@@ -4399,6 +4465,11 @@ function ProfileScreen({ data, account, online, onOpenAuth, onSignOut, sound, on
 
       {showSettings && (
         <Modal title="Settings" onClose={() => { setShowSettings(false); setConfirmReset(false); }}>
+          {isAdmin && (
+            <SettingRow label="Admin" sub="Send chips, look up players, close tables">
+              <button className="btn btn-sm btn-raise" onClick={() => { setShowSettings(false); onOpenAdmin(); }}>Open</button>
+            </SettingRow>
+          )}
           {cloudEnabled() && (
             <SettingRow label={account ? `@${account.username || "player"}` : "Account"} sub={account ? `Saving online · ${account.email || ""}` : "Not signed in. Progress only saves on this phone."}>
               {account ? <button className="btn btn-sm" onClick={() => { onSignOut(); setShowSettings(false); }}>Sign out</button> : <button className="btn btn-sm btn-raise" onClick={() => { onOpenAuth("signup"); setShowSettings(false); }}>Sign up</button>}
@@ -4541,6 +4612,8 @@ export default function App() {
   const [ftOpen, setFtOpen] = useState(false);
   const [invites, setInvites] = useState([]);
   const [inviteNames, setInviteNames] = useState({});
+  const [isAdmin, setIsAdmin] = useState(false); const [adminOpen, setAdminOpen] = useState(false);
+  useEffect(() => { if (!account || !account.username) { setIsAdmin(false); return; } api("admin", { op: "check" }).then((r) => setIsAdmin(!!r.admin)).catch(() => setIsAdmin(false)); }, [account]);
   const toastTimer = useRef(null);
   const sound = useSound(soundOn);
 
@@ -4614,7 +4687,7 @@ export default function App() {
     if (!account) return;
     try {
       const r = await cloud.claimPayouts(account);
-      if (r.total > 0) { const d = dataRef.current; persist({ ...d, chips: d.chips + r.total }); showToast({ title: `+${r.total.toLocaleString()} chips`, label: r.reasons.length === 1 ? r.reasons[0] : "Cashed out from friends tables" }, 3000); sound.coin(); }
+      if (r.total !== 0) { const d = dataRef.current; persist({ ...d, chips: Math.max(0, d.chips + r.total) }); showToast({ title: `${r.total > 0 ? "+" : "-"}${Math.abs(r.total).toLocaleString()} chips`, label: r.reasons.length === 1 ? r.reasons[0] : "Chips from friends tables" }, 3000); if (r.total > 0) sound.coin(); }
     } catch (e) { /* try again later */ }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [account]);
@@ -4989,7 +5062,7 @@ export default function App() {
           {tab === "home" && <HomeMenu onPlayAI={handlePlayAI} onFriendsTable={() => { sound.tap(); setFtOpen(true); }} data={data} chips={data.chips} ranked={data.ranked} onClaimDaily={handleClaimDaily} onClaimChallenge={handleClaimChallenge} onSpin={handleSpin} onPrestige={handlePrestige} sound={sound} goShop={() => setTab("shop")} />}
           {tab === "leaderboard" && <LeaderboardScreen data={data} account={account} online={online} onOpenAuth={setAuthOpen} />}
           {tab === "coach" && <CoachScreen data={data} />}
-          {tab === "profile" && <ProfileScreen data={data} account={account} online={online} onOpenAuth={setAuthOpen} onSignOut={handleSignOut} sound={sound} onUpdateName={handleUpdateName} onSelectAvatar={handleSelectAvatar} onSetPhoto={handleSetPhoto} onUsePhoto={handleUsePhoto} onSelectFrame={handleSelectFrame} onAddFriend={handleAddFriend} onUpdateSettings={handleUpdateSettings} onExportData={handleExportData} onImportData={handleImportData} onResetProfile={handleResetProfile} onEquipTitle={handleEquipTitle} onPrestige={handlePrestige} />}
+          {tab === "profile" && <ProfileScreen data={data} account={account} online={online} isAdmin={isAdmin} onOpenAdmin={() => setAdminOpen(true)} onOpenAuth={setAuthOpen} onSignOut={handleSignOut} sound={sound} onUpdateName={handleUpdateName} onSelectAvatar={handleSelectAvatar} onSetPhoto={handleSetPhoto} onUsePhoto={handleUsePhoto} onSelectFrame={handleSelectFrame} onAddFriend={handleAddFriend} onUpdateSettings={handleUpdateSettings} onExportData={handleExportData} onImportData={handleImportData} onResetProfile={handleResetProfile} onEquipTitle={handleEquipTitle} onPrestige={handlePrestige} />}
         </div>
       </main>
       <BottomNav tab={tab} setTab={(t) => { sound.tap(); setTab(t); if (t !== "shop") setPreviewTheme(null); }} />
@@ -5010,6 +5083,7 @@ export default function App() {
           <button className="btn btn-sm btn-raise" onClick={() => acceptInvite(invites[0])}>Join</button>
         </div>
       )}
+      {adminOpen && isAdmin && <AdminModal onClose={() => setAdminOpen(false)} />}
       {ftOpen && <FriendsTableModal account={account} data={data} onClose={() => setFtOpen(false)} onOpenTable={openTable} onOpenAuth={setAuthOpen} onDebit={handleDebit} />}
       {authOpen && <AuthModal mode={authOpen} setMode={setAuthOpen} onClose={() => setAuthOpen(null)} onAuthed={handleAuthed} account={account} data={data} />}
       {toast && (

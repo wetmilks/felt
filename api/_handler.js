@@ -86,6 +86,8 @@ export async function handle(body, token, db) {
     return { status: 200, body: { ok: true, tableId: row.id, code: row.code } };
   }
 
+  if (a.action === "admin") return admin(a, uid, db);
+
   if (a.action === "mine") return { status: 200, body: { ok: true, tables: await db.myTables(uid) } };
 
   if (a.action === "get") { // used by the stand-in and as a fallback when live updates drop
@@ -155,4 +157,42 @@ export async function handle(body, token, db) {
     });
     default: return fail("Unknown action.");
   }
+}
+
+/* ---------- admin: only usernames on the server's list get in ---------- */
+const ADMINS = []; // usernames, lowercase
+async function isAdmin(db, uid) {
+  const p = await db.getProfile(uid);
+  const list = [...ADMINS, ...String((typeof process !== "undefined" && process.env.ADMIN_USERNAMES) || "").split(",")].map((x) => x.trim().toLowerCase()).filter(Boolean);
+  return !!(p && p.username && list.includes(p.username.toLowerCase()));
+}
+async function admin(a, uid, db) {
+  const ok = await isAdmin(db, uid);
+  if (a.op === "check") return { status: 200, body: { ok: true, admin: ok } };
+  if (!ok) return fail("Not allowed.", 403);
+  if (a.op === "lookup") {
+    const p = await db.findProfile(String(a.username || "").trim().toLowerCase().replace(/^@/, ""));
+    if (!p) return fail("No player with that username.");
+    return { status: 200, body: { ok: true, player: { ...p, chips: await db.getChips(p.id) } } };
+  }
+  if (a.op === "give") {
+    const amount = Math.trunc(Number(a.amount) || 0);
+    if (!amount || Math.abs(amount) > 1e12) return fail("Pick an amount.");
+    const note = String(a.note || "").slice(0, 60) || (amount > 0 ? "A gift from felt" : "Adjusted by felt");
+    if (a.everyone) { const n = await db.payoutAll(amount, note); return { status: 200, body: { ok: true, count: n } }; }
+    const p = await db.findProfile(String(a.username || "").trim().toLowerCase().replace(/^@/, ""));
+    if (!p) return fail("No player with that username.");
+    await db.payout(p.id, amount, note);
+    return { status: 200, body: { ok: true, count: 1, player: p.username } };
+  }
+  if (a.op === "tables") return { status: 200, body: { ok: true, tables: await db.openTables() } };
+  if (a.op === "close") {
+    const r = await mutate(db, a.tableId, async (st, cfg, now, fx) => {
+      st.seats.forEach((s, i) => { if (s) { fx.cashouts.push({ uid: s.uid, amount: s.stack + s.bet }); st.seats[i] = null; } });
+      st.pot = 0; st.stage = "waiting"; st.turn = -1; st.nextAt = 0; st.result = null; st.board = [];
+      return null;
+    });
+    return r;
+  }
+  return fail("Unknown admin action.");
 }

@@ -50,6 +50,17 @@ const db = {
   async getHoles(id, uid) { const { data } = await client().from("poker_holes").select("hand_no, cards").eq("table_id", id).eq("user_id", uid).maybeSingle(); return data; },
   async payout(uid, amount, reason) { const { error } = await client().from("chip_payouts").insert({ user_id: uid, amount, reason }); if (error) throw new Error(error.message); },
   async invite(to, from, tableId, code) { await client().from("table_invites").insert({ to_user: to, from_user: from, table_id: tableId, code }); },
+  async findProfile(username) { const { data } = await client().from("profiles").select("id, username, display_name, rating, placed, prestige").eq("username", username).maybeSingle(); return data; },
+  async payoutAll(amount, reason) {
+    const { data } = await client().from("profiles").select("id");
+    const rows = (data || []).map((p) => ({ user_id: p.id, amount, reason }));
+    for (let i = 0; i < rows.length; i += 500) { const { error } = await client().from("chip_payouts").insert(rows.slice(i, i + 500)); if (error) throw new Error(error.message); }
+    return rows.length;
+  },
+  async openTables() {
+    const { data } = await client().from("poker_tables").select("id, code, sb, bb, friendly, state, updated_at").eq("closed", false).order("updated_at", { ascending: false }).limit(30);
+    return (data || []).map((t) => ({ id: t.id, code: t.code, sb: t.sb, bb: t.bb, friendly: t.friendly, players: (t.state.seats || []).filter(Boolean).map((x) => x.name), stage: t.state.stage, updated_at: t.updated_at }));
+  },
   async myTables(uid) {
     const { data } = await client().from("poker_tables").select("id, code, sb, bb, friendly, state").eq("closed", false).contains("state", { seats: [{ uid }] }).limit(5);
     return (data || []).map((t) => ({ id: t.id, code: t.code, sb: t.sb, bb: t.bb, friendly: t.friendly, players: (t.state.seats || []).filter(Boolean).length }));
