@@ -2234,7 +2234,83 @@ function SizePicker({ value, onChange }) {
   );
 }
 
-function RankedCard({ ranked, chips, onPlay, onPrestige }) {
+// Every rank from the top down, where you are on it, how RP works, and prestige.
+function RankLadderModal({ ranked, onClose, onPrestige }) {
+  const placed = isPlaced(ranked);
+  const rating = placed ? Math.round(ranked.rating) : null;
+  const myTier = tierOf(ranked);
+  const prog = placed ? rankProgress(ranked.rating) : null;
+  const meRef = useRef(null);
+  useEffect(() => { if (meRef.current && meRef.current.scrollIntoView) meRef.current.scrollIntoView({ block: "center" }); }, []);
+  const ready = canPrestige(ranked);
+  const toChamp = placed ? Math.max(0, 1500 - rating) : null;
+  const tiers = RANK_TIERS.slice().reverse();
+  return (
+    <Modal title="Ranks" onClose={onClose} width={420}>
+      <div className="ladder-me" style={{ borderColor: `${myTier.color}66`, background: `linear-gradient(135deg, ${myTier.color}22, rgba(22,38,68,0.9))` }}>
+        <TierBadge tier={myTier} size={44} />
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, fontFamily: DISPLAY_FONT, fontSize: 20, fontWeight: 600, color: myTier.color }}>{placed ? rankName(ranked.rating) : "Unranked"}<PrestigeBadge n={ranked.prestige} size={18} /></div>
+          <div className="num" style={{ fontSize: 12, color: "#A9B8D0", marginTop: 2 }}>{placed ? `${rating.toLocaleString()} RP${prog.nextLabel ? `, ${prog.toNext} to ${prog.nextLabel}` : ""}` : `${(ranked.placementGames || []).length} of ${PLACEMENT_MATCHES} placement matches played`}</div>
+          {placed && <div className="bar" style={{ marginTop: 8, height: 6 }}><div style={{ width: `${prog.pct * 100}%`, background: myTier.color }} /></div>}
+        </div>
+      </div>
+
+      <div className="ladder-list">
+        {tiers.map((t) => {
+          const isChamp = t.key === "champion";
+          const divs = isChamp ? [{ label: "Champion", min: t.min }] : [3, 2, 1].map((d) => ({ label: `${t.label} ${ROMAN[d]}`, min: t.min + (d - 1) * DIV_SIZE }));
+          const owned = (ranked.frames || []).includes(t.key);
+          return (
+            <div key={t.key} className="ladder-tier" style={{ borderColor: `${t.color}40` }}>
+              <div className="ladder-tier-head">
+                <TierBadge tier={t} size={30} />
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 15, fontWeight: 700, color: t.color }}>{t.label}</div>
+                  <div style={{ fontSize: 11, color: "#7587A6" }}>{isChamp ? "1,500 RP and up" : `${t.min.toLocaleString()} to ${(t.min + 299).toLocaleString()} RP`}{t.min > 0 ? (owned ? ", frame unlocked" : ", unlocks a frame") : ""}</div>
+                </div>
+              </div>
+              <div className="ladder-divs">
+                {divs.map((dv) => {
+                  const here = placed && rankName(ranked.rating) === dv.label;
+                  const passed = placed && rating >= dv.min && !here;
+                  return (
+                    <div key={dv.label} ref={here ? meRef : null} className={`ladder-div${here ? " here" : ""}${passed ? " passed" : ""}`} style={here ? { borderColor: t.color, background: `${t.color}1F` } : undefined}>
+                      <span style={{ fontWeight: here ? 700 : 500 }}>{dv.label}</span>
+                      <span className="num" style={{ color: "#7587A6" }}>{here ? <b style={{ color: t.color }}>You</b> : passed ? <Icon name="check" size={13} stroke={2.4} style={{ color: "#34D399" }} /> : `${dv.min.toLocaleString()} RP`}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="ladder-section">
+        <div className="ladder-h">How RP works</div>
+        <div className="ladder-p">Each ranked match is {RANKED_MATCH_HANDS} hands. Where you finish in chips decides most of it: first place is the big gain, last place the big loss. Clearing the table, knockouts, smart decisions and win streaks add more. Leaving early costs 30 RP.</div>
+        <div className="ladder-p">Each tier has three divisions of {DIV_SIZE} RP. Higher ranks match you against tougher players. Ranks soft reset at the start of every month.</div>
+      </div>
+
+      <div className="ladder-section prestige-box">
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <PrestigeBadge n={(ranked.prestige || 0) + 1} size={34} />
+          <div style={{ flex: 1 }}>
+            <div className="ladder-h" style={{ margin: 0 }}>Prestige</div>
+            <div style={{ fontSize: 11.5, color: "#C9B8F5" }}>{ranked.prestige ? `You're Prestige ${ranked.prestige}` : "Not prestiged yet"}</div>
+          </div>
+        </div>
+        <div className="ladder-p" style={{ marginTop: 8 }}>Hit Champion, then reset to Bronze to climb again. You get {PRESTIGE_REWARD.toLocaleString()} chips and a badge next to your name that counts every prestige. You keep your frames, titles and stats.</div>
+        <button className="btn prestige-btn" style={{ width: "100%", marginTop: 6 }} disabled={!ready} onClick={() => onPrestige && onPrestige()}>
+          {ready ? `Prestige to ${(ranked.prestige || 0) + 1}` : placed ? `${toChamp.toLocaleString()} RP to Champion` : "Finish placements first"}
+        </button>
+      </div>
+    </Modal>
+  );
+}
+
+function RankedCard({ ranked, chips, onPlay, onPrestige, onInfo }) {
   const placed = isPlaced(ranked);
   const tier = tierOf(ranked);
   const prog = placed ? rankProgress(ranked.rating) : null;
@@ -2244,11 +2320,11 @@ function RankedCard({ ranked, chips, onPlay, onPrestige }) {
   return (
     <section className="panel" style={{ background: `linear-gradient(160deg, ${tier.color}2E 0%, #14223D 58%)`, borderColor: `${tier.color}55` }}>
       <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "#7587A6" }}>
-        <span style={{ fontWeight: 600, color: "#A9B8D0" }}>Ranked</span>
+        <button className="ranked-info" onClick={onInfo} aria-label="See all ranks"><span style={{ fontWeight: 600, color: "#A9B8D0" }}>Ranked</span><Icon name="help" size={14} stroke={2} /></button>
         <span>{month} season ends in {daysLeftInSeason()} days</span>
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 14, margin: "16px 0 14px" }}>
-        <TierBadge tier={tier} size={54} />
+        <button className="ranked-badge-btn" onClick={onInfo} aria-label="See all ranks"><TierBadge tier={tier} size={54} /></button>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontFamily: DISPLAY_FONT, fontSize: 25, fontWeight: 600, color: tier.color, lineHeight: 1.05, display: "flex", alignItems: "center", gap: 8 }}>{placed ? rankName(ranked.rating) : "Unranked"}<PrestigeBadge n={ranked.prestige} size={20} /></div>
           <div className="num" style={{ fontSize: 13, color: "#A9B8D0", marginTop: 4 }}>{placed ? `${Math.round(ranked.rating).toLocaleString()} RP` : `${games.length} of ${PLACEMENT_MATCHES} placement matches`}</div>
@@ -2540,7 +2616,7 @@ function HomeMenu({ onPlayAI, data, chips, ranked, onClaimDaily, onClaimChalleng
       <StreakBanner streak={data.streak} onClaim={onClaimDaily} />
       <div style={{ marginBottom: 14 }}><SpinCard ready={spinReady(data)} onOpen={() => setModal("spin")} /></div>
 
-      <div style={{ marginBottom: 14 }}><RankedCard ranked={ranked} chips={chips} onPlay={() => setModal("ranked")} onPrestige={() => setModal("prestige")} /></div>
+      <div style={{ marginBottom: 14 }}><RankedCard ranked={ranked} chips={chips} onPlay={() => setModal("ranked")} onPrestige={() => setModal("prestige")} onInfo={() => setModal("ladder")} /></div>
 
       <div className="mode-grid">
         {modes.map((o) => (
@@ -2558,6 +2634,7 @@ function HomeMenu({ onPlayAI, data, chips, ranked, onClaimDaily, onClaimChalleng
 
       {modal === "pass" && <PassModal pass={data.pass} onClose={close} />}
       {modal === "spin" && <SpinModal ready={spinReady(data)} onSpin={onSpin} onClose={close} sound={sound} />}
+      {modal === "ladder" && <RankLadderModal ranked={ranked} onClose={close} onPrestige={() => setModal("prestige")} />}
       {modal === "prestige" && (
         <Modal title="Prestige" onClose={close}>
           <div style={{ display: "flex", justifyContent: "center", margin: "4px 0 12px" }}><PrestigeBadge n={(ranked.prestige || 0) + 1} size={56} /></div>
@@ -3036,8 +3113,9 @@ function BestHands({ list, suitColor }) {
   );
 }
 
-function ProfileScreen({ data, onUpdateName, onSelectAvatar, onSelectFrame, onAddFriend, onUpdateSettings, onExportData, onImportData, onResetProfile, onEquipTitle }) {
+function ProfileScreen({ data, onUpdateName, onSelectAvatar, onSelectFrame, onAddFriend, onUpdateSettings, onExportData, onImportData, onResetProfile, onEquipTitle, onPrestige }) {
   const importRef = useRef(null);
+  const [ladder, setLadder] = useState(false);
   const [transfer, setTransfer] = useState(false);
   const [pasted, setPasted] = useState("");
   const [copied, setCopied] = useState(false);
@@ -3087,7 +3165,7 @@ function ProfileScreen({ data, onUpdateName, onSelectAvatar, onSelectFrame, onAd
         </div>
       </div>
 
-      <SectionLabel right={placed && rk.peakRating > rk.rating ? `Peak ${rankName(rk.peakRating)}` : null}>Ranked</SectionLabel>
+      <SectionLabel right={<button className="ranked-info" onClick={() => setLadder(true)}>{placed && rk.peakRating > rk.rating ? `Peak ${rankName(rk.peakRating)}, ` : ""}all ranks<Icon name="chevron" size={11} /></button>}>Ranked</SectionLabel>
       <section className="panel" style={{ marginBottom: 26 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           <TierBadge tier={tier} size={40} />
@@ -3201,6 +3279,7 @@ function ProfileScreen({ data, onUpdateName, onSelectAvatar, onSelectFrame, onAd
         ))}
       </div>
 
+      {ladder && <RankLadderModal ranked={rk} onClose={() => setLadder(false)} onPrestige={() => { onPrestige(); setLadder(false); }} />}
       {transfer && (
         <Modal title="Move my profile" onClose={() => setTransfer(false)} width={400}>
           <div style={{ fontSize: 12.5, color: "#8FA1BE", marginBottom: 8 }}>1. On the old copy, copy this code.</div>
@@ -3677,7 +3756,7 @@ export default function App() {
           {tab === "home" && <HomeMenu onPlayAI={handlePlayAI} data={data} chips={data.chips} ranked={data.ranked} onClaimDaily={handleClaimDaily} onClaimChallenge={handleClaimChallenge} onSpin={handleSpin} onPrestige={handlePrestige} sound={sound} goShop={() => setTab("shop")} />}
           {tab === "leaderboard" && <LeaderboardScreen data={data} />}
           {tab === "coach" && <CoachScreen data={data} />}
-          {tab === "profile" && <ProfileScreen data={data} onUpdateName={handleUpdateName} onSelectAvatar={handleSelectAvatar} onSelectFrame={handleSelectFrame} onAddFriend={handleAddFriend} onUpdateSettings={handleUpdateSettings} onExportData={handleExportData} onImportData={handleImportData} onResetProfile={handleResetProfile} onEquipTitle={handleEquipTitle} />}
+          {tab === "profile" && <ProfileScreen data={data} onUpdateName={handleUpdateName} onSelectAvatar={handleSelectAvatar} onSelectFrame={handleSelectFrame} onAddFriend={handleAddFriend} onUpdateSettings={handleUpdateSettings} onExportData={handleExportData} onImportData={handleImportData} onResetProfile={handleResetProfile} onEquipTitle={handleEquipTitle} onPrestige={handlePrestige} />}
         </div>
       </main>
       <BottomNav tab={tab} setTab={(t) => { sound.tap(); setTab(t); }} />
@@ -4085,6 +4164,20 @@ input[type=range] { accent-color: #F5B83D; }
 .crowded .felt-oval .card, .crowded .card-slot { width: clamp(28px,7.6vw,36px); height: clamp(40px,10.8vw,51px); }
 .crowded .felt-logo { font-size: 52px; }
 .crowded .chip-badge { padding: 1px 7px; }
+/* ---- rank ladder ---- */
+.ranked-info { display: inline-flex; align-items: center; gap: 5px; background: none; border: none; padding: 0; cursor: pointer; color: #7587A6; font-size: 12px; }
+.ranked-badge-btn { background: none; border: none; padding: 0; cursor: pointer; display: block; }
+.ladder-me { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 16px; border: 1px solid; margin-bottom: 12px; }
+.ladder-list { max-height: 44vh; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; margin: 0 -4px; padding: 0 4px; }
+.ladder-tier { border: 1px solid; border-radius: 14px; padding: 10px 12px; background: rgba(22,38,68,0.7); }
+.ladder-tier-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.ladder-divs { display: flex; flex-direction: column; gap: 4px; }
+.ladder-div { display: flex; justify-content: space-between; align-items: center; font-size: 12.5px; padding: 6px 10px; border-radius: 9px; border: 1px solid transparent; background: rgba(244,247,252,0.03); color: #C8D3E6; }
+.ladder-div.passed { color: #7587A6; }
+.ladder-section { margin-top: 14px; padding-top: 12px; border-top: 1px solid rgba(244,247,252,0.08); }
+.ladder-h { font-size: 13.5px; font-weight: 700; margin-bottom: 6px; }
+.ladder-p { font-size: 12px; line-height: 1.45; color: #8FA1BE; margin-bottom: 6px; }
+.prestige-box { border: 1px solid rgba(227,107,255,0.3); border-radius: 14px; padding: 12px; background: linear-gradient(135deg, rgba(227,107,255,0.08), rgba(124,58,237,0.08)); }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; transition-duration: 0.01ms !important; }
 }
