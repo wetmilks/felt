@@ -160,7 +160,7 @@ export async function handle(body, token, db) {
 }
 
 /* ---------- admin: only usernames on the server's list get in ---------- */
-const ADMINS = []; // usernames, lowercase
+const ADMINS = ["william"]; // usernames, lowercase
 async function isAdmin(db, uid) {
   const p = await db.getProfile(uid);
   const list = [...ADMINS, ...String((typeof process !== "undefined" && process.env.ADMIN_USERNAMES) || "").split(",")].map((x) => x.trim().toLowerCase()).filter(Boolean);
