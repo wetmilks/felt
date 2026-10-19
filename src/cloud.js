@@ -2,8 +2,8 @@
 // Talks to Supabase when the two public keys below are set. For local testing, setting
 // localStorage "felt-mock-cloud" to "1" swaps in a stand-in that keeps everything in this browser.
 
-export const CLOUD_URL = "";
-export const CLOUD_KEY = "";
+export const CLOUD_URL = "https://pydehtkxthkzephgfhig.supabase.co";
+export const CLOUD_KEY = "sb_publishable_OaDEFKdmF2nI4SBvB7_xVw_uedYqdeq";
 
 const PUBLIC_COLS = "id, username, display_name, avatar, photo, title, rating, peak, prestige, placed, chips, stats, updated_at";
 const USERNAME_RE = /^[a-z0-9_]{3,16}$/;
