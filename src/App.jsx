@@ -1205,16 +1205,15 @@ function PokerTable({ startStack, name, avatar, soundOn, setSoundOn, onExit, onH
   const [peekers, setPeekers] = useState({}); // seat id -> time they looked
   const peekRef = useRef({ hand: 0, looks: 0, streets: {} });
   const heroPeekStatsRef = useRef({ peeks: 0, onDraws: 0 });
-  function flashPeek(id) {
+  function flashPeek(id, ms = 1500) {
     const t = Date.now();
     setPeekers((m) => ({ ...m, [id]: t }));
-    setTimeout(() => mountedRef.current && setPeekers((m) => (m[id] === t ? (({ [id]: _, ...rest }) => rest)(m) : m)), 1500);
+    setTimeout(() => mountedRef.current && setPeekers((m) => (m[id] === t ? (({ [id]: _, ...rest }) => rest)(m) : m)), ms);
   }
   function onHeroPeek() {
     const pr = peekRef.current;
     if (pr.hand !== handsCount) { pr.hand = handsCount; pr.looks = 0; pr.streets = {}; }
     pr.looks += 1;
-    flashPeek(0);
     // a look after the flop is the tell bots pay attention to
     if (community.length >= 3 && !pr.streets[stage]) {
       pr.streets[stage] = true;
@@ -1324,7 +1323,7 @@ function PokerTable({ startStack, name, avatar, soundOn, setSoundOn, onExit, onH
         if (bp.isHuman || bp.folded || bp.eliminated || !bp.hole.length) return;
         const drawing = !!findDraws(bp.hole, newCommunity);
         const chance = botSkill >= 0.6 ? 0.22 : drawing ? 0.65 : 0.08;
-        if (Math.random() < chance) setTimeout(() => mountedRef.current && flashPeek(bp.id), (500 + Math.random() * 1400) * speedMult);
+        if (Math.random() < chance) setTimeout(() => mountedRef.current && flashPeek(bp.id, 600 + Math.random() * (drawing ? 2200 : 1200)), (500 + Math.random() * 1400) * speedMult);
       });
     }
     // the showdown stage only starts once the pot is paid, so Next hand can't skip the payout
@@ -1910,7 +1909,7 @@ function PokerTable({ startStack, name, avatar, soundOn, setSoundOn, onExit, onH
       <div className="hero-seat" style={{ borderColor: turnPulse ? "rgba(52,211,153,0.6)" : "rgba(244,247,252,0.08)", boxShadow: turnPulse ? "0 0 22px rgba(52,211,153,0.25)" : "none" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
           <div ref={(el) => { seatRefs.current[0] = el; }} style={{ position: "relative", width: 44, height: 44, flexShrink: 0 }}>
-            {peekers[0] && <div className="peek-badge hero" aria-label="You looked at your cards"><Icon name="eye" size={11} stroke={2.4} /></div>}
+            {peekOpen && <div className="peek-badge hero" aria-label="You looked at your cards"><Icon name="eye" size={11} stroke={2.4} /></div>}
             {humanTurn && (<svg width="44" height="44" style={{ position: "absolute", top: 0, left: 0, transform: "rotate(-90deg)" }}>
               <circle cx="22" cy="22" r="20" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="2.5" />
               <circle cx="22" cy="22" r="20" fill="none" stroke={timeLeft < 8 ? "#FF6B6B" : "#34D399"} strokeWidth="2.5" strokeDasharray={2 * Math.PI * 20} strokeDashoffset={2 * Math.PI * 20 * (1 - timeLeft / turnSeconds)} style={{ transition: "stroke-dashoffset .25s linear" }} strokeLinecap="round" /></svg>)}
@@ -2103,7 +2102,7 @@ function PeekCards({ cards, suitColor, omaha, delayFor, open, setOpen, scale = 1
     if (startY.current == null) return;
     const v = Math.max(0, Math.min(1, (startY.current - e.clientY) / 80));
     setPeel(v);
-    if (v > 0.5 && !shown.current) { shown.current = true; setOpen(true); }
+    if (v > 0.25 && !shown.current) { shown.current = true; setOpen(true); }
   };
   const up = () => { if (startY.current == null) return; startY.current = null; setDragging(false); setPeel(0); if (shown.current) setOpen(false); };
   const sz = scale !== 1 && !omaha ? { width: 64 * scale, height: 90 * scale, fontSize: 22 * scale } : {};
@@ -4736,11 +4735,12 @@ body.theme-montecarlo .play-fab span:last-child { margin-top: 2px !important; }
 .peek { display: flex; gap: 6px; position: relative; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; cursor: pointer; }
 .peek .card.peek-open { transform: translateY(-6px) rotate(-1deg); transition: transform .12s ease; }
 .peek .card.peek-open + .card.peek-open { transform: translateY(-6px) rotate(1.5deg); }
-.peek-badge { position: absolute; top: -6px; left: -8px; z-index: 3; width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: var(--t-accent); color: #0B1426; box-shadow: 0 2px 6px rgba(0,0,0,0.4); animation: peekPop 1.5s ease forwards; }
+.peek-badge { position: absolute; top: -6px; left: -8px; z-index: 3; width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: var(--t-accent); color: #0B1426; box-shadow: 0 0 0 3px rgba(245,184,61,0.25), 0 2px 6px rgba(0,0,0,0.4); animation: peekPop .22s cubic-bezier(.3,1.5,.5,1) both, peekGlow 1.2s ease-in-out .22s infinite; }
 .peek-badge.hero { top: -4px; left: -4px; }
-@keyframes peekPop { 0% { opacity: 0; transform: scale(.4); } 12% { opacity: 1; transform: scale(1.15); } 22% { transform: scale(1); } 80% { opacity: 1; } 100% { opacity: 0; } }
-.backs.peeking .card.mini { animation: peekLift .9s ease; }
-@keyframes peekLift { 0%, 100% { transform: rotate(var(--r, 0deg)); } 30%, 70% { transform: rotate(var(--r, 0deg)) translateY(-5px) scaleY(0.82); } }
+@keyframes peekPop { from { opacity: 0; transform: scale(.4); } to { opacity: 1; transform: scale(1); } }
+@keyframes peekGlow { 0%, 100% { box-shadow: 0 0 0 3px rgba(245,184,61,0.25), 0 2px 6px rgba(0,0,0,0.4); } 50% { box-shadow: 0 0 0 6px rgba(245,184,61,0.12), 0 2px 6px rgba(0,0,0,0.4); } }
+.backs .card.mini { transition: transform .2s ease; }
+.backs.peeking .card.mini { transform: rotate(var(--r, 0deg)) translateY(-5px) scaleY(0.8); }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; transition-duration: 0.01ms !important; }
 }
