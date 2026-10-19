@@ -983,6 +983,8 @@ function SectionLabel({ children, right }) {
     </div>
   );
 }
+// 119,975 becomes 120k so crowded tables still fit
+const shortNum = (n) => (n >= 1e6 ? `${(n / 1e6).toFixed(1).replace(/\.0$/, "")}M` : n >= 1e5 ? `${Math.round(n / 1000)}k` : n >= 1e4 ? `${(n / 1000).toFixed(1).replace(/\.0$/, "")}k` : n.toLocaleString());
 const signed = (n) => `${n > 0 ? "+" : n < 0 ? "−" : ""}${Math.abs(n).toLocaleString()}`;
 
 /* =========================================================================
@@ -1588,7 +1590,7 @@ function PokerTable({ startStack, name, avatar, soundOn, setSoundOn, onExit, onH
       : tutorial ? "Practice, nothing at stake" : vip ? `High roller room, blinds ${SB.toLocaleString()}/${BB.toLocaleString()}` : `${gameTag ? `${gameTag} cash` : "Cash game"}, blinds ${SB}/${BB}`;
 
   return (
-    <div className={`table-wrap${drama ? " is-drama" : ""}${vip ? " vip" : ""}`} style={{ ...(cardBack ? { "--back-a": cardBack.a, "--back-b": cardBack.b, "--back-ring": cardBack.ring } : {}), ...(felt ? { "--felt1": felt.c1, "--felt2": felt.c2, "--felt3": felt.c3, "--rail": felt.rail } : {}) }}>
+    <div className={`table-wrap${drama ? " is-drama" : ""}${vip ? " vip" : ""}${bots.length >= 7 ? " crowded" : ""}`} style={{ ...(cardBack ? { "--back-a": cardBack.a, "--back-b": cardBack.b, "--back-ring": cardBack.ring } : {}), ...(felt ? { "--felt1": felt.c1, "--felt2": felt.c2, "--felt3": felt.c3, "--rail": felt.rail } : {}) }}>
       <div className="table-top">
         <button className="iconbtn" onClick={handleBack} aria-label="Leave table"><Icon name="back" size={15} /></button>
         <div style={{ textAlign: "center", minWidth: 0 }}>
@@ -1604,12 +1606,13 @@ function PokerTable({ startStack, name, avatar, soundOn, setSoundOn, onExit, onH
 
       <div key={statusText} className="status">{stage !== "showdown" ? statusText : ""}</div>
 
-      <div className="seats">
+      <div className={`seats${bots.length >= 7 ? " grid4" : ""}`}>
         {bots.map((p, i) => {
           const realIdx = i + 1; const isActive = activeIdx === realIdx && stage !== "idle" && stage !== "showdown"; const revealed = (stage === "showdown" || allInShow) && !p.folded && !p.eliminated && p.hole.length > 0;
           const t = tendencyRef.current[realIdx]; const tendencyTag = t && t.total >= 4 ? (t.aggr / t.total >= 0.55 ? "Aggressive" : t.aggr / t.total <= 0.2 ? "Tight" : null) : null;
           const compact = bots.length >= 5; const tiny = bots.length >= 7;
-          const avSize = tiny ? 28 : compact ? 32 : 36; const ringSize = tiny ? 34 : compact ? 38 : 42; const colWidth = tiny ? 54 : compact ? 62 : 78;
+          const avSize = tiny ? 28 : compact ? 32 : 36; const ringSize = tiny ? 34 : compact ? 38 : 42; const colWidth = tiny ? 76 : compact ? 62 : 78;
+          const fmt = compact ? shortNum : (n) => n.toLocaleString();
           const hc = p.hole.length || holeCount();
           const inHand = !p.eliminated && p.hole.length > 0 && stage !== "idle";
           const botRating = ranked ? botRanks[i] : null;
@@ -1627,9 +1630,9 @@ function PokerTable({ startStack, name, avatar, soundOn, setSoundOn, onExit, onH
                 {botRating != null && <TierBadge tier={tierForRating(botRating)} size={13} />}
                 <span style={{ fontSize: compact ? 10.5 : 11.5, fontWeight: 600, color: "#C8D3E6", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.name}</span>
               </div>
-              <div className="num" style={{ fontSize: 10.5, color: "#7587A6" }}>{p.eliminated ? "Out" : p.stack.toLocaleString()}</div>
+              <div className="num" style={{ fontSize: 10.5, color: "#7587A6" }}>{p.eliminated ? "Out" : fmt(p.stack)}</div>
               {tendencyTag && !p.eliminated && !tiny && <div style={{ fontSize: 9.5, fontWeight: 600, color: tendencyTag === "Aggressive" ? "#FF6B6B" : "#34D399" }}>{tendencyTag}</div>}
-              <div style={{ height: 34, display: "flex", alignItems: "center", justifyContent: "center", gap: 3 }}>
+              <div style={{ height: tiny ? 30 : 34, display: "flex", alignItems: "center", justifyContent: "center", gap: 3 }}>
                 {revealed && p.hole.map((c, i2) => (<div key={c.id} className={`card mini${hc > 2 ? " m4" : ""}${dim(c.id) ? " dim" : ""}${winningIds && winningIds.has(c.id) ? " win" : ""}`} style={{ marginLeft: hc > 2 && i2 ? -7 : 0, animation: `flipIn .4s cubic-bezier(.2,.8,.2,1) ${i2 * 0.08}s backwards` }}><div style={{ color: suitColor[c.s], fontSize: 9, fontWeight: 700 }}>{rankLabel(c.r)}{SUIT_GLYPH[c.s]}</div></div>))}
                 {!revealed && inHand && (
                   <div key={`b${handsCount}`} className={`backs${p.folded ? " folded" : ""}`}>
@@ -1639,7 +1642,7 @@ function PokerTable({ startStack, name, avatar, soundOn, setSoundOn, onExit, onH
               </div>
               <div style={{ height: 18 }}>
                 {allInOdds && allInOdds[p.id] != null && stage !== "showdown" ? <div className="odds-badge num" style={{ color: allInOdds[p.id] >= 50 ? "#34D399" : "#FFB4B4" }}>{allInOdds[p.id]}%</div>
-                  : p.streetContributed > 0 && <div className={`chip-badge${collecting ? " collecting" : ""}`}><ChipStack amount={p.streetContributed} small />{p.streetContributed.toLocaleString()}</div>}
+                  : p.streetContributed > 0 && <div className={`chip-badge${collecting ? " collecting" : ""}`}>{!compact && <ChipStack amount={p.streetContributed} small />}{fmt(p.streetContributed)}</div>}
               </div>
             </div>
           );
@@ -4074,6 +4077,14 @@ input[type=range] { accent-color: #F5B83D; }
 .prestige-badge svg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
 .prestige-badge b { position: relative; color: #FFFFFF; font-family: 'Inter', sans-serif; font-weight: 800; line-height: 1; margin-top: 1px; text-shadow: 0 1px 1px rgba(0,0,0,0.4); }
 .prestige-btn { border-color: rgba(227,107,255,0.55); color: #F0C2FF; background: linear-gradient(135deg, rgba(227,107,255,0.16), rgba(124,58,237,0.16)); font-size: 13px; }
+/* ---- 9 handed: two rows of four, tighter table ---- */
+.seats.grid4 { display: grid; grid-template-columns: repeat(4, 1fr); justify-items: center; row-gap: 2px; margin-top: 0; }
+.crowded .status { margin: 4px 0 0; }
+.crowded .felt-oval { padding: 16px 14px 12px; gap: 8px; }
+.crowded .felt-center { gap: 6px; }
+.crowded .felt-oval .card, .crowded .card-slot { width: clamp(28px,7.6vw,36px); height: clamp(40px,10.8vw,51px); }
+.crowded .felt-logo { font-size: 52px; }
+.crowded .chip-badge { padding: 1px 7px; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; transition-duration: 0.01ms !important; }
 }
