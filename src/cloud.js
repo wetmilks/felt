@@ -101,15 +101,17 @@ const real = {
     const { data } = await c.from("profiles").select(PUBLIC_COLS).in("id", ids);
     return data || [];
   },
-  async top(kind) {
+  async top(kind, tz) {
     const c = await sb();
     let q = c.from("profiles").select(PUBLIC_COLS).limit(50);
+    if (tz) q = q.eq("stats->>tz", tz);
     q = kind === "ranked" ? q.eq("placed", true).order("rating", { ascending: false }) : q.order("stats->tIndex", { ascending: false, nullsFirst: false });
     const { data, error } = await q;
     if (!error) return data || [];
     if (kind === "ranked") throw new Error(friendly(error));
     // fall back to sorting here if the server can't order by the stats field
-    const { data: all, error: e2 } = await c.from("profiles").select(PUBLIC_COLS).limit(200);
+    let q2 = c.from("profiles").select(PUBLIC_COLS).limit(200); if (tz) q2 = q2.eq("stats->>tz", tz);
+    const { data: all, error: e2 } = await q2;
     if (e2) throw new Error(friendly(e2));
     return (all || []).sort((x, y) => ((y.stats || {}).tIndex || 0) - ((x.stats || {}).tIndex || 0)).slice(0, 50);
   },
@@ -201,7 +203,7 @@ const mock = {
   async getProfile(id) { await wait(); return mload().profiles[id] || null; },
   async links(me) { await wait(); return mload().links.filter((l) => l.requester === me.id || l.addressee === me.id); },
   async profiles(ids) { const db = mload(); return ids.map((i) => db.profiles[i]).filter(Boolean); },
-  async top(kind) { await wait(); const all = Object.values(mload().profiles); return (kind === "ranked" ? all.filter((p) => p.placed).sort((a, b) => b.rating - a.rating) : all.sort((a, b) => ((b.stats || {}).tIndex || 0) - ((a.stats || {}).tIndex || 0))).slice(0, 50); },
+  async top(kind, tz) { await wait(); const all = Object.values(mload().profiles).filter((p) => !tz || (p.stats || {}).tz === tz); return (kind === "ranked" ? all.filter((p) => p.placed).sort((a, b) => b.rating - a.rating) : all.sort((a, b) => ((b.stats || {}).tIndex || 0) - ((a.stats || {}).tIndex || 0))).slice(0, 50); },
   async presence(me, onSync) {
     const KEY = "felt-mock-presence";
     const read = () => { try { return JSON.parse(localStorage.getItem(KEY)) || {}; } catch (e) { return {}; } };
@@ -255,7 +257,7 @@ export const cloud = {
   loadSave: (me) => be().loadSave(me),
   pushSave: (me, save, profile) => be().pushSave(me, save, profile),
   getProfile: (id) => be().getProfile(id),
-  top: (kind) => be().top(kind),
+  top: (kind, tz) => be().top(kind, tz),
   legendRank: (me, rating) => be().legendRank(me, rating),
   watchTable: (id, cb) => be().watchTable(id, cb),
   holes: (id, me) => be().holes(id, me),

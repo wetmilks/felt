@@ -273,6 +273,8 @@ const PAT = (() => {
     prestigeMark: svgBg(40, 56, `<circle cx='20' cy='28' r='11' fill='#1A0A33' fill-opacity='0.75'/><polygon points='${Array.from({ length: 24 }, (_, k) => { const r = k % 2 ? 4.6 : 9.6; const a = (k * 15 - 90) * Math.PI / 180; return `${(20 + r * Math.cos(a)).toFixed(2)},${(28 + r * Math.sin(a)).toFixed(2)}`; }).join(" ")}' fill='#F2C14E'/><circle cx='20' cy='28' r='3.3' fill='#B04BFF'/><circle cx='20' cy='28' r='11' fill='none' stroke='#F2C14E' stroke-opacity='0.7' stroke-width='0.6'/>`),
     prestigeQuilt: svgBg(8, 8, `<path d='M4 0L8 4L4 8L0 4Z' fill='none' stroke='#E9B8FF' stroke-opacity='0.22' stroke-width='0.6'/><circle cx='4' cy='4' r='0.6' fill='#F2C14E' fill-opacity='0.5'/>`),
     prestigeFelt: svgBg(30, 30, `<path d='M15 0L30 15L15 30L0 15Z' fill='none' stroke='#F2C14E' stroke-opacity='0.07'/><path d='M15 11L16.2 13.8L19 15L16.2 16.2L15 19L13.8 16.2L11 15L13.8 13.8Z' fill='#F2C14E' fill-opacity='0.08'/>`),
+    holoQuilt: svgBg(8, 8, `<path d='M4 0L8 4L4 8L0 4Z' fill='none' stroke='#FFFFFF' stroke-opacity='0.35' stroke-width='0.6'/>`),
+    holoMark: svgBg(40, 56, `<path d='M20 17L27 28L20 39L13 28Z' fill='#FFFFFF' fill-opacity='0.55'/><path d='M20 17L27 28L20 39L13 28Z' fill='none' stroke='#FFFFFF' stroke-opacity='0.9' stroke-width='0.7'/><ellipse cx='20' cy='28' rx='11' ry='15' fill='none' stroke='#FFFFFF' stroke-opacity='0.55' stroke-width='0.6'/>`),
     // felts
     herring: svgBg(16, 8, `<path d='M0 8L8 0M8 8L16 0' stroke='${W}' stroke-opacity='0.05' stroke-width='2.4'/><path d='M8 8L0 0M16 8L8 0' stroke='#000' stroke-opacity='0.05' stroke-width='2.4'/>`),
     lattice: svgBg(22, 22, `<path d='M11 0L22 11L11 22L0 11Z' fill='none' stroke='${W}' stroke-opacity='0.05'/>`),
@@ -288,6 +290,7 @@ const CARD_BACKS = [
   { key: "neon", label: "Synthwave", pass: 10, a: "#5B2AA8", b: "#C02679", ring: "#FFD1F0", img: `${PAT.synthSun}, ${PAT.synthGrid}, linear-gradient(180deg, #3A1670, #C02679)`, size: "100% 100%, 7px 7px, 100% 100%" },
   { key: "carbon", label: "Carbon", pass: 20, a: "#22262E", b: "#121418", ring: "#9AA4B2", img: PAT.carbon, size: "5px 5px" },
   { key: "prestige", label: "Prestige Gold", prestige: 1, a: "#2A0E4A", b: "#14062A", ring: "#F2C14E", img: `${PAT.prestigeMark}, ${PAT.prestigeQuilt}`, size: "100% 100%, 7px 7px" },
+  { key: "holo", label: "Holo", pass: 25, anim: true, a: "#2A2F55", b: "#151833", ring: "#F4F7FF", img: `${PAT.holoMark}, ${PAT.holoQuilt}, linear-gradient(115deg, #FF8CC6, #FFD98A, #8CFFD0, #8CC8FF, #C79BFF, #FF8CC6, #FFD98A)`, size: "100% 100%, 7px 7px, 300% 300%" },
   { key: "foil", label: "Gold Foil", pass: 30, a: "#D9A53A", b: "#9C6A16", ring: "#FFF3C4", img: `${PAT.foilMark}, ${PAT.quilt}, linear-gradient(135deg, #F6D77A, #C88F27 50%, #F2CB6A)`, size: "100% 100%, 8px 8px, 100% 100%" },
 ];
 const FELTS = [
@@ -297,13 +300,14 @@ const FELTS = [
   { key: "purple", label: "Velvet", pass: 5, c1: "#8A4FD6", c2: "#5E2DA3", c3: "#3B1A6E", rail: "#221A33", tex: "radial-gradient(40% 30% at 30% 30%, rgba(255,255,255,0.10), transparent 70%), radial-gradient(35% 28% at 72% 68%, rgba(255,255,255,0.07), transparent 70%), radial-gradient(30% 40% at 60% 20%, rgba(0,0,0,0.12), transparent 70%)", texSize: "100% 100%" },
   { key: "ocean", label: "Lagoon", pass: 15, c1: "#1FB5AE", c2: "#0F7E78", c3: "#09524E", rail: "#E8DCC0", tex: PAT.ripple, texSize: "60px 60px" },
   { key: "prestige", label: "Prestige", prestige: 2, c1: "#5B2A9E", c2: "#3B1670", c3: "#210A44", rail: "#C9A24D", tex: PAT.prestigeFelt, texSize: "30px 30px", line: "rgba(242,193,78,0.55)" },
+  { key: "aurora", label: "Aurora", pass: 28, anim: true, c1: "#12465A", c2: "#0B2C3A", c3: "#051A23", rail: "#1B2433", tex: "linear-gradient(115deg, rgba(52,211,153,0.42), rgba(56,189,248,0.16) 25%, rgba(168,85,247,0.38) 50%, rgba(52,211,153,0.14) 75%, rgba(56,189,248,0.4))", texSize: "300% 300%", line: "rgba(140,255,208,0.35)" },
   { key: "blackout", label: "Onyx", cost: 4000, c1: "#2C323C", c2: "#191D24", c3: "#0D0F13", rail: "#C9A24D", tex: PAT.hex, texSize: "14px 24px", line: "rgba(201,162,77,0.5)" },
 ];
 const findBack = (k) => CARD_BACKS.find((b) => b.key === k) || CARD_BACKS[0];
 // prestige gear isn't bought, it unlocks when your prestige count gets there
-const ownsCosmetic = (cos, field, item, prestige) => cos[field].includes(item.key) || (!!item.prestige && (prestige || 0) >= item.prestige);
+const ownsCosmetic = (cos, field, item, prestige) => (cos[field] || []).includes(item.key) || item.cost === 0 || (!!item.prestige && (prestige || 0) >= item.prestige);
 const findFelt = (k) => FELTS.find((f) => f.key === k) || FELTS[0];
-function defaultCosmetics() { return { backs: ["blue"], felts: ["green"], cardBack: "blue", felt: "green" }; }
+function defaultCosmetics() { return { backs: ["blue"], felts: ["green"], cardBack: "blue", felt: "green", chipsets: ["classic"], chipset: "classic", fxs: ["confetti"], fx: "confetti" }; }
 
 const STREAK_REWARDS = [300, 400, 500, 650, 800, 1000, 1500];
 function localDateStr(d = new Date()) { return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; }
@@ -358,10 +362,48 @@ const challengeText = (c) => { const def = CHALLENGE_DEFS.find((d) => d.id === c
 
 // Season pass: 30 levels, 400 XP each, rewards granted the moment you level up.
 const PASS_LEVELS = 30, PASS_XP = 400;
-const PASS_SPECIAL = { 5: { type: "felt", key: "purple" }, 10: { type: "back", key: "neon" }, 15: { type: "felt", key: "ocean" }, 20: { type: "back", key: "carbon" }, 25: { type: "avatar", key: "🦄" }, 30: { type: "back", key: "foil" } };
-const passReward = (lvl) => PASS_SPECIAL[lvl] || { type: "chips", amount: 150 + lvl * 25 };
+const RARITY = { common: "#9AA4B2", rare: "#4EA8FF", epic: "#B072FF", legendary: "#F5B83D" };
+// Every level gives something. Chips fill the gaps, the rest you can only get here.
+const PASS_TRACK = [null,
+  { type: "chips", amount: 250 }, { type: "emote", key: "💰", rarity: "rare" }, { type: "chips", amount: 300 }, { type: "title", key: "nightshift", rarity: "rare" }, { type: "felt", key: "purple", rarity: "epic" },
+  { type: "chips", amount: 400 }, { type: "chipset", key: "goldrush", rarity: "epic" }, { type: "emote", key: "🦈", rarity: "rare" }, { type: "chips", amount: 500 }, { type: "back", key: "neon", rarity: "epic" },
+  { type: "avatar", key: "🦈", rarity: "rare" }, { type: "chips", amount: 600 }, { type: "fx", key: "coins", rarity: "epic" }, { type: "emote", key: "🧊", rarity: "rare" }, { type: "felt", key: "ocean", rarity: "epic" },
+  { type: "chips", amount: 750 }, { type: "title", key: "cardshark", rarity: "epic" }, { type: "chipset", key: "obsidian", rarity: "epic" }, { type: "chips", amount: 900 }, { type: "back", key: "carbon", rarity: "epic" },
+  { type: "emote", key: "Run it back", rarity: "rare" }, { type: "fx", key: "fireworks", rarity: "legendary" }, { type: "chips", amount: 1000 }, { type: "avatar", key: "🦄", rarity: "epic" }, { type: "back", key: "holo", rarity: "legendary" },
+  { type: "chips", amount: 1250 }, { type: "title", key: "heatcheck", rarity: "legendary" }, { type: "felt", key: "aurora", rarity: "legendary" }, { type: "chips", amount: 1500 }, { type: "back", key: "foil", rarity: "legendary" },
+];
+const passReward = (lvl) => ({ rarity: "common", ...(PASS_TRACK[lvl] || { type: "chips", amount: 150 + lvl * 25 }) });
+// chip sets and win effects: what your chips look like and what happens when you win big
+const CHIP_SETS = [
+  { key: "classic", label: "Classic", cost: 0, colors: null },
+  { key: "goldrush", label: "Gold Rush", pass: 7, colors: { 25000: "#FFF1B8", 5000: "#F2C14E", 1000: "#D99A2B", 500: "#B8742A", 100: "#7A4A1A", 25: "#FFE08A", 5: "#C98A1E", 1: "#FFF8E0" } },
+  { key: "obsidian", label: "Obsidian", pass: 18, colors: { 25000: "#E8ECF2", 5000: "#9AA4B2", 1000: "#5B6472", 500: "#2B3038", 100: "#15181D", 25: "#717B8A", 5: "#3A404A", 1: "#C9D1DC" } },
+];
+const WIN_FX = [
+  { key: "confetti", label: "Confetti", cost: 0 },
+  { key: "coins", label: "Coin Rain", pass: 13 },
+  { key: "fireworks", label: "Fireworks", pass: 22 },
+];
+const BASE_EMOTES = ["👍", "😂", "😤", "🔥", "🫡", "😬", "GG", "Nice hand", "Ship it"];
 const passLevel = (xp) => Math.min(PASS_LEVELS, Math.floor(xp / PASS_XP));
-const passRewardLabel = (r) => r.type === "chips" ? `${r.amount.toLocaleString()} chips` : r.type === "felt" ? `${findFelt(r.key).label} felt` : r.type === "back" ? `${findBack(r.key).label} card back` : `${r.key} avatar`;
+const passRewardLabel = (r) => r.type === "chips" ? `${r.amount.toLocaleString()} chips` : r.type === "felt" ? `${findFelt(r.key).label} felt` : r.type === "back" ? `${findBack(r.key).label} card back`
+  : r.type === "title" ? `"${findTitle(r.key).label}" title` : r.type === "emote" ? `${r.key} emote` : r.type === "chipset" ? `${CHIP_SETS.find((c) => c.key === r.key).label} chips` : r.type === "fx" ? `${WIN_FX.find((c) => c.key === r.key).label} win effect` : `${r.key} avatar`;
+const passTypeLabel = (r) => ({ chips: "Chips", felt: "Table felt", back: "Card back", title: "Title", emote: "Emote", chipset: "Chip set", fx: "Win effect", avatar: "Avatar" })[r.type];
+// hands over one pass item (not chips); safe to call again
+function grantPassItem(next, r) {
+  const cos = { ...defaultCosmetics(), ...(next.cosmetics || {}) };
+  const add = (list, k) => (list.includes(k) ? list : [...list, k]);
+  if (r.type === "felt") return { ...next, cosmetics: { ...cos, felts: add(cos.felts, r.key) } };
+  if (r.type === "back") return { ...next, cosmetics: { ...cos, backs: add(cos.backs, r.key) } };
+  if (r.type === "chipset") return { ...next, cosmetics: { ...cos, chipsets: add(cos.chipsets, r.key) } };
+  if (r.type === "fx") return { ...next, cosmetics: { ...cos, fxs: add(cos.fxs, r.key) } };
+  if (r.type === "avatar") return { ...next, unlocked: add(next.unlocked || [], r.key) };
+  if (r.type === "emote") return { ...next, emotes: add(next.emotes || [], r.key) };
+  if (r.type === "title") { const t = next.titles || defaultTitles(); return { ...next, titles: { ...t, owned: add(t.owned, r.key) } }; }
+  return next;
+}
+// the track changed mid season: make sure everything below your level is yours
+function passBackfill(d) { let n = d; const lvl = passLevel(ensurePass(d.pass).xp); for (let l = 1; l <= lvl; l++) { const r = passReward(l); if (r.type !== "chips") n = grantPassItem(n, r); } return n; }
 function ensurePass(p) { const season = currentSeasonId(); return p && p.season === season ? p : { season, xp: 0 }; }
 // Adds XP and hands out every reward crossed. Returns the new data and what was earned.
 function grantXp(d, xp) {
@@ -371,11 +413,8 @@ function grantXp(d, xp) {
   const earned = [];
   for (let l = before + 1; l <= after; l++) {
     const r = passReward(l); earned.push({ level: l, reward: r });
-    const cos = next.cosmetics || defaultCosmetics();
     if (r.type === "chips") next = { ...next, chips: next.chips + r.amount };
-    else if (r.type === "felt" && !cos.felts.includes(r.key)) next = { ...next, cosmetics: { ...cos, felts: [...cos.felts, r.key] } };
-    else if (r.type === "back" && !cos.backs.includes(r.key)) next = { ...next, cosmetics: { ...cos, backs: [...cos.backs, r.key] } };
-    else if (r.type === "avatar" && !next.unlocked.includes(r.key)) next = { ...next, unlocked: [...next.unlocked, r.key] };
+    else next = grantPassItem(next, r);
   }
   return { next, earned };
 }
@@ -409,6 +448,10 @@ const TITLES = [
   { key: "champion", label: "Champion", rarity: "legendary", how: "Reach Champion in ranked", earn: (d) => (d.ranked.peakRating || 0) >= 1500 },
   { key: "royal", label: "Royal Club", rarity: "legendary", how: "Win with a royal flush", earn: (d) => ((d.history && d.history.best) || []).some((b) => b.kind === 8 && b.s && b.s[1] === 14) },
   { key: "maxed", label: "Maxed Out", rarity: "legendary", how: "Finish the season pass", earn: (d) => d.pass && d.pass.xp >= PASS_LEVELS * PASS_XP },
+  // season pass
+  { key: "nightshift", label: "Night Shift", rarity: "rare", how: "Season pass level 4" },
+  { key: "cardshark", label: "Card Shark", rarity: "epic", how: "Season pass level 17" },
+  { key: "heatcheck", label: "Heat Check", rarity: "legendary", how: "Season pass level 27" },
   // bought
   { key: "lucky", label: "Lucky", rarity: "common", cost: 1500 },
   { key: "nightowl", label: "Night Owl", rarity: "common", cost: 1500 },
@@ -439,13 +482,14 @@ const CHIP_DENOMS = [
 ];
 // the high roller room plays with its own set: champagne, burgundy, gold, onyx, ivory, emerald
 const VIP_CHIP = { 25000: "#EBD39A", 5000: "#7A1E2C", 1000: "#C9A050", 500: "#8C6A3A", 100: "#ECE5D5", 25: "#11533F", 5: "#7A1E2C", 1: "#ECE5D5" };
-function chipColumns(amount, maxCols = 3, maxPer = 9, vip = false) {
+function chipColumns(amount, maxCols = 3, maxPer = 9, palette = null) {
   let left = Math.max(0, Math.round(amount)); const cols = [];
-  for (const d of CHIP_DENOMS) { const n = Math.floor(left / d.v); if (n > 0) { cols.push({ c: vip ? VIP_CHIP[d.v] : d.c, n: Math.min(maxPer, n) }); left -= n * d.v; } }
+  for (const d of CHIP_DENOMS) { const n = Math.floor(left / d.v); if (n > 0) { cols.push({ c: palette ? palette[d.v] : d.c, n: Math.min(maxPer, n) }); left -= n * d.v; } }
   return cols.slice(0, maxCols);
 }
-function ChipStack({ amount, small = false, vip = false }) {
-  const cols = chipColumns(amount, small ? 2 : 3, small ? 5 : 9, vip);
+function ChipStack({ amount, small = false, vip = false, set = null }) {
+  const cs = set && typeof CHIP_SETS !== "undefined" ? CHIP_SETS.find((c) => c.key === set) : null;
+  const cols = chipColumns(amount, small ? 2 : 3, small ? 5 : 9, vip ? VIP_CHIP : cs ? cs.colors : null);
   if (!cols.length) return null;
   return (
     <span className={`chipstack${small ? " sm" : ""}`} aria-hidden="true">
@@ -1299,7 +1343,7 @@ function computePots(players) {
 /* =========================================================================
    POKER TABLE
    ========================================================================= */
-function PokerTable({ startStack, name, avatar, photo = null, soundOn, setSoundOn, onExit, onHandResolved, stakes, tableSize, tournament, ranked, rankedState, skill, tourneyBuyIn = 0, bankroll, botSkill = 0.4, opponentRating = null, frameColor, tutorial, variant = "holdem", turbo = false, runTwice = false, squeeze = false, cardBack = null, felt = null, title = null, vip = false, prestige = 0, colorblind, cardSize, animSpeed, showWinTip, onDismissWinTip }) {
+function PokerTable({ startStack, name, avatar, photo = null, soundOn, setSoundOn, onExit, onHandResolved, stakes, tableSize, tournament, ranked, rankedState, skill, tourneyBuyIn = 0, bankroll, botSkill = 0.4, opponentRating = null, frameColor, tutorial, variant = "holdem", turbo = false, runTwice = false, squeeze = false, cardBack = null, felt = null, title = null, vip = false, prestige = 0, chipSet = "classic", winFx = "confetti", colorblind, cardSize, animSpeed, showWinTip, onDismissWinTip }) {
   const suitColor = colorblind ? SUIT_COLOR_CB : SUIT_COLOR;
   const cardScale = cardSize === "large" ? 1.18 : 1;
   const speedMult = animSpeed === "fast" ? 0.55 : 1;
@@ -2020,13 +2064,13 @@ function PokerTable({ startStack, name, avatar, photo = null, soundOn, setSoundO
               </div>
               <div style={{ height: 18 }}>
                 {allInOdds && allInOdds[p.id] != null && stage !== "showdown" ? <div className="odds-badge num" style={{ color: allInOdds[p.id] >= 50 ? "var(--t-good)" : "#FFB4B4" }}>{allInOdds[p.id]}%</div>
-                  : p.streetContributed > 0 && <div className={`chip-badge${collecting ? " collecting" : ""}`}>{!compact && <ChipStack amount={p.streetContributed} small vip={vip} />}{fmt(p.streetContributed)}</div>}
+                  : p.streetContributed > 0 && <div className={`chip-badge${collecting ? " collecting" : ""}`}>{!compact && <ChipStack amount={p.streetContributed} small vip={vip} set={chipSet} />}{fmt(p.streetContributed)}</div>}
               </div>
             </div>
           );
         })}
       </div>
-      {confetti && <Confetti key={confetti} />}
+      {confetti && <WinFx key={confetti} kind={winFx} />}
       {drama && <div className="drama-vignette" aria-hidden="true" />}
 
       <div className="felt-center">
@@ -2045,7 +2089,7 @@ function PokerTable({ startStack, name, avatar, photo = null, soundOn, setSoundO
             </div>
           )}
           <div className="pot-row" style={{ visibility: pot > 0 ? "visible" : "hidden" }}>
-            <ChipStack amount={pot} vip={vip} />
+            <ChipStack amount={pot} vip={vip} set={chipSet} />
             <div ref={potRef} className={`pot-num num${potPulse ? " pulse" : ""}`}>Pot {potShown.toLocaleString()}</div>
           </div>
         </div>
@@ -2115,7 +2159,7 @@ function PokerTable({ startStack, name, avatar, photo = null, soundOn, setSoundO
             <div style={{ fontSize: 13.5, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", display: "flex", alignItems: "center", gap: 5 }}><span className={pnameCls(prestige)}>{human?.name}</span><PrestigeBadge n={prestige} size={15} /></div>
             {title && title !== "rookie" && <TitleTag k={title} size={10.5} style={{ display: "block", marginTop: -1 }} />}
             <div className="num" style={{ fontSize: 12, color: "var(--t-mid)" }}>{(human?.stack ?? 0).toLocaleString()}{ranked && handsCount > 0 && !rankedResult && <span className="standing">{ordinal(rankedPlace)} of {players.length}</span>}</div>
-            {human?.streetContributed > 0 && <div className={`chip-badge${collecting ? " collecting" : ""}`} style={{ marginTop: 3 }}><ChipStack amount={human.streetContributed} small vip={vip} />{human.streetContributed.toLocaleString()}</div>}
+            {human?.streetContributed > 0 && <div className={`chip-badge${collecting ? " collecting" : ""}`} style={{ marginTop: 3 }}><ChipStack amount={human.streetContributed} small vip={vip} set={chipSet} />{human.streetContributed.toLocaleString()}</div>}
           </div>
         </div>
         <div style={{ display: "flex", gap: 6, position: "relative" }}>
@@ -2179,10 +2223,11 @@ function PokerTable({ startStack, name, avatar, photo = null, soundOn, setSoundO
           </div>
         ) : busted ? (
           <div style={{ textAlign: "center", width: "100%" }}>
-            <div style={{ fontSize: 13.5, color: "var(--t-bad)", marginBottom: 10 }}>You're out of chips.</div>
+            <div style={{ fontSize: 13.5, color: "var(--t-bad)", marginBottom: tutorial || tournament || ranked ? 10 : 4 }}>You're out of chips.</div>
+            {!tutorial && !tournament && !ranked && <div style={{ fontSize: 12, color: "var(--t-mut)", marginBottom: 10 }}>Daily rewards, the spin, challenges and the season pass get you back in.</div>}
             <div style={{ display: "flex", gap: 8 }}>
               <button className="btn" onClick={() => onExit(0)}>Back to lobby</button>
-              {!tournament && !ranked && <button className="btn btn-raise" onClick={rebuy}>Rebuy {rebuyAmount.toLocaleString()}</button>}
+              {tutorial && <button className="btn btn-raise" onClick={rebuy}>Rebuy {rebuyAmount.toLocaleString()}</button>}
             </div>
           </div>
         ) : betweenHands && showChoice && stage === "showdown" && !(ranked && handsCount >= RANKED_MATCH_HANDS) ? (
@@ -2614,6 +2659,29 @@ function Confetti() {
   );
 }
 
+// Win effects from the season pass. Confetti is the default.
+function CoinRain() {
+  const coins = useMemo(() => Array.from({ length: 26 }).map((_, i) => ({ id: i, left: 4 + Math.random() * 92, delay: Math.random() * 0.45, dur: 1.15 + Math.random() * 0.6, size: 14 + Math.random() * 10, spin: 0.35 + Math.random() * 0.4 })), []);
+  return (
+    <div className="fx-layer" aria-hidden="true">
+      {coins.map((c) => <div key={c.id} className="fx-coin" style={{ left: `${c.left}%`, width: c.size, height: c.size, animation: `coinFall ${c.dur}s cubic-bezier(.35,.1,.7,1) ${c.delay}s forwards`, "--spin": `${c.spin}s` }}><i /></div>)}
+    </div>
+  );
+}
+function Fireworks() {
+  const bursts = useMemo(() => [0, 1, 2].map((b) => ({ id: b, x: 18 + Math.random() * 64, y: 18 + Math.random() * 30, delay: b * 0.32, hue: ["#F5B83D", "#FF7AB8", "#6FD3FF", "#8CFFB0"][Math.floor(Math.random() * 4)] })), []);
+  return (
+    <div className="fx-layer" aria-hidden="true">
+      {bursts.map((b) => (
+        <div key={b.id} className="fx-burst" style={{ left: `${b.x}%`, top: `${b.y}%` }}>
+          {Array.from({ length: 16 }).map((_, k) => { const a = (k / 16) * Math.PI * 2; const r = 60 + (k % 3) * 14; return <i key={k} style={{ background: b.hue, boxShadow: `0 0 6px ${b.hue}`, "--dx": `${Math.cos(a) * r}px`, "--dy": `${Math.sin(a) * r}px`, animation: `burstOut 1.1s cubic-bezier(.15,.7,.3,1) ${b.delay}s both` }} />; })}
+        </div>
+      ))}
+    </div>
+  );
+}
+function WinFx({ kind }) { return kind === "coins" ? <CoinRain /> : kind === "fireworks" ? <Fireworks /> : <Confetti />; }
+
 function RankingsModal({ onClose, suitColor = SUIT_COLOR, variant = "holdem" }) {
   return (
     <Modal title="Hand rankings" onClose={onClose} width={400}>
@@ -2874,59 +2942,104 @@ function ChallengesCard({ challenges, onClaim }) {
   );
 }
 
-function PassRewardIcon({ r, size = 34 }) {
-  if (r.type === "felt") { const f = findFelt(r.key); return <div className="pr-ic" style={{ width: size, height: size, background: `radial-gradient(circle at 50% 40%, ${f.c1}, ${f.c3})`, border: `3px solid ${f.rail}` }} />; }
-  if (r.type === "back") { const b = findBack(r.key); return <div className="pr-ic" style={{ width: size * 0.74, height: size, borderRadius: 5, background: `repeating-linear-gradient(45deg, ${b.a} 0 4px, ${b.b} 4px 8px)`, boxShadow: `inset 0 0 0 2px ${b.ring}` }} />; }
-  if (r.type === "avatar") return <div className="pr-ic" style={{ width: size, height: size, fontSize: size * 0.6, background: "rgba(244,247,252,0.08)" }}>{r.key}</div>;
-  return <div className="pr-ic" style={{ width: size, height: size, background: "rgba(245,184,61,0.16)", color: "var(--t-accent)" }}><Icon name="chips" size={size * 0.5} stroke={2} /></div>;
+// The art for one pass reward, at any size
+function PassArt({ r, size = 54 }) {
+  if (r.type === "back") return <BackSwatch b={findBack(r.key)} w={size * 0.66} />;
+  if (r.type === "felt") { const f = findFelt(r.key); return <div style={{ transform: `scale(${size / 64})` }}><FeltSwatch f={f} /></div>; }
+  if (r.type === "chipset") return <div style={{ transform: `scale(${size / 36})` }}><ChipStack amount={31525} set={r.key} /></div>;
+  if (r.type === "fx") return <div style={{ transform: `scale(${size / 50})` }}><FxSwatch f={WIN_FX.find((x) => x.key === r.key)} /></div>;
+  if (r.type === "avatar") return <div className="pa-av" style={{ width: size * 0.9, height: size * 0.9, fontSize: size * 0.52 }}>{r.key}</div>;
+  if (r.type === "emote") return <div className="pa-emote" style={{ fontSize: r.key.length > 3 ? size * 0.2 : size * 0.42 }}>{r.key}</div>;
+  if (r.type === "title") return <div className="pa-title"><TitleTag k={r.key} size={Math.max(9, size * 0.2)} style={{ whiteSpace: "normal", lineHeight: 1.15, display: "inline-block" }} /></div>;
+  return <div className="pa-chips" style={{ width: size * 0.8, height: size * 0.8 }}><Icon name="chips" size={size * 0.42} stroke={2} /><b className="num" style={{ fontSize: size * 0.19 }}>{shortNum(r.amount)}</b></div>;
 }
+function PassRewardIcon({ r, size = 34 }) { return <div className="pr-ic" style={{ width: size, height: size }}><PassArt r={r} size={size} /></div>; }
 
 function PassCard({ pass, onOpen }) {
   const p = ensurePass(pass);
   const lvl = passLevel(p.xp);
   const into = p.xp - lvl * PASS_XP;
   const maxed = lvl >= PASS_LEVELS;
-  const nextR = maxed ? null : passReward(lvl + 1);
   const month = new Date().toLocaleString("en-US", { month: "long" });
+  const stripRef = useRef(null);
+  useEffect(() => { const el = stripRef.current; if (el) el.scrollLeft = 0; }, []);
+  const upcoming = Array.from({ length: Math.min(8, PASS_LEVELS - lvl) }, (_, i) => lvl + 1 + i);
   return (
-    <button className="pass-card" onClick={onOpen}>
-      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+    <section className="pass-card">
+      <button className="pass-head" onClick={() => onOpen(lvl + 1)}>
         <div className="pass-lvl num"><div style={{ fontSize: 10, fontWeight: 700, opacity: 0.8, letterSpacing: "0.06em" }}>LVL</div>{lvl}</div>
         <div style={{ flex: 1, minWidth: 0, textAlign: "left" }}>
           <div style={{ fontSize: 15, fontWeight: 700 }}>{month} season pass</div>
-          <div style={{ fontSize: 12, color: "#D6C7FF", marginTop: 2 }}>{maxed ? "Maxed out. Nice." : `Next: ${passRewardLabel(nextR)}`}</div>
+          <div className="num" style={{ fontSize: 12, color: "#D6C7FF", marginTop: 2 }}>{maxed ? "Maxed out. Nice." : `${into} / ${PASS_XP} XP · ends in ${daysLeftInSeason()} days`}</div>
         </div>
-        {nextR && <PassRewardIcon r={nextR} size={34} />}
-      </div>
+        <Icon name="chevron" size={16} style={{ color: "#D6C7FF" }} />
+      </button>
       <div className="bar" style={{ marginTop: 12, height: 8, background: "rgba(255,255,255,0.14)" }}><div style={{ width: `${maxed ? 100 : (into / PASS_XP) * 100}%`, background: "linear-gradient(90deg,#F5B83D,#FF7AB8)" }} /></div>
-      <div className="num" style={{ display: "flex", justifyContent: "space-between", fontSize: 11.5, color: "#C9B8F5", marginTop: 6 }}>
-        <span>{maxed ? `${p.xp.toLocaleString()} XP` : `${into} / ${PASS_XP} XP`}</span><span>Ends in {daysLeftInSeason()} days</span>
-      </div>
-    </button>
+      {!maxed && (
+        <div className="pass-strip" ref={stripRef}>
+          {upcoming.map((l, i) => { const r = passReward(l); return (
+            <button key={l} className={`pass-mini r-${r.rarity}${i === 0 ? " next" : ""}`} onClick={() => onOpen(l)} aria-label={`Level ${l}: ${passRewardLabel(r)}`}>
+              <div className="pm-art"><PassArt r={r} size={38} /></div>
+              <div className="pm-l num">{l}</div>
+            </button>
+          ); })}
+        </div>
+      )}
+    </section>
   );
 }
 
-function PassModal({ pass, onClose }) {
+function PassModal({ pass, data, focus, onClose, onEquip }) {
   const p = ensurePass(pass);
   const lvl = passLevel(p.xp);
-  const ref = useRef(null);
-  useEffect(() => { const el = ref.current && ref.current.querySelector(".pass-row.next"); if (el && el.scrollIntoView) el.scrollIntoView({ block: "center" }); }, []);
+  const into = p.xp - lvl * PASS_XP;
+  const [sel, setSel] = useState(Math.max(1, Math.min(PASS_LEVELS, focus || lvl + 1)));
+  const trackRef = useRef(null);
+  useEffect(() => {
+    const el = trackRef.current && trackRef.current.querySelector(`[data-l="${sel}"]`);
+    if (el && trackRef.current) trackRef.current.scrollLeft = el.offsetLeft - trackRef.current.clientWidth / 2 + el.clientWidth / 2;
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  const r = passReward(sel); const got = sel <= lvl;
+  const cos = { ...defaultCosmetics(), ...(data.cosmetics || {}) };
+  const equipped = r.type === "back" ? cos.cardBack === r.key : r.type === "felt" ? cos.felt === r.key : r.type === "chipset" ? cos.chipset === r.key : r.type === "fx" ? cos.fx === r.key : r.type === "title" ? (data.titles || defaultTitles()).equipped === r.key : r.type === "avatar" ? data.avatar === r.key && !data.usePhoto : false;
+  const canEquip = got && ["back", "felt", "chipset", "fx", "title", "avatar"].includes(r.type);
+  const month = new Date().toLocaleString("en-US", { month: "long" });
   return (
-    <Modal title="Season pass" onClose={onClose} width={400}>
-      <div style={{ fontSize: 12, color: "var(--t-mut)", margin: "-6px 2px 10px" }}>Earn XP from every hand, ranked match, tournament and challenge. Rewards unlock on their own. Resets each month.</div>
-      <div ref={ref} style={{ maxHeight: "58vh", overflowY: "auto", margin: "0 -4px", padding: "0 4px" }}>
+    <Modal title="" onClose={onClose} width={440} className="pass-sheet">
+      <div className="ps-head">
+        <div className="pass-lvl num" style={{ width: 48, height: 48 }}><div style={{ fontSize: 9.5, fontWeight: 700, opacity: 0.8 }}>LVL</div>{lvl}</div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 17, fontWeight: 800 }}>{month} season pass</div>
+          <div className="num" style={{ fontSize: 12, color: "#D6C7FF" }}>{lvl >= PASS_LEVELS ? "Maxed out" : `${into} / ${PASS_XP} XP to level ${lvl + 1}`} · {daysLeftInSeason()} days left</div>
+        </div>
+        <button className="iconbtn" onClick={onClose} aria-label="Close"><Icon name="close" size={14} /></button>
+      </div>
+
+      <div className={`ps-preview r-${r.rarity}`}>
+        <div className="ps-art"><PassArt r={r} size={96} /></div>
+        <div className="ps-meta">
+          <div className="ps-rarity" style={{ color: RARITY[r.rarity] }}>{r.rarity} · {passTypeLabel(r)}</div>
+          <div className="ps-name">{r.type === "chips" ? `${r.amount.toLocaleString()} chips` : passRewardLabel(r).replace(/ (felt|card back|title|emote|chips|win effect|avatar)$/, "").replace(/"/g, "")}</div>
+          <div className="ps-sub">{r.type === "emote" ? "Send it at friends tables." : r.type === "fx" ? "Plays when you win a big pot." : r.type === "chipset" ? "Every chip you bet, in this set." : r.type === "title" ? "Shows under your name." : r.type === "chips" ? "Straight to your bankroll." : "Only from the season pass."}</div>
+          {got ? (canEquip ? <button className={`btn btn-sm${equipped ? "" : " btn-raise"}`} disabled={equipped} onClick={() => onEquip(r)}>{equipped ? "Equipped" : "Equip"}</button> : <span className="ps-got"><Icon name="check" size={13} stroke={2.6} /> Unlocked</span>)
+            : <span className="ps-lock num"><Icon name="lock" size={12} stroke={2.2} /> Level {sel} · {((sel * PASS_XP) - p.xp).toLocaleString()} XP to go</span>}
+        </div>
+      </div>
+
+      <div className="ps-track" ref={trackRef}>
+        <div className="ps-line"><div style={{ width: `${Math.min(100, ((lvl + (lvl < PASS_LEVELS ? into / PASS_XP : 0)) / PASS_LEVELS) * 100)}%` }} /></div>
         {Array.from({ length: PASS_LEVELS }, (_, i) => i + 1).map((l) => {
-          const r = passReward(l), got = l <= lvl, special = r.type !== "chips";
+          const rr = passReward(l); const g = l <= lvl;
           return (
-            <div key={l} className={`pass-row${got ? " got" : ""}${l === lvl + 1 ? " next" : ""}${special ? " special" : ""}`}>
-              <div className="num pass-row-n">{l}</div>
-              <PassRewardIcon r={r} size={30} />
-              <div style={{ flex: 1, fontSize: 13, fontWeight: special ? 700 : 500 }}>{passRewardLabel(r)}</div>
-              {got ? <Icon name="check" size={15} stroke={2.4} style={{ color: "var(--t-good)" }} /> : <span className="num" style={{ fontSize: 11, color: "var(--t-faint)" }}>{(l * PASS_XP).toLocaleString()} XP</span>}
-            </div>
+            <button key={l} data-l={l} className={`ps-tile r-${rr.rarity}${g ? " got" : ""}${l === lvl + 1 ? " next" : ""}${l === sel ? " sel" : ""}`} onClick={() => setSel(l)} aria-label={`Level ${l}: ${passRewardLabel(rr)}`}>
+              <div className="ps-node num">{g ? <Icon name="check" size={11} stroke={3} /> : l}</div>
+              <div className="ps-tile-art"><PassArt r={rr} size={46} /></div>
+              <div className="ps-tile-name">{rr.type === "chips" ? shortNum(rr.amount) : passTypeLabel(rr)}</div>
+            </button>
           );
         })}
       </div>
+      <div style={{ fontSize: 11.5, color: "var(--t-mut)", marginTop: 10, textAlign: "center" }}>Swipe for every level. XP comes from hands, ranked matches, tournaments and challenges.</div>
     </Modal>
   );
 }
@@ -3023,8 +3136,9 @@ function VipCard({ chips, onOpen }) {
   );
 }
 
-function HomeMenu({ onPlayAI, onFriendsTable, data, chips, ranked, legendNo, onClaimDaily, onClaimChallenge, onSpin, onPrestige, sound }) {
+function HomeMenu({ onPlayAI, onFriendsTable, onEquipPass, data, chips, ranked, legendNo, onClaimDaily, onClaimChallenge, onSpin, onPrestige, sound }) {
   const [modal, setModal] = useState(null); // "ranked" | "cash" | "tournament" | "pass"
+  const [passFocus, setPassFocus] = useState(null);
   const [size, setSize] = useState(TABLE_SIZES[1]);
   const [tBuyIn, setTBuyIn] = useState(TOURNEY_BUYINS[0]);
   const [turbo, setTurbo] = useState(false);
@@ -3067,10 +3181,10 @@ function HomeMenu({ onPlayAI, onFriendsTable, data, chips, ranked, legendNo, onC
 
       {cloudEnabled() && onFriendsTable && <div style={{ marginBottom: 14 }}><FriendsTableCard onOpen={onFriendsTable} /></div>}
       <div style={{ marginBottom: 14 }}><VipCard chips={chips} onOpen={() => setModal("vip")} /></div>
-      <div style={{ marginBottom: 14 }}><PassCard pass={data.pass} onOpen={() => setModal("pass")} /></div>
+      <div style={{ marginBottom: 14 }}><PassCard pass={data.pass} onOpen={(l) => { setPassFocus(l); setModal("pass"); }} /></div>
       <ChallengesCard challenges={data.challenges} onClaim={onClaimChallenge} />
 
-      {modal === "pass" && <PassModal pass={data.pass} onClose={close} />}
+      {modal === "pass" && <PassModal pass={data.pass} data={data} focus={passFocus} onClose={close} onEquip={onEquipPass} />}
       {modal === "spin" && <SpinModal ready={spinReady(data)} onSpin={onSpin} onClose={close} sound={sound} />}
       {modal === "ladder" && <RankLadderModal ranked={ranked} legendNo={legendNo} onClose={close} />}
       {modal === "vip" && (
@@ -3260,14 +3374,19 @@ function CoachScreen({ data }) {
    SHOP TAB
    ========================================================================= */
 function BackSwatch({ b, w = 44 }) {
-  return <div className="back-sw" style={{ width: w, height: w * 1.4, backgroundColor: b.a, backgroundImage: b.img, backgroundSize: b.size, backgroundPosition: "center", boxShadow: `inset 0 0 0 2px ${b.ring}, inset 0 0 0 3.5px ${b.b}, 0 4px 10px rgba(0,0,0,0.35)` }} />;
+  return <div className={`back-sw${b.anim ? " holo-anim" : ""}`} style={{ width: w, height: w * 1.4, backgroundColor: b.a, backgroundImage: b.img, backgroundSize: b.size, backgroundPosition: "center", boxShadow: `inset 0 0 0 2px ${b.ring}, inset 0 0 0 3.5px ${b.b}, 0 4px 10px rgba(0,0,0,0.35)` }} />;
 }
 function FeltSwatch({ f }) {
   return (
-    <div className="felt-sw" style={{ backgroundColor: f.c2, backgroundImage: `${f.tex ? `${f.tex}, ` : ""}radial-gradient(ellipse at 50% 40%, ${f.c1} 0%, ${f.c2} 55%, ${f.c3} 100%)`, backgroundSize: f.tex ? `${f.texSize}, 100% 100%` : undefined, borderColor: f.rail }}>
+    <div className={`felt-sw${f.anim ? " aurora-anim" : ""}`} style={{ backgroundColor: f.c2, backgroundImage: `${f.tex ? `${f.tex}, ` : ""}radial-gradient(ellipse at 50% 40%, ${f.c1} 0%, ${f.c2} 55%, ${f.c3} 100%)`, backgroundSize: f.tex ? `${f.texSize}, 100% 100%` : undefined, borderColor: f.rail }}>
       {f.line && <span className="felt-sw-line" style={{ borderColor: f.line }} />}
     </div>
   );
+}
+function ChipSetSwatch({ c }) { return <div className="chipset-sw"><div style={{ transform: "scale(1.55)", transformOrigin: "50% 100%" }}><ChipStack amount={31525} set={c.key} /></div></div>; }
+function FxSwatch({ f }) {
+  const ic = f.key === "coins" ? <span className="fx-sw-coin" /> : f.key === "fireworks" ? <span className="fx-sw-burst">{Array.from({ length: 8 }).map((_, k) => <i key={k} style={{ transform: `rotate(${k * 45}deg) translateY(-11px)` }} />)}</span> : <span className="fx-sw-conf">{["#F5B83D", "#34D399", "#6FA8FF", "#FF7AB8"].map((c, k) => <i key={k} style={{ background: c, transform: `rotate(${k * 35 - 40}deg) translate(${(k - 1.5) * 9}px, ${k % 2 ? -6 : 5}px)` }} />)}</span>;
+  return <div className="fx-sw">{ic}</div>;
 }
 function CosmeticTile({ item, owned, equipped, chips, onBuy, onEquip, children }) {
   const canAfford = item.cost != null && chips >= item.cost;
@@ -3365,6 +3484,24 @@ function ShopScreen({ data, onClaimChips, onBuyAvatar, onClaimDaily, onBuyCosmet
         ))}
       </div>
 
+      <SectionLabel right="From the season pass">Chip sets</SectionLabel>
+      <div className="cos-grid" style={{ marginBottom: 24 }}>
+        {CHIP_SETS.map((c) => (
+          <CosmeticTile key={c.key} item={c} owned={ownsCosmetic(cos, "chipsets", c, data.ranked.prestige)} equipped={(cos.chipset || "classic") === c.key} chips={data.chips} onEquip={() => onEquipCosmetic("chipset", c.key)}>
+            <ChipSetSwatch c={c} />
+          </CosmeticTile>
+        ))}
+      </div>
+
+      <SectionLabel right="Plays when you win big">Win effects</SectionLabel>
+      <div className="cos-grid" style={{ marginBottom: 24 }}>
+        {WIN_FX.map((f) => (
+          <CosmeticTile key={f.key} item={f} owned={ownsCosmetic(cos, "fxs", f, data.ranked.prestige)} equipped={(cos.fx || "confetti") === f.key} chips={data.chips} onEquip={() => onEquipCosmetic("fx", f.key)}>
+            <FxSwatch f={f} />
+          </CosmeticTile>
+        ))}
+      </div>
+
       <SectionLabel right="Shows under your name">Titles</SectionLabel>
       <div className="list" style={{ gap: 6, marginBottom: 24 }}>
         {TITLES.filter((t) => t.cost).map((t) => {
@@ -3398,18 +3535,6 @@ function ShopScreen({ data, onClaimChips, onBuyAvatar, onClaimDaily, onBuyCosmet
         })}
       </div>
 
-      <SectionLabel>Free chips</SectionLabel>
-      <div className="list">
-        {CHIP_PACKS.map((pack) => (
-          <div key={pack.label} className="row">
-            <div>
-              <div className="row-title">{pack.label}</div>
-              <div className="row-sub num">{pack.amount.toLocaleString()} chips</div>
-            </div>
-            <button className="btn btn-sm" onClick={() => onClaimChips(pack.amount)}>Claim</button>
-          </div>
-        ))}
-      </div>
     </div>
   );
 }
@@ -3422,18 +3547,22 @@ function LeaderboardScreen({ data, account, online = {}, onOpenAuth }) {
   const [fl, setFl] = useState(null); const [openF, setOpenF] = useState(null);
   // real players from everyone's accounts; the sample list only shows if that can't load
   const [real, setReal] = useState({});
+  const [scope, setScope] = useState(() => { try { return localStorage.getItem("felt-lb-scope") || "world"; } catch (e) { return "world"; } });
+  const tz = myTimeZone();
+  const realKey = `${tab}-${scope}`;
   useEffect(() => {
     if (!cloudEnabled() || tab === "friends") return;
     let on = true;
-    cloud.top(tab === "ranked" ? "ranked" : "index").then((list) => on && setReal((r) => ({ ...r, [tab]: list }))).catch(() => on && setReal((r) => ({ ...r, [tab]: false })));
+    cloud.top(tab === "ranked" ? "ranked" : "index", scope === "local" ? tz : null).then((list) => on && setReal((r) => ({ ...r, [realKey]: list }))).catch(() => on && setReal((r) => ({ ...r, [realKey]: false })));
     return () => { on = false; };
-  }, [tab]);
+  }, [tab, scope]); // eslint-disable-line react-hooks/exhaustive-deps
+  const pickScope = (v) => { setScope(v); try { localStorage.setItem("felt-lb-scope", v); } catch (e) { /* private mode */ } };
   useEffect(() => { if (tab !== "friends" || !account) return; cloud.friends(account).then((r) => setFl(r.friends)).catch(() => setFl([])); }, [tab, account]);
   const placed = isPlaced(data.ranked);
   const month = new Date().toLocaleString("en-US", { month: "long" });
   const myIndex = tournamentIndex((data.skill || {}).tourneys);
   // sample players stand in until online play exists, so the boards have company
-  const realList = real[tab];
+  const realList = real[realKey];
   const live = Array.isArray(realList);
   const others = live ? realList.filter((p) => !account || p.id !== account.id).map((p) => ({ id: p.id, name: p.display_name, profile: p, isYou: false, prestige: p.prestige || 0, title: p.title, rating: p.placed ? p.rating : null, index: (p.stats || {}).tIndex || 0 })).filter((p) => (tab === "ranked" ? p.rating != null : true)) : MOCK_PLAYERS.map((m) => ({ name: m.name, isYou: false, title: hashStr(m.name) % 5 < 2 ? TITLES[1 + (hashStr(m.name + "t") % (TITLES.length - 1))].key : null, rating: Math.round(Math.min(1680, m.wins * 9 + m.chips / 80)), index: Math.round(m.wins * 7 + m.chips / 150) }));
   const you = { name: data.name, isYou: true, profile: { ...publicProfile(data), id: account ? account.id : "me" }, prestige: data.ranked.prestige || 0, title: (data.titles || defaultTitles()).equipped, rating: placed ? Math.round(data.ranked.rating) : null, index: myIndex };
@@ -3465,7 +3594,7 @@ function LeaderboardScreen({ data, account, online = {}, onOpenAuth }) {
         {live && p.profile && <PlayerAvatar p={p.profile} size={30} live={!p.isYou && !!online[p.id]} />}
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 14, fontWeight: 600, color: p.isYou ? "var(--t-good)" : "var(--t-text)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}><span className={pnameCls(p.prestige)}>{p.isYou && p.name !== "You" ? `${p.name} (you)` : p.name}</span>{p.prestige ? <PrestigeBadge n={p.prestige} size={15} /> : null}</div>
-          {(tier || (p.title && p.title !== "rookie")) && <div style={{ fontSize: 11, display: "flex", gap: 8, alignItems: "baseline", whiteSpace: "nowrap", overflow: "hidden" }}>{tier && <span style={{ color: tier.color }}>{live && p.rating >= 1500 ? `Legend #${i + 1}` : rankName(p.rating)}</span>}{p.title && p.title !== "rookie" && <TitleTag k={p.title} size={10.5} />}</div>}
+          {(tier || (p.title && p.title !== "rookie")) && <div style={{ fontSize: 11, display: "flex", gap: 8, alignItems: "baseline", whiteSpace: "nowrap", overflow: "hidden" }}>{tier && <span style={{ color: tier.color }}>{live && scope === "world" && p.rating >= 1500 ? `Legend #${i + 1}` : rankName(p.rating)}</span>}{p.title && p.title !== "rookie" && <TitleTag k={p.title} size={10.5} />}</div>}
         </div>
         <div className="num" style={{ fontSize: 13.5, fontWeight: 600, color: "var(--t-text2)" }}>{value(p)}</div>
       </div>
@@ -3512,12 +3641,18 @@ function LeaderboardScreen({ data, account, online = {}, onOpenAuth }) {
         <button onClick={() => setTab("index")} className={`segbtn${!isRanked ? " on" : ""}`}>Tournament index</button>
         {cloudEnabled() && <button onClick={() => setTab("friends")} className="segbtn">Friends</button>}
       </div>
-      <div style={{ fontSize: 12, color: "var(--t-mut)", margin: "0 2px 12px" }}>
-        {isRanked ? `${month} season, ends in ${daysLeftInSeason()} days. Ranked by RP.` : "Best 8 tournament cashes. Results fade over 90 days."}
+      <div style={{ display: "flex", alignItems: "center", gap: 10, margin: "0 2px 12px" }}>
+        <div style={{ flex: 1, fontSize: 12, color: "var(--t-mut)" }}>{scope === "local" && cloudEnabled() ? `Players in ${tzLabel(tz)} time. ` : ""}{isRanked ? `${month} season, ends in ${daysLeftInSeason()} days.` : "Best 8 tournament cashes, fading over 90 days."}</div>
+        {cloudEnabled() && (
+          <div className="scope-toggle" role="radiogroup" aria-label="Leaderboard scope">
+            <button role="radio" aria-checked={scope === "world"} className={scope === "world" ? "on" : ""} onClick={() => pickScope("world")}><Icon name="wheel" size={11} stroke={2.2} />World</button>
+            <button role="radio" aria-checked={scope === "local"} className={scope === "local" ? "on" : ""} onClick={() => pickScope("local")}><Icon name="home" size={11} stroke={2.2} />Local</button>
+          </div>
+        )}
       </div>
       <div className="list" style={{ gap: 6, flex: 1 }}>
         {visible.map((p, i) => renderRow(p, i))}
-        <div style={{ fontSize: 11, color: "var(--t-faint)", textAlign: "center", padding: "8px 0 4px" }}>{live ? (pool.length <= 1 ? "No one else is on the board yet. Get your friends on felt." : "Everyone with a felt account. Tap a player to see their profile.") : realList === undefined && cloudEnabled() ? "Loading players…" : "Other players are samples until online play is added."}</div>
+        <div style={{ fontSize: 11, color: "var(--t-faint)", textAlign: "center", padding: "8px 0 4px" }}>{live ? (pool.length <= 1 ? (scope === "local" ? `No one else in ${tzLabel(tz)} time yet. Get your friends on felt.` : "No one else is on the board yet. Get your friends on felt.") : scope === "local" ? `Everyone in ${tzLabel(tz)} time. Tap a player to see their profile.` : "Everyone with a felt account. Tap a player to see their profile.") : realList === undefined && cloudEnabled() ? "Loading players…" : "Other players are samples until online play is added."}</div>
       </div>
       {/* your spot stays visible at the bottom, even when you're off the list */}
       <div className="lb-dock">
@@ -3563,6 +3698,9 @@ function OnlineTable({ tableId, account, data, sound, soundOn, setSoundOn, onExi
   const versionRef = useRef(-1); const offsetRef = useRef(0); const tickAt = useRef(0); const prevRef = useRef(null); const mounted = useRef(true); const errT = useRef(null);
   const suitColor = data.settings.colorblind ? SUIT_COLOR_CB : SUIT_COLOR;
   const back = findBack((data.cosmetics || {}).cardBack); const felt = findFelt((data.cosmetics || {}).felt);
+  const chipSet = (data.cosmetics || {}).chipset || "classic"; const winFx = (data.cosmetics || {}).fx || "confetti";
+  const [fxAt, setFxAt] = useState(null);
+  const myEmotes = [...BASE_EMOTES, ...(data.emotes || [])];
 
   const apply = useCallback((r) => {
     if (!r || !r.state || r.version == null || r.version <= versionRef.current) return;
@@ -3630,7 +3768,7 @@ function OnlineTable({ tableId, account, data, sound, soundOn, setSoundOn, onExi
     if (st.board.length > p.board.length && st.handNo === p.handNo) sound.flip(st.board.length - p.board.length, 0.12);
     st.seats.forEach((s, i) => { const o = p.seats[i]; if (s && o && s.uid === o.uid && st.handNo === p.handNo) { if (s.bet > o.bet) { if (s.allIn && !o.allIn) sound.allIn(i === mySeat ? 1 : 0.6); else sound.call(i === mySeat ? 1 : 0.6, (s.bet - o.bet) / (row.bb || 1)); } else if (s.folded && !o.folded) sound.fold(i === mySeat ? 1 : 0.5); else if (s.last === "Check" && o.last !== "Check") sound.click(0.6); } });
     if (st.turn === mySeat && p.turn !== mySeat && betting) { sound.ping(); vibrate(15); }
-    if (st.stage === "showdown" && p.stage !== "showdown" && st.result) { const mine = st.result.winners.some((w) => w.seat === mySeat); if (mine) { sound.win(); vibrate([30, 40, 30]); } else if (me && me.inHand) sound.lose(); }
+    if (st.stage === "showdown" && p.stage !== "showdown" && st.result) { const mine = st.result.winners.some((w) => w.seat === mySeat); if (mine) { sound.win(); vibrate([30, 40, 30]); const w = st.result.winners.find((x) => x.seat === mySeat); if (w && w.amount >= (row.bb || 1) * 10) { setFxAt(Date.now()); setTimeout(() => mounted.current && setFxAt(null), 1800); } } else if (me && me.inHand) sound.lose(); }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [row && row.version]);
 
@@ -3691,7 +3829,7 @@ function OnlineTable({ tableId, account, data, sound, soundOn, setSoundOn, onExi
             : inHand && !s.folded ? (<div className={`backs${s.peekAt ? " peeking" : ""}`}>{[0, 1].map((j) => <div key={j} className="card mini back" style={{ "--r": `${j === 0 ? -7 : 7}deg`, marginLeft: j ? -11 : 0 }} />)}</div>) : null}
         </div>
         <div style={{ height: 18 }}>
-          {s.bet > 0 ? <div className="chip-badge">{!compact && <ChipStack amount={s.bet} small />}{fmt(s.bet)}</div> : s.last && inHand ? <div className="ot-last">{s.last}</div> : null}
+          {s.bet > 0 ? <div className="chip-badge">{!compact && <ChipStack amount={s.bet} small set={chipSet} />}{fmt(s.bet)}</div> : s.last && inHand ? <div className="ot-last">{s.last}</div> : null}
         </div>
       </div>
     );
@@ -3737,6 +3875,7 @@ function OnlineTable({ tableId, account, data, sound, soundOn, setSoundOn, onExi
       <div key={statusLine} className="status">{err ? <span style={{ color: "var(--t-bad)" }}>{err}</span> : statusLine}</div>
 
       <div className={`seats${order.length >= 7 ? " grid4" : ""}`}>{order.map(seatView)}</div>
+      {fxAt && <WinFx key={fxAt} kind={winFx} />}
 
       <div className="felt-center">
         <div className="felt-oval">
@@ -3746,7 +3885,7 @@ function OnlineTable({ tableId, account, data, sound, soundOn, setSoundOn, onExi
             {Array.from({ length: 5 - st.board.length }).map((_, i) => <div key={i} className="card-slot" />)}
           </div>
           <div className="pot-row" style={{ visibility: pot > 0 ? "visible" : "hidden" }}>
-            <ChipStack amount={pot} />
+            <ChipStack amount={pot} set={chipSet} />
             <div className="pot-num num">Pot {pot.toLocaleString()}</div>
           </div>
         </div>
@@ -3778,7 +3917,7 @@ function OnlineTable({ tableId, account, data, sound, soundOn, setSoundOn, onExi
             <div style={{ minWidth: 0 }}>
               <div style={{ fontSize: 13.5, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}><span className={pnameCls(me.prestige)}>{me.name}</span></div>
               <div className="num" style={{ fontSize: 12, color: "var(--t-mid)" }}>{me.stack.toLocaleString()}</div>
-              {me.bet > 0 && <div className="chip-badge" style={{ marginTop: 3 }}><ChipStack amount={me.bet} small />{me.bet.toLocaleString()}</div>}
+              {me.bet > 0 && <div className="chip-badge" style={{ marginTop: 3 }}><ChipStack amount={me.bet} small set={chipSet} />{me.bet.toLocaleString()}</div>}
             </div>
           </div>
           <div style={{ display: "flex", gap: 6, position: "relative" }}>
@@ -3847,7 +3986,7 @@ function OnlineTable({ tableId, account, data, sound, soundOn, setSoundOn, onExi
       )}
       {sheet && sheet.kind === "emote" && (
         <Modal title="React" onClose={() => setSheet(null)}>
-          <div className="emote-grid">{EMOTES.map((e) => <button key={e} className="emote-btn" onClick={() => { setSheet(null); send("emote", { e }, true); }}>{e}</button>)}</div>
+          <div className="emote-grid">{myEmotes.map((e) => <button key={e} className="emote-btn" onClick={() => { setSheet(null); send("emote", { e }, true); }}>{e}</button>)}</div>
         </Modal>
       )}
       {sheet && sheet.kind === "invite" && (
@@ -4608,10 +4747,14 @@ function hydrate(d) {
   merged.history = { bankroll: [], best: [], ...(d.history || {}) };
   merged.titles = { ...defaultTitles(), ...(d.titles || {}) };
   merged.themes = { ...defaultThemes(), ...(d.themes || {}) };
+  Object.assign(merged, passBackfill(merged));
   { const earned = newlyEarnedTitles(merged); if (earned.length) merged.titles = { ...merged.titles, owned: [...merged.titles.owned, ...earned.map((t) => t.key)] }; }
   if (merged.history.bankroll.length === 0) merged.history = { ...merged.history, bankroll: [{ t: Date.now(), v: merged.chips }] };
   return merged;
 }
+// "Local" on the leaderboard means players in your time zone
+function myTimeZone() { try { return Intl.DateTimeFormat().resolvedOptions().timeZone || null; } catch (e) { return null; } }
+const tzLabel = (tz) => (tz ? tz.split("/").pop().replace(/_/g, " ") : "your area");
 // what other players can see about you
 function publicProfile(d) {
   const rk = d.ranked || {}; const st = d.stats || {};
@@ -4619,7 +4762,7 @@ function publicProfile(d) {
     display_name: (d.name || "Player").slice(0, 24), avatar: d.avatar || "🫵", photo: d.usePhoto && d.photo ? d.photo : null,
     title: (d.titles || {}).equipped || null, rating: Math.round(rk.rating || 0), peak: Math.round(rk.peakRating || rk.rating || 0),
     prestige: rk.prestige || 0, placed: isPlaced(rk), chips: Math.round(d.chips || 0),
-    stats: { handsPlayed: st.handsPlayed || 0, handsWon: st.handsWon || 0, biggestPot: st.biggestPot || 0, bestWinStreak: st.bestWinStreak || 0, rankedWins: rk.wins || 0, rankedLosses: rk.losses || 0, achievements: (d.achievements || []).length, tIndex: tournamentIndex((d.skill || {}).tourneys) || 0 },
+    stats: { handsPlayed: st.handsPlayed || 0, handsWon: st.handsWon || 0, biggestPot: st.biggestPot || 0, bestWinStreak: st.bestWinStreak || 0, rankedWins: rk.wins || 0, rankedLosses: rk.losses || 0, achievements: (d.achievements || []).length, tIndex: tournamentIndex((d.skill || {}).tourneys) || 0, tz: myTimeZone() },
   };
 }
 
@@ -4902,12 +5045,19 @@ export default function App() {
     sound.tap();
     persist({ ...data, titles: { ...tt, equipped: key } });
   };
+  const handleEquipPass = (r) => {
+    if (r.type === "title") return handleEquipTitle(r.key);
+    if (r.type === "avatar") return handleSelectAvatar(r.key);
+    return handleEquipCosmetic(r.type, r.key);
+  };
   const handleEquipCosmetic = (type, key) => {
-    const cos = data.cosmetics || defaultCosmetics();
-    const item = (type === "back" ? CARD_BACKS : FELTS).find((x) => x.key === key);
-    if (!item || !ownsCosmetic(cos, type === "back" ? "backs" : "felts", item, data.ranked.prestige)) return;
+    const cos = { ...defaultCosmetics(), ...(data.cosmetics || {}) };
+    const map = { back: [CARD_BACKS, "backs", "cardBack"], felt: [FELTS, "felts", "felt"], chipset: [CHIP_SETS, "chipsets", "chipset"], fx: [WIN_FX, "fxs", "fx"] }[type];
+    if (!map) return;
+    const item = map[0].find((x) => x.key === key);
+    if (!item || !ownsCosmetic(cos, map[1], item, data.ranked.prestige)) return;
     sound.tap();
-    persist({ ...data, cosmetics: { ...cos, [type === "back" ? "cardBack" : "felt"]: key } });
+    persist({ ...data, cosmetics: { ...cos, [map[2]]: key } });
   };
   const handleBuyAvatar = (avatarObj) => {
     if (data.unlocked.includes(avatarObj.emoji) || data.chips < avatarObj.cost) return;
@@ -5082,7 +5232,7 @@ export default function App() {
           onExit={handleExitTable} onHandResolved={handleHandResolved}
           stakes={session?.stakes} tableSize={session?.tableSize} tournament={isTournament} ranked={isRanked}
           rankedState={data.ranked} skill={data.skill} tourneyBuyIn={session?.buyIn || 0} bankroll={data.chips} botSkill={botSkill} opponentRating={opponentRating} frameColor={frameColor} tutorial={isPractice}
-          variant={session?.variant || "holdem"} turbo={!!session?.turbo} runTwice={!!data.settings.runTwice} squeeze={data.settings.squeeze !== false} cardBack={isVip ? VIP_BACK : findBack((data.cosmetics || {}).cardBack)} felt={isVip ? VIP_FELT : findFelt((data.cosmetics || {}).felt)} title={(data.titles || defaultTitles()).equipped} vip={isVip} prestige={data.ranked.prestige || 0}
+          variant={session?.variant || "holdem"} turbo={!!session?.turbo} runTwice={!!data.settings.runTwice} squeeze={data.settings.squeeze !== false} cardBack={isVip ? VIP_BACK : findBack((data.cosmetics || {}).cardBack)} felt={isVip ? VIP_FELT : findFelt((data.cosmetics || {}).felt)} title={(data.titles || defaultTitles()).equipped} vip={isVip} prestige={data.ranked.prestige || 0} chipSet={(data.cosmetics || {}).chipset || "classic"} winFx={(data.cosmetics || {}).fx || "confetti"}
           colorblind={data.settings.colorblind} cardSize={data.settings.cardSize} animSpeed={data.settings.animSpeed}
           showWinTip={!data.settings.winTipSeen} onDismissWinTip={handleDismissWinTip}
         />
@@ -5097,7 +5247,7 @@ export default function App() {
       <main className="app-main">
         <div key={tab} style={{ width: "100%", maxWidth: 460, height: "100%" }}>
           {tab === "shop" && <ShopScreen data={data} onClaimChips={handleClaimChips} onBuyAvatar={handleBuyAvatar} onClaimDaily={handleClaimDaily} onBuyCosmetic={handleBuyCosmetic} onEquipCosmetic={handleEquipCosmetic} onBuyTitle={handleBuyTitle} onBuyTheme={handleBuyTheme} onEquipTheme={handleEquipTheme} onPreviewTheme={handlePreviewTheme} previewTheme={previewTheme} />}
-          {tab === "home" && <HomeMenu legendNo={legendNo} onPlayAI={handlePlayAI} onFriendsTable={() => { sound.tap(); setFtOpen(true); }} data={data} chips={data.chips} ranked={data.ranked} onClaimDaily={handleClaimDaily} onClaimChallenge={handleClaimChallenge} onSpin={handleSpin} onPrestige={handlePrestige} sound={sound} goShop={() => setTab("shop")} />}
+          {tab === "home" && <HomeMenu legendNo={legendNo} onEquipPass={handleEquipPass} onPlayAI={handlePlayAI} onFriendsTable={() => { sound.tap(); setFtOpen(true); }} data={data} chips={data.chips} ranked={data.ranked} onClaimDaily={handleClaimDaily} onClaimChallenge={handleClaimChallenge} onSpin={handleSpin} onPrestige={handlePrestige} sound={sound} goShop={() => setTab("shop")} />}
           {tab === "leaderboard" && <LeaderboardScreen data={data} account={account} online={online} onOpenAuth={setAuthOpen} />}
           {tab === "coach" && <CoachScreen data={data} />}
           {tab === "profile" && <ProfileScreen data={data} account={account} online={online} legendNo={legendNo} isAdmin={isAdmin} onOpenAdmin={() => setAdminOpen(true)} onOpenAuth={setAuthOpen} onSignOut={handleSignOut} sound={sound} onUpdateName={handleUpdateName} onSelectAvatar={handleSelectAvatar} onSetPhoto={handleSetPhoto} onUsePhoto={handleUsePhoto} onSelectFrame={handleSelectFrame} onAddFriend={handleAddFriend} onUpdateSettings={handleUpdateSettings} onExportData={handleExportData} onImportData={handleImportData} onResetProfile={handleResetProfile} onEquipTitle={handleEquipTitle} onPrestige={handlePrestige} />}
@@ -5942,6 +6092,76 @@ body.theme-montecarlo .pc-index { top: 11px; left: 11px; } body.theme-montecarlo
 .se-kicker { font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--t-mut); margin-top: 14px; }
 .se-title { font-family: var(--t-display); font-size: 28px; font-weight: 700; margin-top: 4px; }
 .se-body { font-size: 13px; line-height: 1.5; color: var(--t-mid); margin-top: 8px; }
+/* ---------- season pass: a swipeable track ---------- */
+.pass-card { cursor: default !important; }
+.pass-card:active { transform: none !important; }
+.pass-head { width: 100%; display: flex; align-items: center; gap: 12px; background: none; border: none; padding: 0; color: inherit; cursor: pointer; text-align: left; }
+.pass-strip { display: flex; gap: 8px; overflow-x: auto; margin: 12px -16px -2px; padding: 4px 16px 6px; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+.pass-strip::-webkit-scrollbar { display: none; }
+.pass-mini { flex: 0 0 auto; width: 62px; height: 74px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.16); background: rgba(10,6,30,0.32); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; cursor: pointer; scroll-snap-align: start; color: #fff; padding: 0; position: relative; overflow: hidden; }
+.pass-mini .pm-art { height: 46px; display: flex; align-items: center; justify-content: center; }
+.pass-mini .pm-l { font-size: 10px; font-weight: 800; opacity: 0.75; }
+.pass-mini.next { border-color: rgba(255,214,102,0.9); box-shadow: 0 0 0 2px rgba(255,214,102,0.25); }
+.pass-mini.r-rare { border-color: rgba(78,168,255,0.5); } .pass-mini.r-epic { border-color: rgba(176,114,255,0.6); background: rgba(60,20,110,0.4); } .pass-mini.r-legendary { border-color: rgba(245,184,61,0.7); background: rgba(90,55,10,0.35); }
+.pass-mini.next.r-rare, .pass-mini.next.r-epic, .pass-mini.next.r-legendary { border-color: rgba(255,214,102,0.95); }
+.pass-sheet { padding: 16px !important; background: linear-gradient(180deg, #241048 0%, #120A2A 45%, var(--t-panel) 100%) !important; border-color: rgba(196,160,255,0.3) !important; overflow-x: hidden; }
+.ps-head { display: flex; align-items: center; gap: 12px; color: #fff; margin-bottom: 12px; }
+.ps-preview { display: flex; align-items: center; gap: 14px; padding: 14px; border-radius: 18px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); min-height: 132px; position: relative; overflow: hidden; }
+.ps-preview::before { content: ""; position: absolute; left: -30px; top: -30px; width: 170px; height: 170px; border-radius: 50%; background: radial-gradient(circle, var(--rc, rgba(154,164,178,0.25)), transparent 70%); pointer-events: none; }
+.ps-preview.r-rare { --rc: rgba(78,168,255,0.35); border-color: rgba(78,168,255,0.35); } .ps-preview.r-epic { --rc: rgba(176,114,255,0.45); border-color: rgba(176,114,255,0.45); } .ps-preview.r-legendary { --rc: rgba(245,184,61,0.45); border-color: rgba(245,184,61,0.55); }
+.ps-art { width: 110px; height: 110px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; position: relative; }
+.ps-meta { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 4px; position: relative; }
+.ps-rarity { font-size: 10.5px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; }
+.ps-name { font-family: var(--t-display); font-size: 21px; font-weight: 700; color: #fff; line-height: 1.1; }
+.ps-sub { font-size: 12px; color: var(--t-mid); margin-bottom: 4px; }
+.ps-got { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 700; color: var(--t-good); }
+.ps-lock { display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 600; color: var(--t-mut); }
+.ps-track { position: relative; display: flex; gap: 8px; overflow-x: auto; margin: 14px -16px 0; padding: 26px 16px 8px; scroll-snap-type: x proximity; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+.ps-track::-webkit-scrollbar { display: none; }
+.ps-line { position: absolute; left: 46px; top: 36px; height: 3px; width: calc(30 * 88px - 88px); background: rgba(255,255,255,0.12); border-radius: 3px; }
+.ps-line > div { height: 100%; border-radius: 3px; background: linear-gradient(90deg, #F5B83D, #FF7AB8); }
+.ps-tile { flex: 0 0 80px; height: 118px; position: relative; border-radius: 14px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.04); color: #fff; cursor: pointer; padding: 22px 4px 6px; display: flex; flex-direction: column; align-items: center; justify-content: space-between; scroll-snap-align: center; transition: transform .15s ease, border-color .15s ease; }
+.ps-tile:active { transform: scale(0.96); }
+.ps-tile.r-rare { background: rgba(78,168,255,0.08); border-color: rgba(78,168,255,0.3); } .ps-tile.r-epic { background: rgba(176,114,255,0.12); border-color: rgba(176,114,255,0.4); } .ps-tile.r-legendary { background: linear-gradient(180deg, rgba(245,184,61,0.18), rgba(245,184,61,0.05)); border-color: rgba(245,184,61,0.55); }
+.ps-tile.got { opacity: 0.6; }
+.ps-tile.sel { opacity: 1; border-color: #fff; box-shadow: 0 0 0 2px rgba(255,255,255,0.35), 0 8px 20px rgba(0,0,0,0.35); }
+.ps-tile.next .ps-node { background: #F5B83D; color: #241048; border-color: #FFE08A; }
+.ps-node { position: absolute; top: -12px; left: 50%; transform: translateX(-50%); width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10.5px; font-weight: 800; background: #2A1A52; border: 2px solid rgba(255,255,255,0.25); color: #fff; }
+.ps-tile.got .ps-node { background: #34D399; border-color: #8CF0C6; color: #062A1D; }
+.ps-tile-art { flex: 1; display: flex; align-items: center; justify-content: center; }
+.ps-tile-name { font-size: 10px; font-weight: 700; color: rgba(255,255,255,0.75); white-space: nowrap; }
+.pr-ic { display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.pa-av { border-radius: 50%; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.1); box-shadow: inset 0 0 0 2px rgba(255,255,255,0.15); }
+.pa-emote { background: #F4F7FC; color: #0B1426; font-weight: 800; padding: 0.25em 0.5em; border-radius: 0.7em; position: relative; white-space: nowrap; line-height: 1.1; }
+.pa-emote::after { content: ""; position: absolute; top: 100%; left: 50%; margin-left: -0.25em; border: 0.25em solid transparent; border-top-color: #F4F7FC; }
+.pa-title { max-width: 72px; text-align: center; overflow: hidden; }
+.ps-art .pa-title { max-width: 110px; }
+.pa-chips { border-radius: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; background: radial-gradient(circle at 50% 35%, rgba(245,184,61,0.35), rgba(245,184,61,0.08)); color: #F5C451; box-shadow: inset 0 0 0 1.5px rgba(245,184,61,0.45); }
+.chipset-sw { height: 48px; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 6px; }
+.fx-sw { width: 48px; height: 48px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: radial-gradient(circle, rgba(255,255,255,0.12), rgba(255,255,255,0.02)); position: relative; }
+.fx-sw-coin { width: 24px; height: 24px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #FFF4C2, #F2C14E 45%, #B07A1A); box-shadow: inset 0 0 0 2px rgba(255,240,200,0.6), 0 2px 6px rgba(0,0,0,0.4); animation: coinSpin 1.6s linear infinite; }
+.fx-sw-burst { position: relative; width: 4px; height: 4px; }
+.fx-sw-burst i { position: absolute; left: 0; top: 0; width: 4px; height: 9px; border-radius: 2px; background: #FF7AB8; transform-origin: 2px 2px; box-shadow: 0 0 6px #FF7AB8; }
+.fx-sw-burst i:nth-child(odd) { background: #F5B83D; box-shadow: 0 0 6px #F5B83D; }
+.fx-sw-conf { position: relative; width: 4px; height: 4px; }
+.fx-sw-conf i { position: absolute; width: 6px; height: 10px; border-radius: 1.5px; }
+@keyframes coinSpin { 0% { transform: rotateY(0deg); } 100% { transform: rotateY(360deg); } }
+/* win effects at the table */
+.fx-layer { position: absolute; top: 0; right: 0; bottom: 0; left: 0; pointer-events: none; overflow: hidden; z-index: 20; }
+.fx-coin { position: absolute; top: -30px; }
+.fx-coin i { display: block; width: 100%; height: 100%; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #FFF4C2, #F2C14E 45%, #B07A1A); box-shadow: inset 0 0 0 2px rgba(255,240,200,0.6), 0 3px 8px rgba(0,0,0,0.35); animation: coinSpin var(--spin) linear infinite; }
+@keyframes coinFall { 0% { transform: translateY(0); opacity: 1; } 85% { opacity: 1; } 100% { transform: translateY(105vh); opacity: 0; } }
+.fx-burst { position: absolute; width: 0; height: 0; }
+.fx-burst i { position: absolute; left: -3px; top: -3px; width: 6px; height: 6px; border-radius: 50%; }
+@keyframes burstOut { 0% { transform: translate(0, 0) scale(0.4); opacity: 0; } 12% { opacity: 1; } 70% { opacity: 1; } 100% { transform: translate(var(--dx), calc(var(--dy) + 30px)) scale(0.6); opacity: 0; } }
+/* animated holo back and aurora felt */
+@keyframes holoShift { 0% { background-position: center, 0 0, 0% 50%; } 100% { background-position: center, 0 0, 100% 50%; } }
+.holo-anim, .table-wrap[data-back="holo"] .card.back, .table-wrap[data-back="holo"] .sq-cover { animation: holoShift 5s linear infinite alternate; }
+@keyframes auroraShift { 0% { background-position: 0% 50%, 0 0, 0 0; } 100% { background-position: 100% 50%, 0 0, 0 0; } }
+.aurora-anim, .table-wrap[data-felt="aurora"] .felt-oval { animation: auroraShift 12s ease-in-out infinite alternate; }
+.scope-toggle { display: flex; gap: 2px; padding: 2px; border-radius: 10px; background: rgba(244,247,252,0.07); flex-shrink: 0; }
+.scope-toggle button { display: inline-flex; align-items: center; gap: 4px; border: none; background: transparent; color: var(--t-mut); font-size: 11.5px; font-weight: 700; padding: 6px 9px; border-radius: 8px; cursor: pointer; }
+.scope-toggle button.on { background: var(--t-text); color: var(--t-bg); }
 /* ---------- High Roller Room: black lacquer, emerald baize, champagne gold ---------- */
 .vip-card { width: 100%; display: flex; flex-direction: column; align-items: stretch; gap: 0; padding: 16px 18px 15px; border-radius: 18px; cursor: pointer; text-align: left; color: #F3EDE0; background-color: #0C0B09; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4' height='4'%3E%3Cpath d='M0 4L4 0' stroke='%23FFFFFF' stroke-opacity='0.025'/%3E%3C/svg%3E"), radial-gradient(120% 90% at 85% 0%, rgba(217,180,106,0.16), transparent 55%), linear-gradient(160deg, #1A1713 0%, #0B0A08 60%, #121009 100%); border: 1px solid rgba(217,180,106,0.32); position: relative; overflow: hidden; transition: transform .14s ease, box-shadow .3s ease; box-shadow: inset 0 1px 0 rgba(255,240,210,0.08), 0 10px 26px rgba(0,0,0,0.35); }
 .vip-card::before { content: ""; position: absolute; top: 5px; right: 5px; bottom: 5px; left: 5px; border-radius: 14px; border: 1px solid rgba(217,180,106,0.14); pointer-events: none; }
