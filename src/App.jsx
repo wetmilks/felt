@@ -819,8 +819,45 @@ function equityKnown(hole, oppHoles, board, iters = 350) {
   return win / runs;
 }
 // Every sound is synthesized: filtered noise for paper and clay, short tones for felt thumps and bells.
+// Real recordings of cards and chips (Kenney's Casino Audio, CC0). Fetched once, decoded when sound
+// first starts. Until they're ready, or if they fail, the synthesized versions below play instead.
+const SAMPLE_SETS = { slide: 8, place: 4, shove: 4, lay: 3, collide: 4, handle: 6, stack: 6, shuffle: 1 };
+const SAMPLE_FILE = { slide: "card-slide", place: "card-place", shove: "card-shove", lay: "chip-lay", collide: "chips-collide", handle: "chips-handle", stack: "chips-stack", shuffle: "card-shuffle" };
+let sampleFetch = null;
+function fetchSamples() {
+  if (sampleFetch) return sampleFetch;
+  const base = (import.meta.env && import.meta.env.BASE_URL) || "/";
+  const jobs = [];
+  Object.entries(SAMPLE_SETS).forEach(([k, n]) => { for (let i = 1; i <= n; i++) { const name = n === 1 ? SAMPLE_FILE[k] : `${SAMPLE_FILE[k]}-${i}`; jobs.push(fetch(`${base}sfx/${name}.mp3`).then((r) => (r.ok ? r.arrayBuffer() : null)).then((ab) => [k, ab]).catch(() => [k, null])); } });
+  sampleFetch = Promise.all(jobs);
+  return sampleFetch;
+}
+if (typeof window !== "undefined") setTimeout(() => { try { fetchSamples(); } catch (e) { /* offline */ } }, 1200);
+
 function makeSfx(ctx, out) {
   const now = () => ctx.currentTime;
+  const bufs = {}; // set name -> decoded buffers
+  fetchSamples().then((list) => list.forEach(([k, ab]) => {
+    if (!ab) return;
+    const done = (b) => { (bufs[k] = bufs[k] || []).push(b); };
+    try { const pr = ctx.decodeAudioData(ab.slice(0), done, () => {}); if (pr && pr.catch) pr.catch(() => {}); } catch (e) { /* undecodable */ } // each audio context decodes its own copy
+  })).catch(() => {});
+  const has = (k) => bufs[k] && bufs[k].length > 0;
+  const lastPick = {};
+  // play one recording from a set: a different take than last time, slightly retuned so repeats never sound copied
+  const sample = (k, at = 0, gain = 1, { maxDur = 0, rate = 1 } = {}) => {
+    if (!has(k)) return false;
+    const list = bufs[k]; let i = Math.floor(Math.random() * list.length);
+    if (list.length > 1 && i === lastPick[k]) i = (i + 1) % list.length; lastPick[k] = i;
+    const t = now() + at;
+    const src = ctx.createBufferSource(); src.buffer = list[i];
+    src.playbackRate.value = rate * (1 + (Math.random() * 2 - 1) * 0.05);
+    const gv = gain * (0.88 + Math.random() * 0.12);
+    const g = ctx.createGain(); g.gain.value = gv; g.gain.setValueAtTime(gv, t);
+    src.connect(g); g.connect(out); src.start(t);
+    if (maxDur && list[i].duration > maxDur) { g.gain.setValueAtTime(gv, t + maxDur * 0.7); g.gain.linearRampToValueAtTime(0.0001, t + maxDur); src.stop(t + maxDur + 0.02); }
+    return true;
+  };
   let noiseBuf = null;
   const getNoise = () => {
     if (!noiseBuf) { noiseBuf = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate); const d = noiseBuf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1; }
@@ -859,7 +896,7 @@ function makeSfx(ctx, out) {
   // a knuckle on the felt
   const knock = (at, v = 1) => { tone(at, jit(150, 0.05), 0.07, { gain: 0.24 * v, to: 95, attack: 0.002 }); burst(at, 0.03, { type: "lowpass", freq: 500, gain: 0.18 * v }); };
   const bell = (at, f, v = 1, dur = 0.5) => { tone(at, f, dur, { gain: 0.07 * v }); tone(at, f * 2.01, dur * 0.6, { gain: 0.025 * v }); tone(at, f * 3.02, dur * 0.3, { gain: 0.012 * v }); };
-  return {
+  const synth = {
     shuffle: () => {
       let t = 0;
       for (let i = 0; i < 16; i++) { const p = i / 15; t += 0.022 - 0.01 * Math.sin(p * Math.PI); burst(t, 0.012, { freq: jit(3800, 0.2), q: 2.5, gain: 0.1 + 0.06 * Math.sin(p * Math.PI) }); }
@@ -893,21 +930,51 @@ function makeSfx(ctx, out) {
     // lub-dub: two low thumps, the second softer
     heartbeat: () => { [[0, 1], [0.2, 0.7]].forEach(([at, v]) => { tone(at, 62, 0.17, { gain: 0.5 * v, to: 44, attack: 0.006 }); tone(at, 128, 0.11, { gain: 0.2 * v, to: 88, attack: 0.004 }); burst(at, 0.05, { type: "lowpass", freq: 320, gain: 0.22 * v }); }); },
   };
+  // bet size in big blinds picks the sound: one chip set down, a short stack, or a whole handful
+  const betSound = (v, bb) => {
+    if (bb != null && bb <= 2.5) return sample("lay", 0, 0.75 * v);
+    if (!sample("stack", 0, 0.8 * v)) return false;
+    if (bb != null && bb > 12) sample("handle", 0.1, 0.5 * v);
+    return true;
+  };
+  const chimes = (at, v) => [523.25, 659.25, 783.99].forEach((f, i) => bell(at + i * 0.07, f, v, 0.7));
+  return {
+    ...synth,
+    shuffle: () => { if (!sample("shuffle", 0, 0.75)) synth.shuffle(); },
+    deal: (count = 1, spacing = 0.08) => { if (!has("slide")) return synth.deal(count, spacing); for (let i = 0; i < count; i++) sample("slide", i * spacing, 0.42, { maxDur: 0.34 }); },
+    flip: (count = 1, spacing = 0.12) => { if (!has("place")) return synth.flip(count, spacing); for (let i = 0; i < count; i++) sample("place", i * spacing, 0.7, { maxDur: 0.45 }); },
+    call: (v = 1, bb) => { if (!betSound(v, bb)) synth.call(v); },
+    raise: (v = 1, bb) => { if (!betSound(v, bb == null ? 6 : bb)) synth.raise(v); },
+    allIn: (v = 1) => { if (!sample("handle", 0, 0.85 * v)) return synth.allIn(v); sample("stack", 0.16, 0.7 * v); tone(0, 95, 0.4, { gain: 0.06 * v, to: 70, attack: 0.08 }); },
+    fold: (v = 1) => { if (!sample("shove", 0, 0.65 * v, { maxDur: 0.5 })) synth.fold(v); },
+    chip: () => { if (!sample("collide", 0, 0.6)) return synth.chip(); sample("collide", 0.09, 0.45); },
+    win: () => { if (!sample("handle", 0, 0.9)) return synth.win(); sample("stack", 0.22, 0.6); chimes(0.3, 0.6); },
+    coin: () => { if (!sample("handle", 0, 0.8)) return synth.coin(); bell(0.18, 1318.5, 0.5, 0.35); },
+    rankUp: () => { [392, 523.25, 659.25, 783.99, 1046.5].forEach((f, i) => bell(i * 0.09, f, 1.1, 0.8)); if (!sample("handle", 0.5, 0.7)) synth.chip(); },
+  };
 }
 const SFX_NAMES = ["shuffle", "deal", "flip", "click", "call", "raise", "allIn", "fold", "chip", "win", "lose", "tap", "tick", "coin", "ping", "achievement", "rankUp", "rankDown", "heartbeat"];
+// one audio context for the whole app, so recordings decode once and iOS only needs unlocking once
+const AUDIO_REF = { current: null };
+function audioGet() {
+  const ref = AUDIO_REF;
+  if (!ref.current) {
+    const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return null;
+    const ctx = new AC();
+    const comp = ctx.createDynamicsCompressor(); comp.threshold.value = -14; comp.ratio.value = 4;
+    const master = ctx.createGain(); master.gain.value = 0.9; master.connect(comp); comp.connect(ctx.destination);
+    ref.current = { ctx, sfx: makeSfx(ctx, master) };
+  }
+  if (ref.current.ctx.state === "suspended") ref.current.ctx.resume();
+  return ref.current.sfx;
+}
+// the first tap anywhere unlocks audio and decodes the recordings, so the first deal already sounds real
+if (typeof window !== "undefined") {
+  const unlock = () => { try { audioGet(); } catch (e) { /* no audio */ } window.removeEventListener("pointerdown", unlock, true); window.removeEventListener("keydown", unlock, true); };
+  window.addEventListener("pointerdown", unlock, true); window.addEventListener("keydown", unlock, true);
+}
 function useSound(enabled) {
-  const ref = useRef(null);
-  const get = () => {
-    if (!ref.current) {
-      const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return null;
-      const ctx = new AC();
-      const comp = ctx.createDynamicsCompressor(); comp.threshold.value = -14; comp.ratio.value = 4;
-      const master = ctx.createGain(); master.gain.value = 0.9; master.connect(comp); comp.connect(ctx.destination);
-      ref.current = { ctx, sfx: makeSfx(ctx, master) };
-    }
-    if (ref.current.ctx.state === "suspended") ref.current.ctx.resume();
-    return ref.current.sfx;
-  };
+  const get = audioGet;
   return useMemo(() => {
     const api = {};
     SFX_NAMES.forEach((n) => { api[n] = (...args) => { if (!enabled) return; try { const s = get(); if (s) s[n](...args); } catch (e) { /* audio not available */ } }; });
@@ -1538,13 +1605,13 @@ function PokerTable({ startStack, name, avatar, soundOn, setSoundOn, onExit, onH
       const vol = idx === 0 ? 1 : 0.5;
       if (type === "fold") { p.folded = true; label = `${p.name} folds`; sound.fold(vol); }
       else if (type === "check") { label = `${p.name} checks`; sound.click(vol); }
-      else if (type === "call") { const need = Math.min(currentBet - p.streetContributed, p.stack); p.stack -= need; p.contributed += need; p.streetContributed += need; if (p.stack === 0) p.allIn = true; label = `${p.name} ${p.allIn ? "calls all in" : "calls"} ${need}`; if (p.allIn) sound.allIn(vol); else sound.call(vol); flyBet(idx, need); }
+      else if (type === "call") { const need = Math.min(currentBet - p.streetContributed, p.stack); p.stack -= need; p.contributed += need; p.streetContributed += need; if (p.stack === 0) p.allIn = true; label = `${p.name} ${p.allIn ? "calls all in" : "calls"} ${need}`; if (p.allIn) sound.allIn(vol); else sound.call(vol, need / BB); flyBet(idx, need); }
       else if (type === "bet" || type === "raise") {
         const target = Math.min(amount, p.streetContributed + p.stack); const delta = target - p.streetContributed;
         p.stack -= delta; p.contributed += delta; p.streetContributed = target; if (p.stack === 0) p.allIn = true; flyBet(idx, delta); lastAggRef.current = idx;
         setMinRaise(Math.max(BB, target - currentBet)); setCurrentBet(target);
         ps.forEach((pl) => { if (pl.id !== p.id) pl.hasActed = false; });
-        label = `${p.name} ${p.allIn ? "is all in for" : type === "bet" ? "bets" : "raises to"} ${target}`; if (p.allIn) sound.allIn(vol); else sound.raise(vol);
+        label = `${p.name} ${p.allIn ? "is all in for" : type === "bet" ? "bets" : "raises to"} ${target}`; if (p.allIn) sound.allIn(vol); else sound.raise(vol, delta / BB);
       }
       p.hasActed = true; setStatusText(label); setShowRaise(false); setCustomRaise(false);
       const stillIn = ps.filter((pl) => !pl.folded);
