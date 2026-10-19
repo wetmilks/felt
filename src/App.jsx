@@ -292,7 +292,6 @@ const CHALLENGE_DEFS = [
   { id: "good", daily: 25, weekly: 150, text: (n) => `Make ${n} good decisions`, ev: (e) => (e.hand ? e.goodCount || 0 : 0) },
   { id: "ranked", daily: 1, weekly: 3, text: (n) => (n === 1 ? "Win a ranked match" : `Win ${n} ranked matches`), ev: (e) => (e.rankedWin ? 1 : 0) },
   { id: "cash", daily: 1, weekly: 3, text: (n) => (n === 1 ? "Cash in a tournament" : `Cash in ${n} tournaments`), ev: (e) => (e.tourneyCash ? 1 : 0) },
-  { id: "variant", daily: 10, weekly: 50, text: (n) => `Play ${n} hands of Omaha or Short Deck`, ev: (e) => (e.hand && e.variant && e.variant !== "holdem" ? 1 : 0) },
 ];
 const CHALLENGE_REWARD = { daily: { chips: 250, xp: 120 }, weekly: { chips: 1000, xp: 400 } };
 function hashStr(str) { let h = 2166136261; for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
@@ -302,6 +301,14 @@ function ensureChallenges(ch) {
   let next = ch || {};
   if (next.day !== day) next = { ...next, day, daily: pickSeeded(CHALLENGE_DEFS, 3, hashStr("d" + day)).map((c) => ({ id: c.id, target: c.daily, progress: 0, claimed: false })) };
   if (next.week !== week) next = { ...next, week, weekly: pickSeeded(CHALLENGE_DEFS.filter((c) => c.id !== "hands" && c.id !== "good"), 3, hashStr("w" + week)).map((c) => ({ id: c.id, target: c.weekly, progress: 0, claimed: false })) };
+  const fix = (list, key, seed) => {
+    const kept = (list || []).filter((c) => CHALLENGE_DEFS.some((d) => d.id === c.id));
+    if (kept.length >= 3) return kept;
+    const extra = pickSeeded(CHALLENGE_DEFS.filter((d) => !kept.some((c) => c.id === d.id) && (key === "daily" || (d.id !== "hands" && d.id !== "good"))), 3 - kept.length, hashStr(seed)).map((d) => ({ id: d.id, target: d[key], progress: 0, claimed: false }));
+    return [...kept, ...extra];
+  };
+  const daily = fix(next.daily, "daily", "dx" + day), weekly = fix(next.weekly, "weekly", "wx" + week);
+  if (daily !== next.daily || weekly !== next.weekly) next = { ...next, daily, weekly };
   return next;
 }
 function applyChallengeEvent(ch, e) {
@@ -506,6 +513,51 @@ function coachVerdict(adv, type, eq, toCall, pot) {
     return { good: true, text: lines[Math.floor(Math.random() * lines.length)] };
   }
   return null;
+}
+
+/* =========================================================================
+   DAILY SPIN, HIGH ROLLER ROOM, PRESTIGE
+   ========================================================================= */
+// Eight slices, clockwise from the top. Weights decide the odds.
+const SPIN_PRIZES = [
+  { label: "150", sub: "chips", type: "chips", amount: 150, w: 22, color: "#2F6FDE" },
+  { label: "300", sub: "chips", type: "chips", amount: 300, w: 20, color: "#16A06A" },
+  { label: "150", sub: "XP", type: "xp", amount: 150, w: 16, color: "#8B5CF6" },
+  { label: "600", sub: "chips", type: "chips", amount: 600, w: 14, color: "#E0861E" },
+  { label: "300", sub: "XP", type: "xp", amount: 300, w: 10, color: "#D9468F" },
+  { label: "1.2k", sub: "chips", type: "chips", amount: 1200, w: 9, color: "#0EA5B7" },
+  { label: "?", sub: "mystery", type: "mystery", w: 6, color: "#1F2430" },
+  { label: "5k", sub: "jackpot", type: "chips", amount: 5000, w: 3, color: "#C9A24D" },
+];
+function pickSpinIndex() {
+  const total = SPIN_PRIZES.reduce((a, p) => a + p.w, 0);
+  let r = Math.random() * total;
+  for (let i = 0; i < SPIN_PRIZES.length; i++) { r -= SPIN_PRIZES[i].w; if (r < 0) return i; }
+  return 0;
+}
+const spinReady = (d) => d.lastSpin !== localDateStr();
+function hoursUntilTomorrow() { const d = new Date(); const t = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1); return Math.max(1, Math.ceil((t - d) / 3600000)); }
+
+// The VIP lounge: big blinds, sharp bots, a black and gold table.
+const HIGH_ROLLER_MIN = 25000;
+const HIGH_ROLLER_TABLES = [
+  { key: "vip", label: "High Roller", sb: 250, bb: 500, minBankroll: 25000, vip: true },
+  { key: "whale", label: "Whale Table", sb: 1000, bb: 2000, minBankroll: 100000, vip: true },
+];
+const VIP_FELT = { key: "vip", label: "VIP", c1: "#2C313B", c2: "#181B21", c3: "#0C0E12", rail: "#C9A24D" };
+const VIP_BACK = { key: "vipback", label: "VIP", a: "#14161B", b: "#0B0C0F", ring: "#E2B65A" };
+
+// Prestige: hit Champion, reset to Bronze, keep a badge that counts how many times you've done it.
+const PRESTIGE_REWARD = 10000;
+const canPrestige = (r) => isPlaced(r) && r.rating >= 1500;
+function PrestigeBadge({ n, size = 18 }) {
+  if (!n) return null;
+  return (
+    <span className="prestige-badge" style={{ width: size, height: size, fontSize: size * 0.52 }} title={`Prestige ${n}`} aria-label={`Prestige ${n}`}>
+      <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1.5l2.6 5.6 6.1.7-4.5 4.2 1.2 6.1L12 15.1l-5.4 3 1.2-6.1-4.5-4.2 6.1-.7z" fill="url(#pgrad)" stroke="#FFE7A3" strokeWidth="1" /><defs><linearGradient id="pgrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#E36BFF" /><stop offset="1" stopColor="#7C3AED" /></linearGradient></defs></svg>
+      <b>{n}</b>
+    </span>
+  );
 }
 
 // One place decides what a ranked match is worth, so the results screen and the saved profile always agree.
@@ -861,6 +913,8 @@ const ICON_PATHS = {
   share: ["M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7", "m16 6-4-4-4 4", "M12 2v13"],
   flame: ["M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.07-2.14-.22-4.05 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.15.43-2.29 1-3a2.5 2.5 0 0 0 2.5 2.5z"],
   gift: ["M20 12v10H4V12", "M2 7h20v5H2z", "M12 22V7", "M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z", "M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"],
+  crown: ["M3 7l4.5 4L12 4l4.5 7L21 7l-2 11H5z", "M5 21h14"],
+  wheel: ["M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z", "M12 2v20", "M2 12h20", "M4.9 4.9l14.2 14.2", "M19.1 4.9 4.9 19.1"],
   star: ["M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"],
   chips: ["M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20z", "M12 17a5 5 0 1 0 0-10 5 5 0 0 0 0 10z", "M12 2v3", "M12 19v3", "M2 12h3", "M19 12h3"],
   trophy: ["M8 21h8", "M12 17v4", "M7 4h10v5a5 5 0 0 1-10 0z", "M17 5h3a3 3 0 0 1-3 4", "M7 5H4a3 3 0 0 0 3 4"],
@@ -951,7 +1005,7 @@ function computePots(players) {
 /* =========================================================================
    POKER TABLE
    ========================================================================= */
-function PokerTable({ startStack, name, avatar, soundOn, setSoundOn, onExit, onHandResolved, stakes, tableSize, tournament, ranked, rankedState, skill, tourneyBuyIn = 0, bankroll, botSkill = 0.4, opponentRating = null, frameColor, tutorial, variant = "holdem", turbo = false, runTwice = false, squeeze = false, cardBack = null, felt = null, title = null, colorblind, cardSize, animSpeed, showWinTip, onDismissWinTip }) {
+function PokerTable({ startStack, name, avatar, soundOn, setSoundOn, onExit, onHandResolved, stakes, tableSize, tournament, ranked, rankedState, skill, tourneyBuyIn = 0, bankroll, botSkill = 0.4, opponentRating = null, frameColor, tutorial, variant = "holdem", turbo = false, runTwice = false, squeeze = false, cardBack = null, felt = null, title = null, vip = false, prestige = 0, colorblind, cardSize, animSpeed, showWinTip, onDismissWinTip }) {
   const suitColor = colorblind ? SUIT_COLOR_CB : SUIT_COLOR;
   const cardScale = cardSize === "large" ? 1.18 : 1;
   const speedMult = animSpeed === "fast" ? 0.55 : 1;
@@ -1531,10 +1585,10 @@ function PokerTable({ startStack, name, avatar, soundOn, setSoundOn, onExit, onH
     ? (tournamentOver ? "Tournament over" : `${gameTag || "Tournament"}, level ${blindLevel + 1}, blinds ${SB}/${BB}`)
     : ranked
       ? `${placementNo ? `Placement ${placementNo} of ${PLACEMENT_MATCHES}` : "Ranked"}, ${handsCount === 0 ? `${RANKED_MATCH_HANDS} hand match` : handsCount >= RANKED_MATCH_HANDS ? "final hand" : `hand ${handsCount} of ${RANKED_MATCH_HANDS}`}`
-      : tutorial ? "Practice, nothing at stake" : `${gameTag ? `${gameTag} cash` : "Cash game"}, blinds ${SB}/${BB}`;
+      : tutorial ? "Practice, nothing at stake" : vip ? `High roller room, blinds ${SB.toLocaleString()}/${BB.toLocaleString()}` : `${gameTag ? `${gameTag} cash` : "Cash game"}, blinds ${SB}/${BB}`;
 
   return (
-    <div className={`table-wrap${drama ? " is-drama" : ""}`} style={{ ...(cardBack ? { "--back-a": cardBack.a, "--back-b": cardBack.b, "--back-ring": cardBack.ring } : {}), ...(felt ? { "--felt1": felt.c1, "--felt2": felt.c2, "--felt3": felt.c3, "--rail": felt.rail } : {}) }}>
+    <div className={`table-wrap${drama ? " is-drama" : ""}${vip ? " vip" : ""}`} style={{ ...(cardBack ? { "--back-a": cardBack.a, "--back-b": cardBack.b, "--back-ring": cardBack.ring } : {}), ...(felt ? { "--felt1": felt.c1, "--felt2": felt.c2, "--felt3": felt.c3, "--rail": felt.rail } : {}) }}>
       <div className="table-top">
         <button className="iconbtn" onClick={handleBack} aria-label="Leave table"><Icon name="back" size={15} /></button>
         <div style={{ textAlign: "center", minWidth: 0 }}>
@@ -1596,7 +1650,7 @@ function PokerTable({ startStack, name, avatar, soundOn, setSoundOn, onExit, onH
 
       <div className="felt-center">
         <div className={`felt-oval${drama ? " drama" : ""}`}>
-          <div className="felt-logo" aria-hidden="true" style={variant === "short" ? { fontSize: 44 } : undefined}>{variant === "holdem" ? "felt" : variant === "short" ? "short deck" : "omaha"}</div>
+          <div className="felt-logo" aria-hidden="true" style={variant === "short" ? { fontSize: 44 } : undefined}>{vip ? "VIP" : variant === "holdem" ? "felt" : variant === "short" ? "short deck" : "omaha"}</div>
           <div style={{ display: "flex", gap: "clamp(4px,1.4vw,6px)", position: "relative" }}>
             {community.map((c, i) => <div key={c.id} className={`card${dim(c.id) ? " dim" : ""}${winningIds && winningIds.has(c.id) ? " win" : ""}`} style={{ animation: `flipIn .45s cubic-bezier(.2,.8,.2,1) ${Math.max(0, i - boardBaseRef.current) * 0.12 * speedMult}s backwards` }}><div style={{ color: suitColor[c.s] }}>{rankLabel(c.r)}</div><div style={{ color: suitColor[c.s], fontSize: "0.9em" }}>{SUIT_GLYPH[c.s]}</div></div>)}
             {Array.from({ length: 5 - community.length }).map((_, i) => (<div key={i} className={`card-slot${drama && i === 0 ? " next" : ""}`} />))}
@@ -1677,7 +1731,7 @@ function PokerTable({ startStack, name, avatar, soundOn, setSoundOn, onExit, onH
             {dealerIdx === 0 && <div className="dealer-chip" style={{ bottom: -1, right: -1 }}>D</div>}
           </div>
           <div style={{ minWidth: 0 }}>
-            <div style={{ fontSize: 13.5, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{human?.name}</div>
+            <div style={{ fontSize: 13.5, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", display: "flex", alignItems: "center", gap: 5 }}>{human?.name}<PrestigeBadge n={prestige} size={15} /></div>
             {title && title !== "rookie" && <TitleTag k={title} size={10.5} style={{ display: "block", marginTop: -1 }} />}
             <div className="num" style={{ fontSize: 12, color: "#8FA1BE" }}>{(human?.stack ?? 0).toLocaleString()}{ranked && handsCount > 0 && !rankedResult && <span className="standing">{ordinal(rankedPlace)} of {players.length}</span>}</div>
             {human?.streetContributed > 0 && <div className={`chip-badge${collecting ? " collecting" : ""}`} style={{ marginTop: 3 }}><ChipStack amount={human.streetContributed} small />{human.streetContributed.toLocaleString()}</div>}
@@ -2177,7 +2231,7 @@ function SizePicker({ value, onChange }) {
   );
 }
 
-function RankedCard({ ranked, chips, onPlay }) {
+function RankedCard({ ranked, chips, onPlay, onPrestige }) {
   const placed = isPlaced(ranked);
   const tier = tierOf(ranked);
   const prog = placed ? rankProgress(ranked.rating) : null;
@@ -2193,7 +2247,7 @@ function RankedCard({ ranked, chips, onPlay }) {
       <div style={{ display: "flex", alignItems: "center", gap: 14, margin: "16px 0 14px" }}>
         <TierBadge tier={tier} size={54} />
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontFamily: DISPLAY_FONT, fontSize: 25, fontWeight: 600, color: tier.color, lineHeight: 1.05 }}>{placed ? rankName(ranked.rating) : "Unranked"}</div>
+          <div style={{ fontFamily: DISPLAY_FONT, fontSize: 25, fontWeight: 600, color: tier.color, lineHeight: 1.05, display: "flex", alignItems: "center", gap: 8 }}>{placed ? rankName(ranked.rating) : "Unranked"}<PrestigeBadge n={ranked.prestige} size={20} /></div>
           <div className="num" style={{ fontSize: 13, color: "#A9B8D0", marginTop: 4 }}>{placed ? `${Math.round(ranked.rating).toLocaleString()} RP` : `${games.length} of ${PLACEMENT_MATCHES} placement matches`}</div>
         </div>
         {placed && ranked.wins + ranked.losses > 0 && (
@@ -2214,7 +2268,8 @@ function RankedCard({ ranked, chips, onPlay }) {
           <div style={{ fontSize: 12, color: "#7587A6", marginTop: 10, textAlign: "center" }}>Play {PLACEMENT_MATCHES} matches and we'll read your game to set your rank.</div>
         </>
       )}
-      <button className="btn btn-raise shine" style={{ width: "100%", marginTop: 18 }} disabled={locked} onClick={onPlay}>
+      {canPrestige(ranked) && onPrestige && <button className="btn prestige-btn" style={{ width: "100%", marginTop: 14 }} onClick={onPrestige}>Prestige to Bronze for a badge and {PRESTIGE_REWARD.toLocaleString()} chips</button>}
+      <button className="btn btn-raise shine" style={{ width: "100%", marginTop: canPrestige(ranked) ? 8 : 18 }} disabled={locked} onClick={onPlay}>
         {locked ? `You need ${RANKED_BUYIN.toLocaleString()} chips to buy in` : placed ? "Play ranked" : `Play placement match ${games.length + 1}`}
       </button>
     </section>
@@ -2365,11 +2420,100 @@ function PassModal({ pass, onClose }) {
   );
 }
 
-function HomeMenu({ onPlayAI, data, chips, ranked, onClaimDaily, onClaimChallenge }) {
+function SpinCard({ ready, onOpen }) {
+  return (
+    <button className={`spin-card${ready ? " ready" : ""}`} onClick={onOpen}>
+      <div className="spin-ic"><Icon name="wheel" size={20} stroke={2} /></div>
+      <div style={{ flex: 1, minWidth: 0, textAlign: "left" }}>
+        <div style={{ fontSize: 14, fontWeight: 700 }}>{ready ? "Daily spin is ready" : "Daily spin"}</div>
+        <div style={{ fontSize: 11.5, color: ready ? "#CFE6FF" : "#7587A6", marginTop: 1 }}>{ready ? "Chips, XP, or a 5,000 chip jackpot" : `Next spin in ${hoursUntilTomorrow()}h`}</div>
+      </div>
+      {ready ? <span className="btn btn-raise btn-sm shine" style={{ pointerEvents: "none" }}>Spin</span> : <Icon name="lock" size={14} style={{ color: "#5E7196" }} />}
+    </button>
+  );
+}
+
+function SpinModal({ ready, onSpin, onClose, sound }) {
+  const [rot, setRot] = useState(0);
+  const [result, setResult] = useState(null);
+  const [spinning, setSpinning] = useState(false);
+  const timers = useRef([]);
+  useEffect(() => () => timers.current.forEach(clearTimeout), []);
+  const SEG = 360 / SPIN_PRIZES.length;
+  const T = 4.6;
+  const go = () => {
+    if (!ready || spinning || result) return;
+    const out = onSpin();
+    if (!out) return;
+    const jitter = (Math.random() * 2 - 1) * (SEG / 2 - 6);
+    const target = 360 * 6 + (360 - (out.index * SEG + SEG / 2)) + jitter;
+    setSpinning(true); setRot(target);
+    // a tick each time a slice edge passes the pointer, slowing down with the wheel
+    const n = Math.floor(target / SEG);
+    for (let k = 1; k <= n; k++) { const t = T * (1 - Math.cbrt(1 - (k * SEG) / target)); if (t < T - 0.05) timers.current.push(setTimeout(() => sound && sound.tick(), t * 1000)); }
+    timers.current.push(setTimeout(() => { setSpinning(false); setResult(out); if (sound) out.big ? sound.rankUp() : sound.coin(); }, T * 1000 + 150));
+  };
+  const r = 120, cx = 130, cy = 130;
+  const pt = (deg, rad) => { const a = ((deg - 90) * Math.PI) / 180; return [cx + rad * Math.cos(a), cy + rad * Math.sin(a)]; };
+  return (
+    <Modal title="Daily spin" onClose={spinning ? () => {} : onClose} width={360}>
+      <div className="wheel-wrap">
+        <div className="wheel-pointer" aria-hidden="true" />
+        <svg viewBox="0 0 260 260" className="wheel" style={{ transform: `rotate(${rot}deg)`, transition: spinning ? `transform ${T}s cubic-bezier(.33,1,.68,1)` : "none" }} role="img" aria-label="Prize wheel">
+          {SPIN_PRIZES.map((p, i) => {
+            const [x1, y1] = pt(i * SEG, r), [x2, y2] = pt((i + 1) * SEG, r);
+            const [lx, ly] = pt(i * SEG + SEG / 2, r * 0.66);
+            const [sx, sy] = pt(i * SEG + SEG / 2, r * 0.44);
+            return (
+              <g key={i}>
+                <path d={`M${cx} ${cy} L${x1} ${y1} A${r} ${r} 0 0 1 ${x2} ${y2} Z`} fill={p.color} stroke="#0B1426" strokeWidth="2" />
+                <g transform={`rotate(${i * SEG + SEG / 2} ${lx} ${ly})`}><text x={lx} y={ly + 6} textAnchor="middle" fontSize="19" fontWeight="800" fill="#FFFFFF" fontFamily="Inter, -apple-system, sans-serif">{p.label}</text></g>
+                <g transform={`rotate(${i * SEG + SEG / 2} ${sx} ${sy})`}><text x={sx} y={sy + 4} textAnchor="middle" fontSize="9.5" fontWeight="700" fill="rgba(255,255,255,0.8)" fontFamily="Inter, -apple-system, sans-serif">{p.sub.toUpperCase()}</text></g>
+              </g>
+            );
+          })}
+          <circle cx={cx} cy={cy} r={r} fill="none" stroke="#F5C451" strokeWidth="5" />
+          {SPIN_PRIZES.map((_, i) => { const [x, y] = pt(i * SEG, r - 1); return <circle key={i} cx={x} cy={y} r="3.5" fill="#FFF3C4" />; })}
+          <circle cx={cx} cy={cy} r="20" fill="#0B1426" stroke="#F5C451" strokeWidth="3" />
+          <text x={cx} y={cy + 6} textAnchor="middle" fontSize="17" fill="#F5C451">{"♠"}</text>
+        </svg>
+      </div>
+      {result ? (
+        <div className="spin-result">
+          <div style={{ fontSize: 12, color: "#8FA1BE" }}>{result.big ? "Jackpot" : "You won"}</div>
+          <div style={{ fontFamily: DISPLAY_FONT, fontSize: 26, fontWeight: 700, color: "#F5C451" }}>{result.text}</div>
+          <button className="btn btn-raise" style={{ width: "100%", marginTop: 12 }} onClick={onClose}>Nice</button>
+        </div>
+      ) : (
+        <button className="btn btn-raise shine" style={{ width: "100%", marginTop: 14 }} disabled={!ready || spinning} onClick={go}>{spinning ? "Spinning..." : ready ? "Spin" : `Come back in ${hoursUntilTomorrow()}h`}</button>
+      )}
+    </Modal>
+  );
+}
+
+function VipCard({ chips, onOpen }) {
+  const unlocked = chips >= HIGH_ROLLER_MIN;
+  return (
+    <button className={`vip-card${unlocked ? " open" : ""}`} onClick={onOpen}>
+      <div className="vip-ic"><Icon name="crown" size={20} stroke={2} /></div>
+      <div style={{ flex: 1, minWidth: 0, textAlign: "left" }}>
+        <div style={{ fontSize: 14.5, fontWeight: 800, color: "#F5D27A", letterSpacing: "0.02em" }}>High Roller Room</div>
+        {unlocked
+          ? <div style={{ fontSize: 11.5, color: "#C9B78A", marginTop: 1 }}>Blinds from 250/500. Sharp players only.</div>
+          : (<>
+              <div style={{ fontSize: 11.5, color: "#9C8E6C", marginTop: 1 }} className="num">Unlocks at {HIGH_ROLLER_MIN.toLocaleString()} chips</div>
+              <div className="bar" style={{ height: 5, marginTop: 7, background: "rgba(245,210,122,0.12)" }}><div style={{ width: `${Math.min(100, (chips / HIGH_ROLLER_MIN) * 100)}%`, background: "linear-gradient(90deg,#C9A24D,#F5D27A)" }} /></div>
+            </>)}
+      </div>
+      <Icon name={unlocked ? "chevron" : "lock"} size={15} style={{ color: unlocked ? "#F5D27A" : "#6E6248" }} />
+    </button>
+  );
+}
+
+function HomeMenu({ onPlayAI, data, chips, ranked, onClaimDaily, onClaimChallenge, onSpin, onPrestige, sound }) {
   const [modal, setModal] = useState(null); // "ranked" | "cash" | "tournament" | "pass"
   const [size, setSize] = useState(TABLE_SIZES[1]);
   const [tBuyIn, setTBuyIn] = useState(TOURNEY_BUYINS[0]);
-  const [variant, setVariant] = useState("holdem");
   const [turbo, setTurbo] = useState(false);
   const placed = isPlaced(ranked);
   const close = () => setModal(null);
@@ -2391,8 +2535,9 @@ function HomeMenu({ onPlayAI, data, chips, ranked, onClaimDaily, onClaimChalleng
       </header>
 
       <StreakBanner streak={data.streak} onClaim={onClaimDaily} />
+      <div style={{ marginBottom: 14 }}><SpinCard ready={spinReady(data)} onOpen={() => setModal("spin")} /></div>
 
-      <div style={{ marginBottom: 14 }}><RankedCard ranked={ranked} chips={chips} onPlay={() => setModal("ranked")} /></div>
+      <div style={{ marginBottom: 14 }}><RankedCard ranked={ranked} chips={chips} onPlay={() => setModal("ranked")} onPrestige={() => setModal("prestige")} /></div>
 
       <div className="mode-grid">
         {modes.map((o) => (
@@ -2404,10 +2549,48 @@ function HomeMenu({ onPlayAI, data, chips, ranked, onClaimDaily, onClaimChalleng
         ))}
       </div>
 
+      <div style={{ marginBottom: 14 }}><VipCard chips={chips} onOpen={() => setModal("vip")} /></div>
       <div style={{ marginBottom: 14 }}><PassCard pass={data.pass} onOpen={() => setModal("pass")} /></div>
       <ChallengesCard challenges={data.challenges} onClaim={onClaimChallenge} />
 
       {modal === "pass" && <PassModal pass={data.pass} onClose={close} />}
+      {modal === "spin" && <SpinModal ready={spinReady(data)} onSpin={onSpin} onClose={close} sound={sound} />}
+      {modal === "prestige" && (
+        <Modal title="Prestige" onClose={close}>
+          <div style={{ display: "flex", justifyContent: "center", margin: "4px 0 12px" }}><PrestigeBadge n={(ranked.prestige || 0) + 1} size={56} /></div>
+          <p className="sheet-body" style={{ marginTop: 0 }}>You made Champion. Prestige resets your rank to Bronze so you can climb again, and you keep a badge that shows how many times you've done it.</p>
+          <div className="kv-list">
+            <div className="kv"><span>New rank</span><b>Bronze I</b></div>
+            <div className="kv"><span>Badge</span><b>Prestige {(ranked.prestige || 0) + 1}</b></div>
+            <div className="kv"><span>Bonus</span><b className="num">{PRESTIGE_REWARD.toLocaleString()} chips</b></div>
+            <div className="kv"><span>You keep</span><b>Frames, titles, stats, peak rank</b></div>
+          </div>
+          <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
+            <button className="btn" onClick={close}>Not yet</button>
+            <button className="btn btn-raise shine" onClick={() => { onPrestige(); close(); }}>Prestige</button>
+          </div>
+        </Modal>
+      )}
+      {modal === "vip" && (
+        <Modal title="High Roller Room" onClose={close} width={380}>
+          <p className="sheet-body" style={{ marginTop: 0 }}>{chips >= HIGH_ROLLER_MIN ? "Big blinds and the sharpest bots in felt. Your whole bankroll comes to the table, so pick your spot." : `Get to ${HIGH_ROLLER_MIN.toLocaleString()} chips to get in. You have ${chips.toLocaleString()}.`}</p>
+          <SizePicker value={size} onChange={setSize} />
+          <div className="list" style={{ marginTop: 12 }}>
+            {HIGH_ROLLER_TABLES.map((t) => {
+              const locked = chips < t.minBankroll;
+              return (
+                <button key={t.key} disabled={locked} className="row vip-row" onClick={() => onPlayAI({ mode: "cash", tableSize: size, stakes: t, vip: true })}>
+                  <div style={{ textAlign: "left" }}>
+                    <div className="row-title" style={{ color: "#F5D27A" }}>{t.label}</div>
+                    <div className="row-sub num">Blinds {t.sb.toLocaleString()}/{t.bb.toLocaleString()}{locked ? `, needs ${t.minBankroll.toLocaleString()} chips` : ""}</div>
+                  </div>
+                  <Icon name={locked ? "lock" : "chevron"} size={15} style={{ color: "#9C8E6C", flexShrink: 0 }} />
+                </button>
+              );
+            })}
+          </div>
+        </Modal>
+      )}
 
       {modal === "ranked" && (
         <Modal title={placed ? "Ranked match" : `Placement match ${(ranked.placementGames || []).length + 1} of ${PLACEMENT_MATCHES}`} onClose={close}>
@@ -2429,14 +2612,13 @@ function HomeMenu({ onPlayAI, data, chips, ranked, onClaimDaily, onClaimChalleng
 
       {modal === "cash" && (
         <Modal title="Cash game" onClose={close} width={380}>
-          <VariantPicker value={variant} onChange={setVariant} />
           <SizePicker value={size} onChange={setSize} />
           <TurboRow on={turbo} onToggle={() => setTurbo((t) => !t)} />
           <div className="list" style={{ marginTop: 12 }}>
             {STAKES_TIERS.map((t) => {
               const locked = chips < t.minBankroll;
               return (
-                <button key={t.key} disabled={locked} className="row" onClick={() => onPlayAI({ mode: "cash", tableSize: size, stakes: t, variant, turbo })}>
+                <button key={t.key} disabled={locked} className="row" onClick={() => onPlayAI({ mode: "cash", tableSize: size, stakes: t, turbo })}>
                   <div style={{ textAlign: "left" }}>
                     <div className="row-title">{t.label}</div>
                     <div className="row-sub num">Blinds {t.sb}/{t.bb}{locked ? `, needs ${t.minBankroll.toLocaleString()} chips` : ""}</div>
@@ -2455,7 +2637,6 @@ function HomeMenu({ onPlayAI, data, chips, ranked, onClaimDaily, onClaimChalleng
         const canAfford = chips >= tBuyIn.buyIn;
         return (
           <Modal title="Tournament" onClose={close} width={380}>
-            <VariantPicker value={variant} onChange={setVariant} />
             <SizePicker value={size} onChange={setSize} />
             <div style={{ fontSize: 12, color: "#7587A6", margin: "14px 2px 6px" }}>Buy-in</div>
             <div className="seg">
@@ -2470,7 +2651,7 @@ function HomeMenu({ onPlayAI, data, chips, ranked, onClaimDaily, onClaimChalleng
               <div className="kv"><span>Pays</span><b className="num">{pays.map((x, i) => `${ordinal(i + 1)} ${Math.round(x * 100)}%`).join(", ")}</b></div>
             </div>
             <p className="sheet-body">Blinds start at 10/20 and go up every {turbo ? 3 : 5} hands. Cashing earns tournament index points. Bigger buy-ins and deeper runs score more.</p>
-            <button className="btn btn-raise shine" style={{ width: "100%" }} disabled={!canAfford} onClick={() => onPlayAI({ mode: "tournament", tableSize: size, stakes: { sb: 10, bb: 20 }, buyIn: tBuyIn.buyIn, variant, turbo })}>{tBuyIn.buyIn ? `Buy in for ${tBuyIn.buyIn.toLocaleString()}` : "Start freeroll"}</button>
+            <button className="btn btn-raise shine" style={{ width: "100%" }} disabled={!canAfford} onClick={() => onPlayAI({ mode: "tournament", tableSize: size, stakes: { sb: 10, bb: 20 }, buyIn: tBuyIn.buyIn, turbo })}>{tBuyIn.buyIn ? `Buy in for ${tBuyIn.buyIn.toLocaleString()}` : "Start freeroll"}</button>
           </Modal>
         );
       })()}
@@ -2705,7 +2886,7 @@ function LeaderboardScreen({ data }) {
   const myIndex = tournamentIndex((data.skill || {}).tourneys);
   // sample players stand in until online play exists, so the boards have company
   const others = MOCK_PLAYERS.map((m) => ({ name: m.name, isYou: false, title: hashStr(m.name) % 5 < 2 ? TITLES[1 + (hashStr(m.name + "t") % (TITLES.length - 1))].key : null, rating: Math.round(Math.min(1680, m.wins * 9 + m.chips / 80)), index: Math.round(m.wins * 7 + m.chips / 150) }));
-  const you = { name: data.name, isYou: true, title: (data.titles || defaultTitles()).equipped, rating: placed ? Math.round(data.ranked.rating) : null, index: myIndex };
+  const you = { name: data.name, isYou: true, prestige: data.ranked.prestige || 0, title: (data.titles || defaultTitles()).equipped, rating: placed ? Math.round(data.ranked.rating) : null, index: myIndex };
   const isRanked = tab === "ranked";
   const key = isRanked ? "rating" : "index";
   const pool = [...others, ...(you[key] != null ? [you] : [])].sort((a, b) => b[key] - a[key]);
@@ -2732,7 +2913,7 @@ function LeaderboardScreen({ data }) {
         <div className="num" style={{ width: 26, fontSize: 13.5, fontWeight: 700, color: i < 3 ? medal[i] : "#5E7196" }}>{i + 1}</div>
         {tier && <TierBadge tier={tier} size={26} />}
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 14, fontWeight: 600, color: p.isYou ? "#34D399" : "#F4F7FC", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.isYou && p.name !== "You" ? `${p.name} (you)` : p.name}</div>
+          <div style={{ fontSize: 14, fontWeight: 600, color: p.isYou ? "#34D399" : "#F4F7FC", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.isYou && p.name !== "You" ? `${p.name} (you)` : p.name}{p.prestige ? <PrestigeBadge n={p.prestige} size={15} /> : null}</div>
           {(tier || (p.title && p.title !== "rookie")) && <div style={{ fontSize: 11, display: "flex", gap: 8, alignItems: "baseline", whiteSpace: "nowrap", overflow: "hidden" }}>{tier && <span style={{ color: tier.color }}>{rankName(p.rating)}</span>}{p.title && p.title !== "rookie" && <TitleTag k={p.title} size={10.5} />}</div>}
         </div>
         <div className="num" style={{ fontSize: 13.5, fontWeight: 600, color: "#C8D3E6" }}>{value(p)}</div>
@@ -2893,7 +3074,7 @@ function ProfileScreen({ data, onUpdateName, onSelectAvatar, onSelectFrame, onAd
             <button type="submit" className="iconbtn" aria-label="Save name"><Icon name="check" size={13} /></button>
           </form>
         ) : (
-          <button onClick={() => setEditingName(true)} className="name-btn">{data.name}<Icon name="edit" size={12} style={{ color: "#5E7196", marginLeft: 6 }} /></button>
+          <button onClick={() => setEditingName(true)} className="name-btn">{data.name}<PrestigeBadge n={rk.prestige} size={20} /><Icon name="edit" size={12} style={{ color: "#5E7196", marginLeft: 6 }} /></button>
         )}
         <button className="title-btn" onClick={() => setPickingTitle(true)} aria-label="Change title"><TitleTag k={tt.equipped} size={12.5} /><Icon name="chevron" size={11} style={{ color: "#5E7196", transform: "rotate(90deg)" }} /></button>
         <div style={{ display: "flex", justifyContent: "center", gap: 8, marginTop: 8 }}>
@@ -3262,6 +3443,42 @@ export default function App() {
     sound.coin(); vibrate(20);
     persist({ ...data, chips: data.chips - item.cost, cosmetics: { ...cos, [field]: [...cos[field], item.key], [type === "back" ? "cardBack" : "felt"]: item.key } });
   };
+  // the wheel's result is decided here and saved before the animation even starts
+  const handleSpin = () => {
+    if (!spinReady(data)) return null;
+    const index = pickSpinIndex();
+    const pz = SPIN_PRIZES[index];
+    let next = { ...data, lastSpin: localDateStr() };
+    let text = "", big = false;
+    if (pz.type === "chips") { next = { ...next, chips: next.chips + pz.amount }; text = `${pz.amount.toLocaleString()} chips`; big = pz.amount >= 5000; }
+    else if (pz.type === "xp") { const g = grantXp(next, pz.amount); next = g.next; text = `${pz.amount} XP`; g.earned.forEach((e) => notesRef.current.push({ kind: "level", ...e })); }
+    else {
+      const cos = next.cosmetics || defaultCosmetics(); const tt = next.titles || defaultTitles();
+      const pool = [
+        ...FELTS.filter((f) => f.cost && !cos.felts.includes(f.key)).map((f) => ({ kind: "felt", item: f })),
+        ...CARD_BACKS.filter((b) => b.cost && !cos.backs.includes(b.key)).map((b) => ({ kind: "back", item: b })),
+        ...TITLES.filter((t) => t.cost && t.cost <= 3000 && !tt.owned.includes(t.key)).map((t) => ({ kind: "title", item: t })),
+      ];
+      if (!pool.length) { next = { ...next, chips: next.chips + 3000 }; text = "3,000 chips"; }
+      else {
+        const m = pool[Math.floor(Math.random() * pool.length)]; big = true;
+        if (m.kind === "felt") { next = { ...next, cosmetics: { ...cos, felts: [...cos.felts, m.item.key] } }; text = `${m.item.label} felt`; }
+        else if (m.kind === "back") { next = { ...next, cosmetics: { ...cos, backs: [...cos.backs, m.item.key] } }; text = `${m.item.label} card back`; }
+        else { next = { ...next, titles: { ...tt, owned: [...tt.owned, m.item.key] } }; text = `"${m.item.label}" title`; }
+      }
+    }
+    persist(withTitles(trackHistory(data, next, null)));
+    setTimeout(flushNotes, 5200);
+    return { index, text, big };
+  };
+  const handlePrestige = () => {
+    const r = data.ranked;
+    if (!canPrestige(r)) return;
+    sound.rankUp(); vibrate([30, 40, 30, 40, 60]);
+    const n = (r.prestige || 0) + 1;
+    persist({ ...data, chips: data.chips + PRESTIGE_REWARD, ranked: { ...r, rating: 0, prestige: n, streak: 0, recent: [] } });
+    showToast({ title: `Prestige ${n}`, label: `Back to Bronze. +${PRESTIGE_REWARD.toLocaleString()} chips` }, 3200);
+  };
   const handleBuyTitle = (t) => {
     const tt = data.titles || defaultTitles();
     if (!t.cost || tt.owned.includes(t.key) || data.chips < t.cost) return;
@@ -3426,7 +3643,8 @@ export default function App() {
     const isRanked = session?.mode === "ranked";
     const frameColor = data.ranked.frame ? RANK_TIERS.find((t) => t.key === data.ranked.frame)?.color : null;
     const placed = isPlaced(data.ranked);
-    const botSkill = isRanked ? tierOf(data.ranked).botSkill : isPractice ? 0.2 : 0.4;
+    const isVip = !!session?.vip;
+    const botSkill = isRanked ? tierOf(data.ranked).botSkill : isPractice ? 0.2 : isVip ? 0.72 : 0.4;
     const opponentRating = isRanked ? (placed ? data.ranked.rating : 650) : null;
     return (
       <div className="app-table">
@@ -3438,7 +3656,7 @@ export default function App() {
           onExit={handleExitTable} onHandResolved={handleHandResolved}
           stakes={session?.stakes} tableSize={session?.tableSize} tournament={isTournament} ranked={isRanked}
           rankedState={data.ranked} skill={data.skill} tourneyBuyIn={session?.buyIn || 0} bankroll={data.chips} botSkill={botSkill} opponentRating={opponentRating} frameColor={frameColor} tutorial={isPractice}
-          variant={session?.variant || "holdem"} turbo={!!session?.turbo} runTwice={!!data.settings.runTwice} squeeze={data.settings.squeeze !== false} cardBack={findBack((data.cosmetics || {}).cardBack)} felt={findFelt((data.cosmetics || {}).felt)} title={(data.titles || defaultTitles()).equipped}
+          variant={session?.variant || "holdem"} turbo={!!session?.turbo} runTwice={!!data.settings.runTwice} squeeze={data.settings.squeeze !== false} cardBack={isVip ? VIP_BACK : findBack((data.cosmetics || {}).cardBack)} felt={isVip ? VIP_FELT : findFelt((data.cosmetics || {}).felt)} title={(data.titles || defaultTitles()).equipped} vip={isVip} prestige={data.ranked.prestige || 0}
           colorblind={data.settings.colorblind} cardSize={data.settings.cardSize} animSpeed={data.settings.animSpeed}
           showWinTip={!data.settings.winTipSeen} onDismissWinTip={handleDismissWinTip}
         />
@@ -3453,7 +3671,7 @@ export default function App() {
       <main className="app-main">
         <div key={tab} style={{ width: "100%", maxWidth: 460, height: "100%" }}>
           {tab === "shop" && <ShopScreen data={data} onClaimChips={handleClaimChips} onBuyAvatar={handleBuyAvatar} onClaimDaily={handleClaimDaily} onBuyCosmetic={handleBuyCosmetic} onEquipCosmetic={handleEquipCosmetic} onBuyTitle={handleBuyTitle} />}
-          {tab === "home" && <HomeMenu onPlayAI={handlePlayAI} data={data} chips={data.chips} ranked={data.ranked} onClaimDaily={handleClaimDaily} onClaimChallenge={handleClaimChallenge} goShop={() => setTab("shop")} />}
+          {tab === "home" && <HomeMenu onPlayAI={handlePlayAI} data={data} chips={data.chips} ranked={data.ranked} onClaimDaily={handleClaimDaily} onClaimChallenge={handleClaimChallenge} onSpin={handleSpin} onPrestige={handlePrestige} sound={sound} goShop={() => setTab("shop")} />}
           {tab === "leaderboard" && <LeaderboardScreen data={data} />}
           {tab === "coach" && <CoachScreen data={data} />}
           {tab === "profile" && <ProfileScreen data={data} onUpdateName={handleUpdateName} onSelectAvatar={handleSelectAvatar} onSelectFrame={handleSelectFrame} onAddFriend={handleAddFriend} onUpdateSettings={handleUpdateSettings} onExportData={handleExportData} onImportData={handleImportData} onResetProfile={handleResetProfile} onEquipTitle={handleEquipTitle} />}
@@ -3830,6 +4048,32 @@ input[type=range] { accent-color: #F5B83D; }
 .is-drama .hero-seat { position: relative; z-index: 6; }
 .card-slot.next { border-color: #F5C451; border-style: solid; box-shadow: 0 0 16px rgba(245,184,61,0.6); animation: slotPulse .85s ease-in-out infinite; }
 @keyframes slotPulse { 0%, 100% { transform: scale(1); } 30% { transform: scale(1.07); } }
+/* ---- daily spin, high roller room, prestige ---- */
+.spin-card { width: 100%; display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 18px; cursor: pointer; text-align: left; color: #F4F7FC; background: rgba(22,38,68,0.9); border: 1px solid rgba(244,247,252,0.08); transition: transform .14s ease; }
+.spin-card:active { transform: scale(0.98); }
+.spin-card.ready { background: linear-gradient(120deg, #1D5FD6 0%, #0EA5B7 100%); border-color: transparent; box-shadow: 0 10px 26px rgba(14,165,183,0.28); }
+.spin-ic { width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.14); flex-shrink: 0; }
+.spin-card.ready .spin-ic { animation: spinNudge 3s ease-in-out infinite; }
+@keyframes spinNudge { 0%, 70%, 100% { transform: rotate(0); } 80% { transform: rotate(-25deg); } 90% { transform: rotate(15deg); } }
+.wheel-wrap { position: relative; width: 260px; max-width: 100%; margin: 6px auto 0; height: 260px; }
+.wheel { width: 100%; height: 100%; display: block; filter: drop-shadow(0 10px 24px rgba(0,0,0,0.45)); }
+.wheel-pointer { position: absolute; top: -6px; left: 50%; margin-left: -13px; width: 0; height: 0; border-left: 13px solid transparent; border-right: 13px solid transparent; border-top: 24px solid #F5C451; z-index: 2; filter: drop-shadow(0 3px 4px rgba(0,0,0,0.5)); }
+.spin-result { text-align: center; margin-top: 14px; animation: badgePop .45s cubic-bezier(.3,1.4,.5,1) both; }
+
+.vip-card { width: 100%; display: flex; align-items: center; gap: 12px; padding: 14px; border-radius: 18px; cursor: pointer; text-align: left; color: #F4F7FC; background: linear-gradient(135deg, #1A1C22 0%, #0C0D10 100%); border: 1px solid rgba(201,162,77,0.35); position: relative; overflow: hidden; transition: transform .14s ease; }
+.vip-card:active { transform: scale(0.98); }
+.vip-card.open { border-color: rgba(245,210,122,0.7); box-shadow: 0 10px 28px rgba(201,162,77,0.22); }
+.vip-card.open::after { content: ""; position: absolute; top: 0; bottom: 0; left: -60%; width: 40%; background: linear-gradient(100deg, transparent, rgba(245,210,122,0.18), transparent); transform: skewX(-20deg); animation: shimmer 5.5s ease-in-out infinite; pointer-events: none; }
+.vip-ic { width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: #F5D27A; background: rgba(201,162,77,0.14); border: 1px solid rgba(201,162,77,0.35); flex-shrink: 0; }
+.vip-row { background: linear-gradient(135deg, #1A1C22, #101114) !important; border-color: rgba(201,162,77,0.3) !important; }
+.table-wrap.vip .felt-oval { box-shadow: inset 0 0 0 2px rgba(0,0,0,0.3), inset 0 10px 30px rgba(0,0,0,0.45), 0 0 0 1px rgba(245,210,122,0.25), 0 14px 34px rgba(0,0,0,0.5), 0 0 60px rgba(201,162,77,0.18); }
+.table-wrap.vip .felt-logo { color: rgba(245,210,122,0.09); letter-spacing: 0.08em; }
+.table-wrap.vip .wordmark-sm { color: #F5D27A; }
+
+.prestige-badge { position: relative; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; vertical-align: middle; margin-left: 2px; }
+.prestige-badge svg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+.prestige-badge b { position: relative; color: #FFFFFF; font-family: 'Inter', sans-serif; font-weight: 800; line-height: 1; margin-top: 1px; text-shadow: 0 1px 1px rgba(0,0,0,0.4); }
+.prestige-btn { border-color: rgba(227,107,255,0.55); color: #F0C2FF; background: linear-gradient(135deg, rgba(227,107,255,0.16), rgba(124,58,237,0.16)); font-size: 13px; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; transition-duration: 0.01ms !important; }
 }
