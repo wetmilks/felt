@@ -1,0 +1,158 @@
+// What happens when a phone sends a move. Works against any `db` with the methods used below:
+// the real one talks to Supabase, a stand-in one keeps everything in memory for testing.
+import * as E from "./_engine.js";
+
+export const STAKES = [[5, 10], [10, 20], [25, 50], [50, 100], [100, 200], [250, 500], [500, 1000], [1000, 2000]];
+const MIN_BB = 20, MAX_BB = 100;
+const CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ";
+const newCode = () => Array.from({ length: 4 }, () => CODE_CHARS[Math.floor(Math.random() * CODE_CHARS.length)]).join("");
+const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+const fail = (error, status = 400) => ({ status, body: { error } });
+
+async function playerInfo(db, uid) {
+  const p = await db.getProfile(uid);
+  if (!p) throw new Error("Make your username first.");
+  return { uid, name: p.display_name || p.username, avatar: p.avatar, prestige: p.prestige }; // photos load separately so every update stays small
+}
+async function checkChips(db, uid, amount) {
+  const have = await db.getChips(uid);
+  if (have == null || have < amount) return `You need ${amount.toLocaleString()} chips for that. You have ${(have || 0).toLocaleString()}.`;
+  return null;
+}
+function buyInRange(t) { return [t.bb * MIN_BB, t.bb * MAX_BB]; }
+
+// Load, change, save. If someone else saved first, start over with their version.
+async function mutate(db, tableId, fn) {
+  for (let attempt = 0; attempt < 6; attempt++) {
+    const loaded = await db.load(tableId);
+    if (!loaded) return fail("That table doesn't exist.", 404);
+    const { row, secrets } = loaded;
+    if (row.closed) return fail("That table has closed.");
+    const st = JSON.parse(JSON.stringify(row.state));
+    const sec = st.dealId ? secrets[st.dealId] || null : null;
+    if (st.dealId && !sec && ["preflop", "flop", "turn", "river"].includes(st.stage)) { await wait(150); continue; } // the deal is still being written
+    const now = Date.now();
+    const cfg = { sb: row.sb, bb: row.bb, sec };
+    const fx = { cashouts: [], newSec: null, debit: 0 };
+    const err = await fn(st, cfg, now, fx, row);
+    if (err === "nothing") return { status: 200, body: { ok: true, noop: true } };
+    if (err) return fail(err);
+    st.at = now; // lets phones line their clocks up with the server's
+    if (st.refunds && st.refunds.length) { fx.cashouts.push(...st.refunds); st.refunds = []; }
+    if (fx.newSec) await db.putSecret(tableId, fx.newSec);
+    const closed = st.seats.every((s) => !s);
+    const saved = await db.save(tableId, row.version, st, closed);
+    if (!saved) { await wait(40 + Math.random() * 120); continue; }
+    if (fx.newSec) {
+      const holes = {}; Object.entries(fx.newSec.holes).forEach(([seat, cards]) => { const s = st.seats[seat]; if (s) holes[s.uid] = cards; });
+      await db.putHoles(tableId, st.handNo, holes);
+    }
+    if (!row.friendly) for (const c of fx.cashouts) if (c.amount > 0) await db.payout(c.uid, c.amount, `Cashed out of table ${row.code}`);
+    return { status: 200, body: { ok: true, state: st, version: row.version + 1, debit: fx.debit } };
+  }
+  return fail("The table's busy. Try again.", 409);
+}
+
+export async function handle(body, token, db) {
+  const user = token ? await db.getUser(token) : null;
+  if (!user) return fail("Sign in first.", 401);
+  const uid = user.id; const a = body || {};
+
+  if (a.action === "create") {
+    const stake = STAKES.find(([sb, bb]) => sb === a.sb && bb === a.bb);
+    if (!stake) return fail("Pick blinds from the list.");
+    const [sb, bb] = stake; const friendly = !!a.friendly;
+    const maxSeats = Math.max(2, Math.min(9, Math.floor(a.maxSeats || 6)));
+    const [lo, hi] = buyInRange({ bb });
+    const buyIn = friendly ? bb * 100 : Math.floor(a.buyIn || 0);
+    if (!friendly && (buyIn < lo || buyIn > hi)) return fail(`Buy in between ${lo.toLocaleString()} and ${hi.toLocaleString()}.`);
+    if (!friendly) { const e = await checkChips(db, uid, buyIn); if (e) return fail(e); }
+    const me = await playerInfo(db, uid);
+    const st = E.newState(maxSeats); const now = Date.now();
+    E.sit(st, 0, me, buyIn, now); st.at = now;
+    for (let i = 0; i < 8; i++) {
+      const code = newCode();
+      const row = await db.createTable({ code, host: uid, sb, bb, friendly, max_seats: maxSeats, state: st });
+      if (row) return { status: 200, body: { ok: true, tableId: row.id, code, state: st, debit: friendly ? 0 : buyIn } };
+    }
+    return fail("Couldn't make a table code. Try again.");
+  }
+
+  if (a.action === "join") {
+    const code = String(a.code || "").trim().toUpperCase();
+    if (!/^[A-Z]{4}$/.test(code)) return fail("Codes are 4 letters.");
+    const row = await db.findByCode(code);
+    if (!row || row.closed) return fail(`No open table with code ${code}.`, 404);
+    return { status: 200, body: { ok: true, tableId: row.id, code: row.code } };
+  }
+
+  if (a.action === "mine") return { status: 200, body: { ok: true, tables: await db.myTables(uid) } };
+
+  if (a.action === "get") { // used by the stand-in and as a fallback when live updates drop
+    const loaded = await db.load(a.tableId);
+    if (!loaded) return fail("That table doesn't exist.", 404);
+    return { status: 200, body: { ok: true, state: loaded.row.state, version: loaded.row.version, closed: loaded.row.closed, table: { code: loaded.row.code, sb: loaded.row.sb, bb: loaded.row.bb, friendly: loaded.row.friendly, host: loaded.row.host }, holes: await db.getHoles(a.tableId, uid) } };
+  }
+
+  if (a.action === "invite") {
+    const loaded = await db.load(a.tableId);
+    if (!loaded || loaded.row.closed) return fail("That table has closed.");
+    if (E.seatOf(loaded.row.state, uid) < 0 && loaded.row.host !== uid) return fail("Sit down first.");
+    await db.invite(a.to, uid, a.tableId, loaded.row.code);
+    return { status: 200, body: { ok: true } };
+  }
+
+  const tableId = a.tableId; if (!tableId) return fail("Which table?");
+  switch (a.action) {
+    case "sit": {
+      const me = await playerInfo(db, uid);
+      let need = 0;
+      const r = await mutate(db, tableId, async (st, cfg, now, fx, row) => {
+        const [lo, hi] = buyInRange(row);
+        const buyIn = row.friendly ? row.bb * 100 : Math.floor(a.buyIn || 0);
+        if (!row.friendly && (buyIn < lo || buyIn > hi)) return `Buy in between ${lo.toLocaleString()} and ${hi.toLocaleString()}.`;
+        if (!row.friendly && need !== buyIn) { const e = await checkChips(db, uid, buyIn); if (e) return e; need = buyIn; }
+        const e = E.sit(st, Math.floor(a.seat), me, buyIn, now); if (e) return e;
+        fx.debit = row.friendly ? 0 : buyIn;
+        return null;
+      });
+      return r;
+    }
+    case "rebuy": return mutate(db, tableId, async (st, cfg, now, fx, row) => {
+      const seat = E.seatOf(st, uid); if (seat < 0) return "You're not at this table.";
+      const s = st.seats[seat]; const [lo, hi] = buyInRange(row);
+      const amount = row.friendly ? row.bb * 100 : Math.floor(a.amount || 0);
+      if (!row.friendly && (amount < 1 || s.stack + amount > hi)) return `You can top up to ${hi.toLocaleString()} total.`;
+      if (row.friendly && s.stack > 0) return "Friendly tables only reload when you're out.";
+      if (!row.friendly) { const e = await checkChips(db, uid, amount); if (e) return e; }
+      const e = E.rebuy(st, seat, amount, now); if (e) return e;
+      fx.debit = row.friendly ? 0 : amount; return null;
+    });
+    case "leave": return mutate(db, tableId, async (st, cfg, now, fx) => {
+      const seat = E.seatOf(st, uid); if (seat < 0) return null;
+      const { cashout } = E.leave(st, seat, now, cfg);
+      fx.cashouts.push({ uid, amount: cashout }); fx.cashout = cashout;
+      return null;
+    });
+    case "act": return mutate(db, tableId, async (st, cfg, now) => {
+      const seat = E.seatOf(st, uid); if (seat < 0) return "You're not at this table.";
+      if (!cfg.sec) return "Hold on, dealing.";
+      return E.act(st, cfg.sec, seat, a.move, a.amount, now, cfg);
+    });
+    case "tick": return mutate(db, tableId, async (st, cfg, now, fx) => {
+      const r = E.tick(st, cfg.sec, now, cfg);
+      if (!r.changed) return "nothing";
+      fx.newSec = r.newSec; fx.cashouts.push(...r.cashouts); return null;
+    });
+    case "back": return mutate(db, tableId, async (st, cfg, now) => { const seat = E.seatOf(st, uid); return seat < 0 ? "You're not at this table." : E.back(st, seat, now); });
+    case "peek": return mutate(db, tableId, async (st, cfg, now) => { const seat = E.seatOf(st, uid); if (seat < 0) return "nothing"; st.seats[seat].peekAt = a.on ? now : null; return null; });
+    case "emote": return mutate(db, tableId, async (st, cfg, now) => { const seat = E.seatOf(st, uid); if (seat < 0) return "nothing"; st.seats[seat].emote = { e: String(a.e || "").slice(0, 16), at: now }; return null; });
+    case "show": return mutate(db, tableId, async (st, cfg) => {
+      const seat = E.seatOf(st, uid);
+      if (seat < 0 || st.stage !== "showdown" || !st.result || !st.result.uncontested || st.result.winners[0].seat !== seat || !cfg.sec) return "You can't show now.";
+      st.result.reveal = { ...st.result.reveal, [seat]: cfg.sec.holes[seat] }; st.result.shown = true;
+      st.result.headline = `${st.seats[seat].name} shows`; return null;
+    });
+    default: return fail("Unknown action.");
+  }
+}

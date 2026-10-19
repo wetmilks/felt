@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { cloud, cloudEnabled, cleanUsername } from "./cloud.js";
+import { cloud, cloudEnabled, cleanUsername, api } from "./cloud.js";
 
 /* =========================================================================
    SHARED HELPERS
@@ -2979,7 +2979,7 @@ function VipCard({ chips, onOpen }) {
   );
 }
 
-function HomeMenu({ onPlayAI, data, chips, ranked, onClaimDaily, onClaimChallenge, onSpin, onPrestige, sound }) {
+function HomeMenu({ onPlayAI, onFriendsTable, data, chips, ranked, onClaimDaily, onClaimChallenge, onSpin, onPrestige, sound }) {
   const [modal, setModal] = useState(null); // "ranked" | "cash" | "tournament" | "pass"
   const [size, setSize] = useState(TABLE_SIZES[1]);
   const [tBuyIn, setTBuyIn] = useState(TOURNEY_BUYINS[0]);
@@ -3021,6 +3021,7 @@ function HomeMenu({ onPlayAI, data, chips, ranked, onClaimDaily, onClaimChalleng
         ))}
       </div>
 
+      {cloudEnabled() && onFriendsTable && <div style={{ marginBottom: 14 }}><FriendsTableCard onOpen={onFriendsTable} /></div>}
       <div style={{ marginBottom: 14 }}><VipCard chips={chips} onOpen={() => setModal("vip")} /></div>
       <div style={{ marginBottom: 14 }}><PassCard pass={data.pass} onOpen={() => setModal("pass")} /></div>
       <ChallengesCard challenges={data.challenges} onClaim={onClaimChallenge} />
@@ -3502,6 +3503,437 @@ function LeaderboardScreen({ data, account, online = {}, onOpenAuth }) {
       </div>
       {openF && tab !== "friends" && <FriendProfileModal friendId={openF} online={online} account={account} onClose={() => setOpenF(null)} />}
     </div>
+  );
+}
+
+/* =========================================================================
+   ONLINE TABLES: real people, the server deals
+   ========================================================================= */
+const ONLINE_STAKES = [[5, 10], [10, 20], [25, 50], [50, 100], [100, 200], [250, 500], [500, 1000], [1000, 2000]];
+const EMOTES = ["👍", "😂", "😤", "🔥", "🫡", "😬", "GG", "Nice hand", "Ship it"];
+const TURN_SECS = 20;
+
+function OnlineCard({ c, mini = false, cls = "", suitColor }) {
+  return (
+    <div className={`card${mini ? " mini" : ""}${cls ? " " + cls : ""}`}>
+      {mini ? <div style={{ color: suitColor[c.s], fontSize: 9, fontWeight: 700 }}>{rankLabel(c.r)}{SUIT_GLYPH[c.s]}</div>
+        : (<><div style={{ color: suitColor[c.s] }}>{rankLabel(c.r)}</div><div style={{ color: suitColor[c.s], fontSize: "0.9em" }}>{SUIT_GLYPH[c.s]}</div></>)}
+    </div>
+  );
+}
+
+function OnlineTable({ tableId, account, data, sound, soundOn, setSoundOn, onExit, onDebit, onClaim }) {
+  const [row, setRow] = useState(null);
+  const [holes, setHoles] = useState(null);
+  const [err, setErr] = useState(null);
+  const [sheet, setSheet] = useState(null);
+  const [buyIn, setBuyIn] = useState(0);
+  const [showRaise, setShowRaise] = useState(false); const [custom, setCustom] = useState(false); const [raiseTo, setRaiseTo] = useState(0);
+  const [photos, setPhotos] = useState({});
+  const [peekOpen, setPeekOpen] = useState(false);
+  const [now, setNow] = useState(Date.now());
+  const [friends, setFriends] = useState(null); const [invited, setInvited] = useState({});
+  const versionRef = useRef(-1); const offsetRef = useRef(0); const tickAt = useRef(0); const prevRef = useRef(null); const mounted = useRef(true); const errT = useRef(null);
+  const suitColor = data.settings.colorblind ? SUIT_COLOR_CB : SUIT_COLOR;
+  const back = findBack((data.cosmetics || {}).cardBack); const felt = findFelt((data.cosmetics || {}).felt);
+
+  const apply = useCallback((r) => {
+    if (!r || !r.state || r.version == null || r.version <= versionRef.current) return;
+    versionRef.current = r.version;
+    // the server stamps each save; a stamp can only arrive late, never early, so the biggest gap seen is the real one
+    if (r.state.at) { const est = r.state.at - Date.now(); offsetRef.current = offsetRef.seen ? Math.max(offsetRef.current, est) : est; offsetRef.seen = true; }
+    setRow((prev) => ({ ...(prev || {}), ...r }));
+  }, []);
+  const flash = (m) => { setErr(m); clearTimeout(errT.current); errT.current = setTimeout(() => mounted.current && setErr(null), 3200); };
+  const send = useCallback(async (action, payload = {}, quiet = false) => {
+    try {
+      const r = await api(action, { tableId, ...payload });
+      if (r.state) apply({ state: r.state, version: r.version });
+      if (r.debit) onDebit(r.debit);
+      return r;
+    } catch (e) { if (!quiet) flash(e.message); return null; }
+  }, [tableId, apply, onDebit]);
+
+  useEffect(() => {
+    mounted.current = true;
+    let stop = null;
+    api("get", { tableId }).then((r) => { apply({ state: r.state, version: r.version, closed: r.closed, ...r.table }); if (r.holes) setHoles(r.holes); }).catch((e) => flash(e.message));
+    cloud.watchTable(tableId, (r) => apply(r)).then((s) => { if (mounted.current) stop = s; else s(); });
+    const t = setInterval(() => setNow(Date.now()), 250);
+    return () => { mounted.current = false; clearInterval(t); if (stop) stop(); };
+  }, [tableId, apply]);
+
+  const st = row && row.state;
+  const mySeat = st ? st.seats.findIndex((s) => s && s.uid === account.id) : -1;
+  const me = mySeat >= 0 ? st.seats[mySeat] : null;
+  const serverNow = now + offsetRef.current;
+  const betting = st && ["preflop", "flop", "turn", "river"].includes(st.stage);
+
+  // your two cards for this hand (only your phone ever gets them)
+  useEffect(() => {
+    if (!st || !me || !me.inHand || !st.handNo) return;
+    if (holes && holes.hand_no === st.handNo) return;
+    let tries = 0, on = true;
+    const pull = () => cloud.holes(tableId, account).then((h) => { if (!on) return; if (h && h.hand_no === st.handNo) setHoles(h); else if (tries++ < 8) setTimeout(pull, 400); }).catch(() => {});
+    pull();
+    return () => { on = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [st && st.handNo, me && me.inHand]);
+
+  // photos load once per player
+  useEffect(() => {
+    if (!st) return;
+    st.seats.forEach((s) => { if (s && photos[s.uid] === undefined) { setPhotos((p) => ({ ...p, [s.uid]: null })); cloud.getProfile(s.uid).then((p) => mounted.current && setPhotos((m) => ({ ...m, [s.uid]: (p && p.photo) || null }))).catch(() => {}); } });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [st && st.seats.map((s) => (s ? s.uid : "")).join(",")]);
+
+  // anyone at the table keeps it moving: auto-acts on the clock and deals the next hand
+  useEffect(() => {
+    if (!st) return;
+    const due = (betting && st.turn >= 0 && serverNow > st.deadline + 900) || ((st.stage === "showdown" || st.stage === "waiting") && st.nextAt && serverNow > st.nextAt + 250) || (st.stage === "waiting" && !st.nextAt && st.seats.filter((s) => s && !s.out && s.stack > 0).length >= 2);
+    if (due && Date.now() - tickAt.current > 1500) { tickAt.current = Date.now(); send("tick", {}, true); }
+  });
+
+  // sounds and buzzes, from what changed since the last update
+  useEffect(() => {
+    if (!st) return;
+    const p = prevRef.current; prevRef.current = st;
+    if (!p) return;
+    if (st.handNo !== p.handNo && betting) { sound.shuffle(); const n = st.seats.filter((s) => s && s.inHand).length; setTimeout(() => mounted.current && sound.deal(n * 2, 0.07), 500); setPeekOpen(false); }
+    if (st.board.length > p.board.length && st.handNo === p.handNo) sound.flip(st.board.length - p.board.length, 0.12);
+    st.seats.forEach((s, i) => { const o = p.seats[i]; if (s && o && s.uid === o.uid && st.handNo === p.handNo) { if (s.bet > o.bet) { if (s.allIn && !o.allIn) sound.allIn(i === mySeat ? 1 : 0.6); else sound.call(i === mySeat ? 1 : 0.6, (s.bet - o.bet) / (row.bb || 1)); } else if (s.folded && !o.folded) sound.fold(i === mySeat ? 1 : 0.5); else if (s.last === "Check" && o.last !== "Check") sound.click(0.6); } });
+    if (st.turn === mySeat && p.turn !== mySeat && betting) { sound.ping(); vibrate(15); }
+    if (st.stage === "showdown" && p.stage !== "showdown" && st.result) { const mine = st.result.winners.some((w) => w.seat === mySeat); if (mine) { sound.win(); vibrate([30, 40, 30]); } else if (me && me.inHand) sound.lose(); }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [row && row.version]);
+
+  if (!row || !st) {
+    return (<div className="table-wrap online"><div className="table-top"><button className="iconbtn" onClick={() => onExit()} aria-label="Back"><Icon name="back" size={15} /></button><div className="wordmark-sm">felt</div><span style={{ width: 30 }} /></div><div className="empty" style={{ marginTop: 80 }}>{err || "Joining the table…"}</div></div>);
+  }
+
+  const n = st.seats.length;
+  const order = mySeat >= 0 ? Array.from({ length: n - 1 }, (_, k) => (mySeat + 1 + k) % n).filter((i) => st.seats[i]) : Array.from({ length: n }, (_, k) => k);
+  const pot = st.pot + st.seats.reduce((a, s) => a + (s ? s.bet : 0), 0);
+  const myTurn = betting && st.turn === mySeat && me && !me.folded && !me.allIn;
+  const toCall = me ? Math.max(0, st.currentBet - me.bet) : 0;
+  const secsLeft = betting && st.turn >= 0 ? Math.max(0, Math.ceil((st.deadline - serverNow) / 1000)) : TURN_SECS;
+  const reveal = (st.result && st.result.reveal) || {};
+  const winnerSeats = new Set(((st.result && st.result.winners) || []).map((w) => w.seat));
+  const [lo, hi] = [row.bb * 20, row.bb * 100];
+  const canBuy = row.friendly ? true : data.chips >= lo;
+  const turnName = betting && st.turn >= 0 && st.seats[st.turn] ? st.seats[st.turn].name : null;
+  const nextIn = st.nextAt ? Math.max(0, Math.ceil((st.nextAt - serverNow) / 1000)) : null;
+  const myCards = holes && st.handNo && holes.hand_no === st.handNo ? holes.cards : null;
+  const avatarOf = (s, size) => (photos[s.uid] ? <img src={photos[s.uid]} alt="" style={{ width: size, height: size, borderRadius: "50%", objectFit: "cover", display: "block" }} /> : s.avatar || "🙂");
+  const openSit = (i) => { if (!canBuy) { flash(`You need ${lo.toLocaleString()} chips to sit here.`); return; } setBuyIn(row.friendly ? row.bb * 100 : Math.min(hi, Math.max(lo, Math.min(data.chips, row.bb * 50)))); setSheet({ kind: "sit", seat: i }); };
+  const openInvite = () => { setSheet({ kind: "invite" }); if (!friends) cloud.friends(account).then((r) => mounted.current && setFriends(r.friends)).catch(() => setFriends([])); };
+  const shareText = `Come play poker with me on felt. Table code ${row.code}`;
+  const shareLink = `${window.location.origin}/?table=${row.code}`;
+  const compact = order.length >= 5; const tiny = order.length >= 7;
+
+  const seatView = (i) => {
+    const s = st.seats[i];
+    const colW = tiny ? 76 : compact ? 62 : 78; const ring = tiny ? 34 : compact ? 38 : 42; const av = ring - 6;
+    if (!s) {
+      return (
+        <div key={i} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3, width: colW }}>
+          {mySeat < 0 ? <button className="ot-sit" style={{ width: ring, height: ring }} onClick={() => openSit(i)} aria-label={`Sit in seat ${i + 1}`}>+</button> : <div className="ot-open" style={{ width: ring, height: ring }} />}
+          <div style={{ fontSize: 10.5, color: "var(--t-faint)", fontWeight: 600 }}>{mySeat < 0 ? "Sit here" : "Open"}</div>
+        </div>
+      );
+    }
+    const active = betting && st.turn === i; const inHand = s.inHand && st.stage !== "waiting";
+    const em = s.emote && serverNow - s.emote.at < 3500 ? s.emote.e : null;
+    const fmt = compact ? shortNum : (x) => x.toLocaleString();
+    return (
+      <div key={i} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3, width: colW, opacity: s.out ? 0.45 : s.folded && inHand ? 0.55 : 1, transition: "opacity .3s ease" }}>
+        <div style={{ position: "relative", width: ring, height: ring }}>
+          {active && (<svg width={ring} height={ring} style={{ position: "absolute", top: 0, left: 0, transform: "rotate(-90deg)" }}>
+            <circle cx={ring / 2} cy={ring / 2} r={ring / 2 - 2} fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="2.5" />
+            <circle cx={ring / 2} cy={ring / 2} r={ring / 2 - 2} fill="none" stroke={secsLeft < 8 ? "#FF6B6B" : "#34D399"} strokeWidth="2.5" strokeDasharray={2 * Math.PI * (ring / 2 - 2)} strokeDashoffset={2 * Math.PI * (ring / 2 - 2) * (1 - secsLeft / TURN_SECS)} style={{ transition: "stroke-dashoffset .25s linear" }} strokeLinecap="round" /></svg>)}
+          <div className="bot-av ot-av" style={{ width: av, height: av, fontSize: av * 0.5 }}>{avatarOf(s, av)}</div>
+          {s.peekAt && inHand && !s.folded && <div className="peek-badge" aria-label={`${s.name} looks at their cards`}><Icon name="eye" size={11} stroke={2.4} /></div>}
+          {st.dealer === i && <div className="dealer-chip">D</div>}
+          {em && <div key={s.emote.at} className="emote-bubble">{em}</div>}
+        </div>
+        <div style={{ fontSize: compact ? 10.5 : 11.5, fontWeight: 600, color: "var(--t-text2)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: colW, display: "flex", alignItems: "center", gap: 3 }}>{s.name}<PrestigeBadge n={s.prestige} size={11} /></div>
+        <div className="num" style={{ fontSize: 10.5, color: "var(--t-mut)" }}>{s.out ? (s.stack > 0 ? "Away" : "Out") : fmt(s.stack)}</div>
+        <div style={{ height: tiny ? 30 : 34, display: "flex", alignItems: "center", justifyContent: "center", gap: 3 }}>
+          {reveal[i] ? reveal[i].map((c) => <OnlineCard key={c.id} c={c} mini suitColor={suitColor} cls={`${winnerSeats.has(i) ? "win" : ""}`} />)
+            : inHand && !s.folded ? (<div className={`backs${s.peekAt ? " peeking" : ""}`}>{[0, 1].map((j) => <div key={j} className="card mini back" style={{ "--r": `${j === 0 ? -7 : 7}deg`, marginLeft: j ? -11 : 0 }} />)}</div>) : null}
+        </div>
+        <div style={{ height: 18 }}>
+          {s.bet > 0 ? <div className="chip-badge">{!compact && <ChipStack amount={s.bet} small />}{fmt(s.bet)}</div> : s.last && inHand ? <div className="ot-last">{s.last}</div> : null}
+        </div>
+      </div>
+    );
+  };
+
+  const raisePanel = () => {
+    const maxTo = me.stack + me.bet; const minTo = Math.min(maxTo, st.currentBet + st.minRaise);
+    const clamp = (v) => Math.max(minTo, Math.min(maxTo, v));
+    const presets = [{ label: "Half pot", value: clamp(st.currentBet + Math.round(pot * 0.5)) }, { label: "Pot", value: clamp(st.currentBet + pot) }, { label: "All in", value: maxTo }];
+    const go = (v) => { vibrate(20); setShowRaise(false); setCustom(false); send("act", { move: st.currentBet ? "raise" : "bet", amount: v }); };
+    return !custom ? (
+      <div style={{ display: "flex", gap: 7, width: "100%" }}>
+        {presets.map((p) => <button key={p.label} className="btn preset-btn" onClick={() => go(p.value)}><div style={{ fontSize: 12.5, fontWeight: 600 }}>{p.label}</div><div className="num" style={{ fontSize: 10.5, opacity: 0.8 }}>{p.value.toLocaleString()}</div></button>)}
+        <button className="iconbtn" style={{ width: 42, height: 42, borderRadius: 12 }} onClick={() => { setRaiseTo(minTo); setCustom(true); }} aria-label="Custom amount"><Icon name="edit" size={15} /></button>
+      </div>
+    ) : (
+      <div className="slider-row">
+        <input type="range" min={minTo} max={maxTo} value={clamp(raiseTo)} onChange={(e) => setRaiseTo(Number(e.target.value))} style={{ flex: 1 }} aria-label="Bet amount" />
+        <span className="num" style={{ fontSize: 13, minWidth: 48, textAlign: "right", fontWeight: 700 }}>{clamp(raiseTo).toLocaleString()}</span>
+        <button className="btn btn-raise" style={{ flex: "none", padding: "8px 16px" }} onClick={() => go(clamp(raiseTo))}>{st.currentBet ? "Raise" : "Bet"}</button>
+      </div>
+    );
+  };
+
+  const statusLine = st.stage === "waiting" ? (nextIn != null && st.nextAt ? `Dealing in ${nextIn}` : st.seats.filter(Boolean).length < 2 ? "Waiting for someone to sit down" : "Waiting for players") : st.stage === "showdown" ? "" : turnName ? (st.turn === mySeat ? "Your turn" : `${turnName} to act`) : "";
+  const iWonUncontested = st.stage === "showdown" && st.result && st.result.uncontested && st.result.winners[0] && st.result.winners[0].seat === mySeat && !st.result.shown;
+
+  return (
+    <div data-felt={felt.key} data-back={back.key} className={`table-wrap online${order.length >= 7 ? " crowded" : ""}`} style={{ "--back-a": back.a, "--back-b": back.b, "--back-ring": back.ring, ...(back.img ? { "--back-img": back.img, "--back-size": back.size } : {}), "--felt1": felt.c1, "--felt2": felt.c2, "--felt3": felt.c3, "--rail": felt.rail, ...(felt.tex ? { "--felt-tex": felt.tex, "--felt-tex-size": felt.texSize } : {}), ...(felt.line ? { "--felt-line": felt.line } : {}) }}>
+      <div className="table-top">
+        <button className="iconbtn" onClick={() => (mySeat >= 0 ? setSheet({ kind: "leave" }) : onExit())} aria-label="Leave table"><Icon name="back" size={15} /></button>
+        <div style={{ textAlign: "center", minWidth: 0 }}>
+          <div className="wordmark-sm">felt</div>
+          <div className="table-sub">Table {row.code} · {row.sb}/{row.bb}{row.friendly ? " · Friendly" : ""}</div>
+        </div>
+        <div style={{ display: "flex", gap: 6 }}>
+          <button className="iconbtn" onClick={openInvite} aria-label="Invite friends"><Icon name="user" size={14} /></button>
+          {mySeat >= 0 && <button className="iconbtn" onClick={() => setSheet({ kind: "emote" })} aria-label="Send a reaction"><span style={{ fontSize: 14, lineHeight: 1 }}>😀</span></button>}
+          <button className="iconbtn" onClick={() => setSoundOn((x) => !x)} aria-label={soundOn ? "Mute" : "Unmute"}><Icon name={soundOn ? "soundOn" : "soundOff"} size={14} /></button>
+        </div>
+      </div>
+
+      <div key={statusLine} className="status">{err ? <span style={{ color: "var(--t-bad)" }}>{err}</span> : statusLine}</div>
+
+      <div className={`seats${order.length >= 7 ? " grid4" : ""}`}>{order.map(seatView)}</div>
+
+      <div className="felt-center">
+        <div className="felt-oval">
+          <div className="felt-logo" aria-hidden="true">felt</div>
+          <div style={{ display: "flex", gap: "clamp(4px,1.4vw,6px)", position: "relative" }}>
+            {st.board.map((c, i) => <div key={c.id + st.handNo} className={`card${st.stage === "showdown" && !st.result?.uncontested ? "" : ""}`} style={{ animation: `flipIn .45s cubic-bezier(.2,.8,.2,1) ${(st.result && st.result.runout ? i : Math.max(0, i - (st.board.length > 3 ? st.board.length - 1 : 0))) * 0.14}s backwards` }}><div style={{ color: suitColor[c.s] }}>{rankLabel(c.r)}</div><div style={{ color: suitColor[c.s], fontSize: "0.9em" }}>{SUIT_GLYPH[c.s]}</div></div>)}
+            {Array.from({ length: 5 - st.board.length }).map((_, i) => <div key={i} className="card-slot" />)}
+          </div>
+          <div className="pot-row" style={{ visibility: pot > 0 ? "visible" : "hidden" }}>
+            <ChipStack amount={pot} />
+            <div className="pot-num num">Pot {pot.toLocaleString()}</div>
+          </div>
+        </div>
+        {st.stage === "showdown" && st.result && (
+          <div className="banner" style={{ borderColor: winnerSeats.has(mySeat) ? "rgba(52,211,153,0.45)" : "rgba(244,247,252,0.12)", background: winnerSeats.has(mySeat) ? "rgba(52,211,153,0.12)" : "rgba(244,247,252,0.04)" }}>
+            <div style={{ fontSize: 13.5, fontWeight: 600, color: winnerSeats.has(mySeat) ? "var(--t-good)" : "var(--t-text)" }}>{st.result.headline}</div>
+            {st.result.hands && st.result.hands.length > 1 && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 3, paddingTop: 7, marginTop: 7, borderTop: "1px solid rgba(244,247,252,0.08)" }}>
+                {st.result.hands.map((h) => <div key={h.seat} style={{ display: "flex", justifyContent: "space-between", gap: 10, fontSize: 11.5, color: winnerSeats.has(h.seat) ? "var(--t-good)" : "var(--t-mid)", fontWeight: winnerSeats.has(h.seat) ? 600 : 400 }}><span>{st.seats[h.seat] ? st.seats[h.seat].name : "Player"}</span><span>{h.desc}</span></div>)}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {me ? (
+        <div className="hero-seat" style={{ borderColor: myTurn ? "rgba(52,211,153,0.6)" : "rgba(244,247,252,0.08)", boxShadow: myTurn ? "0 0 22px rgba(52,211,153,0.2)" : "none" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
+            <div style={{ position: "relative", width: 44, height: 44, flexShrink: 0 }}>
+              {peekOpen && <div className="peek-badge hero" aria-label="You're looking at your cards"><Icon name="eye" size={11} stroke={2.4} /></div>}
+              {myTurn && (<svg width="44" height="44" style={{ position: "absolute", top: 0, left: 0, transform: "rotate(-90deg)" }}>
+                <circle cx="22" cy="22" r="20" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="2.5" />
+                <circle cx="22" cy="22" r="20" fill="none" stroke={secsLeft < 8 ? "#FF6B6B" : "#34D399"} strokeWidth="2.5" strokeDasharray={2 * Math.PI * 20} strokeDashoffset={2 * Math.PI * 20 * (1 - secsLeft / TURN_SECS)} style={{ transition: "stroke-dashoffset .25s linear" }} strokeLinecap="round" /></svg>)}
+              <div style={{ position: "absolute", top: 3, left: 3, width: 38, height: 38, borderRadius: "50%", background: "var(--t-panel2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, overflow: "hidden", opacity: me.folded && me.inHand ? 0.45 : 1 }}>{avatarOf(me, 38)}</div>
+              {st.dealer === mySeat && <div className="dealer-chip" style={{ bottom: -1, right: -1 }}>D</div>}
+              {me.emote && serverNow - me.emote.at < 3500 && <div key={me.emote.at} className="emote-bubble">{me.emote.e}</div>}
+            </div>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontSize: 13.5, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{me.name}</div>
+              <div className="num" style={{ fontSize: 12, color: "var(--t-mid)" }}>{me.stack.toLocaleString()}</div>
+              {me.bet > 0 && <div className="chip-badge" style={{ marginTop: 3 }}><ChipStack amount={me.bet} small />{me.bet.toLocaleString()}</div>}
+            </div>
+          </div>
+          <div style={{ display: "flex", gap: 6, position: "relative" }}>
+            {reveal[mySeat] && st.stage === "showdown" ? reveal[mySeat].map((c) => <div key={c.id} className={`card big${winnerSeats.has(mySeat) ? " win" : ""}`}><div style={{ color: suitColor[c.s] }}>{rankLabel(c.r)}</div><div style={{ color: suitColor[c.s], fontSize: "0.85em" }}>{SUIT_GLYPH[c.s]}</div></div>)
+              : myCards && me.inHand && !me.folded && betting ? <PeekCards key={`opk${st.handNo}`} cards={myCards} suitColor={suitColor} omaha={false} delayFor={(i) => 0.5 + i * 0.12} open={peekOpen} setOpen={(v) => { setPeekOpen(v); if (v) sound.flip(1); send("peek", { on: v }, true); }} />
+              : myCards && me.inHand ? myCards.map((c) => <div key={c.id} className="card big mucked"><div style={{ color: suitColor[c.s] }}>{rankLabel(c.r)}</div><div style={{ color: suitColor[c.s], fontSize: "0.85em" }}>{SUIT_GLYPH[c.s]}</div></div>)
+              : (<><div className="card big back" style={{ opacity: 0.35 }} /><div className="card big back" style={{ opacity: 0.35 }} /></>)}
+          </div>
+        </div>
+      ) : (
+        <div className="hero-seat ot-watch">
+          <div style={{ fontSize: 13.5, fontWeight: 700 }}>Pick a seat</div>
+          <div style={{ fontSize: 12, color: "var(--t-mid)" }}>{row.friendly ? `Friendly table. Everyone sits with ${(row.bb * 100).toLocaleString()} free chips.` : `Buy in ${lo.toLocaleString()} to ${hi.toLocaleString()} from your ${data.chips.toLocaleString()} chips.`}</div>
+        </div>
+      )}
+
+      <div className="controls">
+        {showRaise && myTurn && raisePanel()}
+        {myTurn ? (
+          <div style={{ display: "flex", width: "100%", gap: 8 }}>
+            <button className="btn btn-fold" onClick={() => { vibrate(20); setShowRaise(false); send("act", { move: "fold" }); }}>Fold</button>
+            {toCall <= 0 ? <button className="btn btn-go" onClick={() => { vibrate(15); send("act", { move: "check" }); }}>Check</button>
+              : <button className="btn btn-go" onClick={() => { vibrate(15); send("act", { move: "call" }); }}>Call {Math.min(toCall, me.stack).toLocaleString()}</button>}
+            {!showRaise ? <button className="btn" disabled={me.stack <= toCall} onClick={() => setShowRaise(true)}>{st.currentBet ? "Raise" : "Bet"}</button> : <button className="btn" onClick={() => { setShowRaise(false); setCustom(false); }}>Cancel</button>}
+          </div>
+        ) : me && me.out ? (
+          <div style={{ display: "flex", width: "100%", gap: 8, alignItems: "center" }}>
+            <div style={{ flex: 1, fontSize: 12.5, color: "var(--t-mid)" }}>{me.stack > 0 ? "You're sitting out." : "You're out of chips."}</div>
+            {me.stack > 0 ? <button className="btn btn-raise" style={{ flex: "none" }} onClick={() => send("back")}>I'm back</button>
+              : <button className="btn btn-raise" style={{ flex: "none" }} onClick={() => { setBuyIn(row.friendly ? row.bb * 100 : Math.min(hi, Math.max(lo, Math.min(data.chips, row.bb * 50)))); setSheet({ kind: "rebuy" }); }}>Rebuy</button>}
+          </div>
+        ) : iWonUncontested ? (
+          <button className="btn show-btn" style={{ width: "100%" }} onClick={() => send("show")}><Icon name="eye" size={14} stroke={2.2} />Show cards</button>
+        ) : me ? (
+          <div style={{ fontSize: 12.5, color: "var(--t-faint)", padding: "12px 0" }}>{st.stage === "waiting" ? (st.seats.filter(Boolean).length < 2 ? "Invite friends to start" : "Starting soon") : st.stage === "showdown" ? (nextIn ? `Next hand in ${nextIn}` : "Next hand coming") : me.folded ? "You folded. Waiting for the hand to finish." : turnName ? `Waiting on ${turnName}` : "Waiting"}</div>
+        ) : (
+          <button className="btn btn-raise" style={{ width: "100%" }} onClick={openInvite}>Invite friends</button>
+        )}
+      </div>
+
+      {sheet && sheet.kind === "sit" && (
+        <Modal title={`Seat ${sheet.seat + 1}`} onClose={() => setSheet(null)}>
+          {row.friendly ? <p className="sheet-body" style={{ marginTop: 0 }}>Friendly table. You sit with {(row.bb * 100).toLocaleString()} free chips. Your bankroll isn't touched.</p> : (<>
+            <p className="sheet-body" style={{ marginTop: 0 }}>Comes out of your {data.chips.toLocaleString()} chips. Whatever you have when you leave goes back.</p>
+            <div className="slider-row"><input type="range" min={lo} max={Math.min(hi, data.chips)} step={row.bb} value={buyIn} onChange={(e) => setBuyIn(Number(e.target.value))} style={{ flex: 1 }} aria-label="Buy in" /><span className="num" style={{ fontWeight: 700, minWidth: 64, textAlign: "right" }}>{buyIn.toLocaleString()}</span></div>
+          </>)}
+          <button className="btn btn-raise" style={{ width: "100%", marginTop: 14 }} onClick={async () => { const seat = sheet.seat; setSheet(null); if (!row.friendly) await cloud.pushSave(account, data, publicProfile(data)).catch(() => {}); send("sit", { seat, buyIn }); }}>{row.friendly ? "Sit down" : `Buy in for ${buyIn.toLocaleString()}`}</button>
+        </Modal>
+      )}
+      {sheet && sheet.kind === "rebuy" && (
+        <Modal title="Rebuy" onClose={() => setSheet(null)}>
+          {row.friendly ? <p className="sheet-body" style={{ marginTop: 0 }}>Reload {(row.bb * 100).toLocaleString()} free chips.</p> : (
+            <div className="slider-row"><input type="range" min={lo} max={Math.max(lo, Math.min(hi, data.chips))} step={row.bb} value={buyIn} onChange={(e) => setBuyIn(Number(e.target.value))} style={{ flex: 1 }} aria-label="Rebuy amount" /><span className="num" style={{ fontWeight: 700, minWidth: 64, textAlign: "right" }}>{buyIn.toLocaleString()}</span></div>
+          )}
+          <button className="btn btn-raise" style={{ width: "100%", marginTop: 14 }} disabled={!row.friendly && data.chips < lo} onClick={async () => { setSheet(null); if (!row.friendly) await cloud.pushSave(account, data, publicProfile(data)).catch(() => {}); send("rebuy", { amount: buyIn }); }}>{row.friendly ? "Reload" : data.chips < lo ? "Not enough chips" : `Rebuy ${buyIn.toLocaleString()}`}</button>
+        </Modal>
+      )}
+      {sheet && sheet.kind === "leave" && (
+        <Modal title="Leave the table?" onClose={() => setSheet(null)}>
+          <p className="sheet-body" style={{ marginTop: 0 }}>{me && me.inHand && !me.folded && betting ? "You'll fold this hand. " : ""}{row.friendly ? "Friendly chips stay here." : `Your ${me ? me.stack.toLocaleString() : 0} chips go back to your bankroll.`}</p>
+          <div style={{ display: "flex", gap: 8 }}>
+            <button className="btn" onClick={() => setSheet(null)}>Stay</button>
+            <button className="btn btn-raise" onClick={async () => { setSheet(null); await send("leave"); onClaim(); onExit(); }}>Leave</button>
+          </div>
+        </Modal>
+      )}
+      {sheet && sheet.kind === "emote" && (
+        <Modal title="React" onClose={() => setSheet(null)}>
+          <div className="emote-grid">{EMOTES.map((e) => <button key={e} className="emote-btn" onClick={() => { setSheet(null); send("emote", { e }, true); }}>{e}</button>)}</div>
+        </Modal>
+      )}
+      {sheet && sheet.kind === "invite" && (
+        <Modal title="Invite friends" onClose={() => setSheet(null)}>
+          <div className="code-card"><div style={{ fontSize: 11, color: "var(--t-mut)", fontWeight: 700, letterSpacing: "0.08em" }}>TABLE CODE</div><div className="code-big">{row.code}</div></div>
+          <button className="btn" style={{ width: "100%", marginBottom: 12 }} onClick={async () => { try { if (navigator.share) await navigator.share({ title: "felt", text: shareText, url: shareLink }); else { await navigator.clipboard.writeText(`${shareText} ${shareLink}`); flash("Invite link copied"); } } catch (e) { /* cancelled */ } }}><Icon name="share" size={14} /> Share invite link</button>
+          <div className="friend-sub">Your friends</div>
+          <div className="list" style={{ gap: 6, maxHeight: "40vh", overflowY: "auto" }}>
+            {friends === null && <div className="empty">Loading…</div>}
+            {friends && friends.length === 0 && <div className="empty">No friends yet. Add them from your Profile.</div>}
+            {(friends || []).map((f) => {
+              const seated = st.seats.some((s) => s && s.uid === f.id);
+              return (
+                <div key={f.id} className="friend-row">
+                  <PlayerAvatar p={f} size={32} />
+                  <div style={{ flex: 1, minWidth: 0, fontSize: 13.5, fontWeight: 650 }}>{f.display_name}<div style={{ fontSize: 11, color: "var(--t-mut)", fontWeight: 400 }}>@{f.username}</div></div>
+                  <button className="btn btn-sm" disabled={seated || invited[f.id]} onClick={async () => { setInvited((m) => ({ ...m, [f.id]: true })); try { await api("invite", { tableId, to: f.id }); sound.tap(); } catch (e) { flash(e.message); setInvited((m) => ({ ...m, [f.id]: false })); } }}>{seated ? "Here" : invited[f.id] ? "Invited" : "Invite"}</button>
+                </div>
+              );
+            })}
+          </div>
+        </Modal>
+      )}
+    </div>
+  );
+}
+
+// Home screen entry: make a table, join one with a code, or get back to one you're sitting at
+function FriendsTableCard({ onOpen }) {
+  return (
+    <button className="ft-card" onClick={onOpen}>
+      <div className="ft-ic"><Icon name="user" size={19} stroke={2} /></div>
+      <div style={{ flex: 1, minWidth: 0, textAlign: "left" }}>
+        <div style={{ fontSize: 14.5, fontWeight: 750 }}>Play with friends</div>
+        <div style={{ fontSize: 11.5, color: "var(--t-sub)", marginTop: 1 }}>Real people, your own table</div>
+      </div>
+      <Icon name="chevron" size={15} style={{ color: "var(--t-faint)" }} />
+    </button>
+  );
+}
+function FriendsTableModal({ account, data, onClose, onOpenTable, onOpenAuth, onDebit }) {
+  const [mode, setMode] = useState("menu");
+  const [stake, setStake] = useState(1); const [seats, setSeats] = useState(6); const [friendly, setFriendly] = useState(false);
+  const [buyIn, setBuyIn] = useState(0); const [code, setCode] = useState(""); const [busy, setBusy] = useState(false); const [err, setErr] = useState(null);
+  const [mine, setMine] = useState(null);
+  useEffect(() => { if (!account) return; api("mine").then((r) => setMine(r.tables || [])).catch(() => setMine([])); }, [account]);
+  const [sb, bb] = ONLINE_STAKES[stake]; const lo = bb * 20, hi = bb * 100;
+  useEffect(() => { setBuyIn(Math.min(hi, Math.max(lo, Math.min(data.chips, bb * 50)))); }, [stake]); // eslint-disable-line react-hooks/exhaustive-deps
+  if (!account) {
+    return (
+      <Modal title="Play with friends" onClose={onClose}>
+        <p className="sheet-body" style={{ marginTop: 0 }}>Make an account so your friends can find you and join your table.</p>
+        <button className="btn btn-raise" style={{ width: "100%" }} onClick={() => { onClose(); onOpenAuth("signup"); }}>Create account</button>
+      </Modal>
+    );
+  }
+  const create = async () => {
+    setBusy(true); setErr(null);
+    try {
+      if (!friendly) await cloud.pushSave(account, data, publicProfile(data));
+      const r = await api("create", { sb, bb, friendly, maxSeats: seats, buyIn });
+      if (r.debit) onDebit(r.debit);
+      onOpenTable(r.tableId);
+    } catch (e) { setErr(e.message); }
+    setBusy(false);
+  };
+  const join = async () => {
+    setBusy(true); setErr(null);
+    try { const r = await api("join", { code }); onOpenTable(r.tableId); } catch (e) { setErr(e.message); }
+    setBusy(false);
+  };
+  const affordable = friendly || data.chips >= lo;
+  return (
+    <Modal title={mode === "create" ? "New table" : mode === "join" ? "Join a table" : "Play with friends"} onClose={onClose} width={380}>
+      {mode === "menu" && (<>
+        {mine && mine.length > 0 && (<>
+          <div className="friend-sub">You're sitting at</div>
+          <div className="list" style={{ gap: 6, marginBottom: 12 }}>
+            {mine.map((t) => <button key={t.id} className="row" onClick={() => onOpenTable(t.id)}><div style={{ textAlign: "left" }}><div className="row-title">Table {t.code}</div><div className="row-sub num">{t.sb}/{t.bb} · {t.players} {t.players === 1 ? "player" : "players"}{t.friendly ? " · Friendly" : ""}</div></div><Icon name="chevron" size={15} /></button>)}
+          </div>
+        </>)}
+        <div className="list" style={{ gap: 8 }}>
+          <button className="row" onClick={() => setMode("create")}><div style={{ textAlign: "left" }}><div className="row-title">Start a table</div><div className="row-sub">Pick the blinds, invite your friends</div></div><Icon name="chevron" size={15} /></button>
+          <button className="row" onClick={() => setMode("join")}><div style={{ textAlign: "left" }}><div className="row-title">Join with a code</div><div className="row-sub">Got a 4-letter code from a friend?</div></div><Icon name="chevron" size={15} /></button>
+        </div>
+      </>)}
+      {mode === "create" && (<>
+        <div className="friend-sub">Blinds</div>
+        <div className="stake-grid">{ONLINE_STAKES.map(([s, b], i) => <button key={b} className={`stake-btn${stake === i ? " on" : ""}`} onClick={() => setStake(i)}><span className="num">{shortNum(s)}/{shortNum(b)}</span></button>)}</div>
+        <div className="friend-sub" style={{ marginTop: 12 }}>Seats</div>
+        <div className="seg">{[2, 4, 6, 9].map((n) => <button key={n} className={`segbtn${seats === n ? " on" : ""}`} onClick={() => setSeats(n)}>{n === 2 ? "Heads-up" : `${n} seats`}</button>)}</div>
+        <SettingRow label="Friendly table" sub={friendly ? `Everyone gets ${(bb * 100).toLocaleString()} free chips. Bankrolls aren't touched.` : "Real chips. Buy in from your bankroll, cash out when you leave."}>
+          <Toggle on={friendly} onClick={() => setFriendly((f) => !f)} label="Friendly table" />
+        </SettingRow>
+        {!friendly && (affordable ? (
+          <div style={{ marginTop: 4 }}>
+            <div className="friend-sub">Your buy in</div>
+            <div className="slider-row"><input type="range" min={lo} max={Math.min(hi, data.chips)} step={bb} value={buyIn} onChange={(e) => setBuyIn(Number(e.target.value))} style={{ flex: 1 }} aria-label="Buy in" /><span className="num" style={{ fontWeight: 700, minWidth: 64, textAlign: "right" }}>{buyIn.toLocaleString()}</span></div>
+          </div>
+        ) : <div className="auth-err" style={{ marginTop: 8 }}>You need {lo.toLocaleString()} chips for these blinds. Pick lower blinds or make it a friendly table.</div>)}
+        {err && <div className="auth-err" style={{ marginTop: 10 }}>{err}</div>}
+        <div style={{ display: "flex", gap: 8, marginTop: 14 }}>
+          <button className="btn" onClick={() => setMode("menu")}>Back</button>
+          <button className="btn btn-raise" disabled={busy || !affordable} onClick={create}>{busy ? "Making it…" : "Create table"}</button>
+        </div>
+      </>)}
+      {mode === "join" && (<>
+        <input className="input code-input" value={code} onChange={(e) => setCode(e.target.value.toUpperCase().replace(/[^A-Z]/g, "").slice(0, 4))} placeholder="ABCD" autoFocus autoCapitalize="characters" aria-label="Table code" />
+        {err && <div className="auth-err" style={{ marginTop: 10 }}>{err}</div>}
+        <div style={{ display: "flex", gap: 8, marginTop: 14 }}>
+          <button className="btn" onClick={() => setMode("menu")}>Back</button>
+          <button className="btn btn-raise" disabled={busy || code.length !== 4} onClick={join}>{busy ? "Finding it…" : "Join"}</button>
+        </div>
+      </>)}
+    </Modal>
   );
 }
 
@@ -4105,6 +4537,10 @@ export default function App() {
   const [account, setAccount] = useState(null); // { id, email, username } when signed in
   const [authOpen, setAuthOpen] = useState(null); // "signup" | "signin" | "username"
   const [online, setOnline] = useState({}); // user id -> what they're doing, for everyone in the app right now
+  const [onlineTable, setOnlineTable] = useState(null); // id of the friends table you're at
+  const [ftOpen, setFtOpen] = useState(false);
+  const [invites, setInvites] = useState([]);
+  const [inviteNames, setInviteNames] = useState({});
   const toastTimer = useRef(null);
   const sound = useSound(soundOn);
 
@@ -4143,7 +4579,7 @@ export default function App() {
   }, [data, account, loaded]);
   // tell friends you're here and what you're playing
   const presenceRef = useRef(null);
-  const myStatus = !inTable || !session ? "In the lobby" : session.vip ? "At the High Roller table" : session.mode === "ranked" ? "Playing ranked" : session.mode === "tournament" ? "In a tournament" : session.mode === "practice" ? "Practicing" : "Playing cash";
+  const myStatus = onlineTable ? "At a friends table" : !inTable || !session ? "In the lobby" : session.vip ? "At the High Roller table" : session.mode === "ranked" ? "Playing ranked" : session.mode === "tournament" ? "In a tournament" : session.mode === "practice" ? "Practicing" : "Playing cash";
   useEffect(() => {
     if (!account || !account.username) return;
     let gone = false, h = null;
@@ -4172,6 +4608,43 @@ export default function App() {
     showToast({ title: mode === "signup" ? "Account made" : "Signed in", label: "Your progress now saves online" }, 2600);
   };
   // signing out hands the phone back to a fresh guest; your progress lives in the account
+  // chips coming back from friends tables land here
+  const dataRef = useRef(data); dataRef.current = data;
+  const claimPayouts = useCallback(async () => {
+    if (!account) return;
+    try {
+      const r = await cloud.claimPayouts(account);
+      if (r.total > 0) { const d = dataRef.current; persist({ ...d, chips: d.chips + r.total }); showToast({ title: `+${r.total.toLocaleString()} chips`, label: r.reasons.length === 1 ? r.reasons[0] : "Cashed out from friends tables" }, 3000); sound.coin(); }
+    } catch (e) { /* try again later */ }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [account]);
+  useEffect(() => { if (!account || !loaded) return; claimPayouts(); const t = setInterval(claimPayouts, 60000); return () => clearInterval(t); }, [account, loaded, claimPayouts]);
+  const handleDebit = useCallback((amount) => { const d = dataRef.current; persist({ ...d, chips: Math.max(0, d.chips - amount) }); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  // friends asking you to their table
+  useEffect(() => {
+    if (!account || !account.username) { setInvites([]); return; }
+    let stop = null, on = true;
+    cloud.watchInvites(account, (list) => { if (!on) return; setInvites(list); list.forEach((iv) => { if (!inviteNames[iv.from_user]) cloud.getProfile(iv.from_user).then((p) => p && setInviteNames((m) => ({ ...m, [iv.from_user]: p.display_name }))).catch(() => {}); }); }).then((s) => { if (on) stop = s; else s(); });
+    return () => { on = false; if (stop) stop(); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [account]);
+  const openTable = (id) => { sound.tap(); setFtOpen(false); setOnlineTable(id); };
+  const acceptInvite = async (iv) => { cloud.clearInvite(iv.id).catch(() => {}); setInvites((l) => l.filter((x) => x.id !== iv.id)); try { const r = await api("join", { code: iv.code }); openTable(r.tableId); } catch (e) { showToast({ title: "Can't join", label: e.message }, 2600); } };
+  // a shared link like felt-coral.vercel.app/?table=ABCD drops you at that table
+  useEffect(() => {
+    if (!loaded) return;
+    let code = null; try { code = new URLSearchParams(window.location.search).get("table"); } catch (e) { /* no url */ }
+    if (!code) return;
+    try { window.history.replaceState(null, "", window.location.pathname); } catch (e) { /* ignore */ }
+    if (!account) { showToast({ title: "Join your friend's table", label: "Make an account or sign in first" }, 3200); setAuthOpen("signup"); try { sessionStorage.setItem("felt-pending-table", code); } catch (e) { /* ignore */ } return; }
+    api("join", { code }).then((r) => openTable(r.tableId)).catch((e) => showToast({ title: "Can't join", label: e.message }, 2800));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loaded]);
+  useEffect(() => {
+    if (!account) return; let code = null; try { code = sessionStorage.getItem("felt-pending-table"); sessionStorage.removeItem("felt-pending-table"); } catch (e) { /* ignore */ }
+    if (code) api("join", { code }).then((r) => openTable(r.tableId)).catch(() => {});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [account]);
   const handleSignOut = async () => {
     try { await cloud.pushSave(account, data, publicProfile(data)); } catch (e) { showToast({ title: "Can't sign out yet", label: "Couldn't save to your account. Check your connection." }, 2800); return; }
     await cloud.signOut().catch(() => {}); setAccount(null);
@@ -4470,6 +4943,15 @@ export default function App() {
     });
   };
 
+  if (onlineTable && account) {
+    return (
+      <div className="app-table">
+        <style>{GLOBAL_STYLE}</style>
+        <OnlineTable key={onlineTable} tableId={onlineTable} account={account} data={data} sound={sound} soundOn={soundOn} setSoundOn={setSoundOn} onExit={() => { setOnlineTable(null); claimPayouts(); }} onDebit={handleDebit} onClaim={claimPayouts} />
+        {toast && <div className="toast" role="status"><div style={{ fontSize: 12, fontWeight: 700, color: "var(--t-accent)" }}>{toast.title}</div><div style={{ fontSize: 12.5, color: "var(--t-text2)" }}>{toast.label}</div></div>}
+      </div>
+    );
+  }
   if (inTable) {
     const isPractice = session?.mode === "practice";
     const isTournament = session?.mode === "tournament";
@@ -4504,7 +4986,7 @@ export default function App() {
       <main className="app-main">
         <div key={tab} style={{ width: "100%", maxWidth: 460, height: "100%" }}>
           {tab === "shop" && <ShopScreen data={data} onClaimChips={handleClaimChips} onBuyAvatar={handleBuyAvatar} onClaimDaily={handleClaimDaily} onBuyCosmetic={handleBuyCosmetic} onEquipCosmetic={handleEquipCosmetic} onBuyTitle={handleBuyTitle} onBuyTheme={handleBuyTheme} onEquipTheme={handleEquipTheme} onPreviewTheme={handlePreviewTheme} previewTheme={previewTheme} />}
-          {tab === "home" && <HomeMenu onPlayAI={handlePlayAI} data={data} chips={data.chips} ranked={data.ranked} onClaimDaily={handleClaimDaily} onClaimChallenge={handleClaimChallenge} onSpin={handleSpin} onPrestige={handlePrestige} sound={sound} goShop={() => setTab("shop")} />}
+          {tab === "home" && <HomeMenu onPlayAI={handlePlayAI} onFriendsTable={() => { sound.tap(); setFtOpen(true); }} data={data} chips={data.chips} ranked={data.ranked} onClaimDaily={handleClaimDaily} onClaimChallenge={handleClaimChallenge} onSpin={handleSpin} onPrestige={handlePrestige} sound={sound} goShop={() => setTab("shop")} />}
           {tab === "leaderboard" && <LeaderboardScreen data={data} account={account} online={online} onOpenAuth={setAuthOpen} />}
           {tab === "coach" && <CoachScreen data={data} />}
           {tab === "profile" && <ProfileScreen data={data} account={account} online={online} onOpenAuth={setAuthOpen} onSignOut={handleSignOut} sound={sound} onUpdateName={handleUpdateName} onSelectAvatar={handleSelectAvatar} onSetPhoto={handleSetPhoto} onUsePhoto={handleUsePhoto} onSelectFrame={handleSelectFrame} onAddFriend={handleAddFriend} onUpdateSettings={handleUpdateSettings} onExportData={handleExportData} onImportData={handleImportData} onResetProfile={handleResetProfile} onEquipTitle={handleEquipTitle} onPrestige={handlePrestige} />}
@@ -4521,6 +5003,14 @@ export default function App() {
           </div>
         );
       })()}
+      {invites.length > 0 && !inTable && (
+        <div className="invite-banner" role="status">
+          <div style={{ flex: 1, minWidth: 0 }}><div style={{ fontSize: 13, fontWeight: 700 }}>{inviteNames[invites[0].from_user] || "A friend"} invited you</div><div style={{ fontSize: 11.5, color: "var(--t-sub)" }}>Table {invites[0].code}</div></div>
+          <button className="btn btn-sm" onClick={() => { cloud.clearInvite(invites[0].id).catch(() => {}); setInvites((l) => l.slice(1)); }}>Later</button>
+          <button className="btn btn-sm btn-raise" onClick={() => acceptInvite(invites[0])}>Join</button>
+        </div>
+      )}
+      {ftOpen && <FriendsTableModal account={account} data={data} onClose={() => setFtOpen(false)} onOpenTable={openTable} onOpenAuth={setAuthOpen} onDebit={handleDebit} />}
       {authOpen && <AuthModal mode={authOpen} setMode={setAuthOpen} onClose={() => setAuthOpen(null)} onAuthed={handleAuthed} account={account} data={data} />}
       {toast && (
         <div className="toast" role="status">
@@ -5289,6 +5779,28 @@ body.theme-montecarlo .pc-index { top: 11px; left: 11px; } body.theme-montecarlo
 .fp-status.on { color: var(--t-good); font-weight: 600; }
 .lb-row.tap { cursor: pointer; }
 .lb-row.tap:active { transform: scale(0.985); }
+/* online tables */
+.ft-card { width: 100%; display: flex; align-items: center; gap: 12px; padding: 14px; border-radius: 18px; cursor: pointer; text-align: left; color: var(--t-text); background: linear-gradient(135deg, rgba(52,211,153,0.16), rgba(47,111,222,0.12)); border: 1px solid rgba(52,211,153,0.35); transition: transform .14s ease; }
+.ft-card:active { transform: scale(0.98); }
+.ft-ic { width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: #6EE7B7; background: rgba(52,211,153,0.16); flex-shrink: 0; }
+.stake-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.stake-btn { padding: 9px 4px; border-radius: 10px; border: 1px solid rgba(244,247,252,0.12); background: rgba(244,247,252,0.04); color: var(--t-sub); font-weight: 650; font-size: 12.5px; cursor: pointer; }
+.stake-btn.on { border-color: var(--t-accent); color: var(--t-accent); background: rgba(245,184,61,0.1); }
+.code-input { width: 100%; box-sizing: border-box; text-align: center; font-size: 30px !important; font-weight: 800; letter-spacing: 0.4em; padding: 14px 0 14px 0.4em !important; }
+.code-card { text-align: center; padding: 14px; border-radius: 14px; background: rgba(244,247,252,0.04); border: 1px dashed rgba(244,247,252,0.18); margin-bottom: 10px; }
+.code-big { font-size: 34px; font-weight: 800; letter-spacing: 0.3em; padding-left: 0.3em; margin-top: 2px; }
+.ot-sit { border-radius: 50%; border: 1.5px dashed rgba(52,211,153,0.6); background: rgba(52,211,153,0.08); color: #6EE7B7; font-size: 20px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; }
+.ot-open { border-radius: 50%; border: 1.5px dashed rgba(244,247,252,0.15); }
+.ot-av { overflow: hidden; background: var(--t-panel2) !important; }
+.ot-last { font-size: 10px; font-weight: 700; color: var(--t-sub); background: rgba(244,247,252,0.06); border-radius: 8px; padding: 2px 7px; white-space: nowrap; }
+.ot-watch { flex-direction: column; align-items: flex-start !important; gap: 3px !important; border-color: rgba(244,247,252,0.08) !important; }
+.emote-bubble { position: absolute; bottom: calc(100% + 4px); left: 50%; transform: translateX(-50%); z-index: 5; background: var(--t-text); color: var(--t-bg); font-size: 13px; font-weight: 700; padding: 4px 9px; border-radius: 12px; white-space: nowrap; box-shadow: 0 6px 16px rgba(0,0,0,0.35); animation: emotePop 3.4s ease forwards; pointer-events: none; }
+.emote-bubble::after { content: ""; position: absolute; top: 100%; left: 50%; margin-left: -5px; border: 5px solid transparent; border-top-color: var(--t-text); }
+@keyframes emotePop { 0% { opacity: 0; transform: translate(-50%, 6px) scale(0.8); } 8% { opacity: 1; transform: translate(-50%, 0) scale(1.06); } 14% { transform: translate(-50%, 0) scale(1); } 85% { opacity: 1; } 100% { opacity: 0; transform: translate(-50%, -6px); } }
+.emote-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.emote-btn { padding: 14px 6px; border-radius: 14px; border: 1px solid rgba(244,247,252,0.1); background: rgba(244,247,252,0.04); color: var(--t-text); font-size: 22px; cursor: pointer; font-weight: 700; }
+.emote-btn:nth-child(n+7) { font-size: 13.5px; }
+.invite-banner { position: fixed; left: 12px; right: 12px; top: calc(env(safe-area-inset-top) + 10px); z-index: 40; display: flex; align-items: center; gap: 8px; padding: 12px 12px 12px 14px; border-radius: 16px; background: var(--t-panel); border: 1px solid rgba(52,211,153,0.45); box-shadow: 0 14px 34px rgba(0,0,0,0.45); animation: sheetIn .25s ease; max-width: 460px; margin: 0 auto; }
 /* ---------- High Roller Room: black lacquer, emerald baize, champagne gold ---------- */
 .vip-card { width: 100%; display: flex; flex-direction: column; gap: 0; padding: 16px 18px 15px; border-radius: 18px; cursor: pointer; text-align: left; color: #F3EDE0; background-color: #0C0B09; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4' height='4'%3E%3Cpath d='M0 4L4 0' stroke='%23FFFFFF' stroke-opacity='0.025'/%3E%3C/svg%3E"), radial-gradient(120% 90% at 85% 0%, rgba(217,180,106,0.16), transparent 55%), linear-gradient(160deg, #1A1713 0%, #0B0A08 60%, #121009 100%); border: 1px solid rgba(217,180,106,0.32); position: relative; overflow: hidden; transition: transform .14s ease, box-shadow .3s ease; box-shadow: inset 0 1px 0 rgba(255,240,210,0.08), 0 10px 26px rgba(0,0,0,0.35); }
 .vip-card::before { content: ""; position: absolute; top: 5px; right: 5px; bottom: 5px; left: 5px; border-radius: 14px; border: 1px solid rgba(217,180,106,0.14); pointer-events: none; }

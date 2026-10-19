@@ -130,6 +130,34 @@ const real = {
       leave() { try { c.removeChannel(ch); } catch (e) { /* already gone */ } },
     };
   },
+  async token() { const c = await sb(); const { data } = await c.auth.getSession(); return data && data.session ? data.session.access_token : null; },
+  // live table updates, with a slow poll underneath in case the live connection drops
+  async watchTable(id, onRow) {
+    const c = await sb();
+    const pull = async () => { const { data } = await c.from("poker_tables").select("state, version, closed, code, sb, bb, friendly, host").eq("id", id).maybeSingle(); if (data) onRow(data); };
+    const ch = c.channel(`table-${id}`).on("postgres_changes", { event: "UPDATE", schema: "public", table: "poker_tables", filter: `id=eq.${id}` }, (p) => onRow(p.new)).subscribe();
+    pull(); const t = setInterval(pull, 5000);
+    return () => { clearInterval(t); try { c.removeChannel(ch); } catch (e) { /* gone */ } };
+  },
+  async holes(id, me) { const c = await sb(); const { data } = await c.from("poker_holes").select("hand_no, cards").eq("table_id", id).eq("user_id", me.id).maybeSingle(); return data; },
+  async claimPayouts(me) {
+    const c = await sb();
+    const { data } = await c.from("chip_payouts").select("id, amount, reason").eq("user_id", me.id).eq("claimed", false);
+    let total = 0; const reasons = [];
+    for (const p of data || []) {
+      const { data: got } = await c.from("chip_payouts").update({ claimed: true }).eq("id", p.id).eq("claimed", false).select("id");
+      if (got && got.length) { total += Number(p.amount) || 0; reasons.push(p.reason); }
+    }
+    return { total, reasons };
+  },
+  async watchInvites(me, onList) {
+    const c = await sb();
+    const pull = async () => { const { data } = await c.from("table_invites").select("id, from_user, table_id, code, created_at").eq("to_user", me.id).order("created_at", { ascending: false }).limit(5); onList(data || []); };
+    const ch = c.channel(`inv-${me.id}`).on("postgres_changes", { event: "INSERT", schema: "public", table: "table_invites", filter: `to_user=eq.${me.id}` }, pull).subscribe();
+    pull(); const t = setInterval(pull, 30000);
+    return () => { clearInterval(t); try { c.removeChannel(ch); } catch (e) { /* gone */ } };
+  },
+  async clearInvite(id) { const c = await sb(); await c.from("table_invites").delete().eq("id", id); },
   async insertLink(me, other) { const c = await sb(); const { error } = await c.from("friendships").insert({ requester: me.id, addressee: other, status: "pending" }); if (error && !/duplicate/i.test(error.message)) throw new Error(friendly(error)); },
   async acceptLink(me, other) { const c = await sb(); const { error } = await c.from("friendships").update({ status: "accepted" }).eq("requester", other).eq("addressee", me.id); if (error) throw new Error(friendly(error)); },
   async deleteLinks(me, other) {
@@ -179,12 +207,35 @@ const mock = {
       leave() { clearInterval(t); const m = read(); delete m[me.id]; write(m); },
     };
   },
+  async token() { const id = localStorage.getItem(MSES); return id ? `tok-${id}` : null; },
+  async watchTable(id, onRow) {
+    let on = true;
+    const pull = async () => { if (!on) return; try { const r = await api("get", { tableId: id }); onRow({ state: r.state, version: r.version, closed: r.closed, ...r.table }); } catch (e) { /* retry next time */ } };
+    pull(); const t = setInterval(pull, 700);
+    return () => { on = false; clearInterval(t); };
+  },
+  async holes(id) { const r = await api("get", { tableId: id }); return r.holes; },
+  async claimPayouts() { return { total: 0, reasons: [] }; },
+  async watchInvites(me, onList) { onList([]); return () => {}; },
+  async clearInvite() {},
   async insertLink(me, other) { const db = mload(); if (!db.links.some((l) => l.requester === me.id && l.addressee === other)) db.links.push({ requester: me.id, addressee: other, status: "pending" }); mstore(db); },
   async acceptLink(me, other) { const db = mload(); db.links.forEach((l) => { if (l.requester === other && l.addressee === me.id) l.status = "accepted"; }); mstore(db); },
   async deleteLinks(me, other) { const db = mload(); db.links = db.links.filter((l) => !((l.requester === me.id && l.addressee === other) || (l.requester === other && l.addressee === me.id))); mstore(db); },
 };
 
 const be = () => (isMock() ? mock : real);
+
+// every move at an online table goes to the game server, signed with your login
+export async function api(action, payload = {}) {
+  const token = await be().token();
+  if (!token) throw new Error("Sign in first.");
+  let res;
+  try { res = await fetch("/api/table", { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify({ action, ...payload }) }); }
+  catch (e) { throw new Error("Can't reach the table. Check your connection."); }
+  let body = {}; try { body = await res.json(); } catch (e) { /* empty */ }
+  if (!res.ok || body.error) throw new Error(body.error || `Server error (${res.status})`);
+  return body;
+}
 
 /* ---------------- what the app calls ---------------- */
 export const cloud = {
@@ -197,6 +248,11 @@ export const cloud = {
   pushSave: (me, save, profile) => be().pushSave(me, save, profile),
   getProfile: (id) => be().getProfile(id),
   top: (kind) => be().top(kind),
+  watchTable: (id, cb) => be().watchTable(id, cb),
+  holes: (id, me) => be().holes(id, me),
+  claimPayouts: (me) => be().claimPayouts(me),
+  watchInvites: (me, cb) => be().watchInvites(me, cb),
+  clearInvite: (id) => be().clearInvite(id),
   presence: (me, onSync) => be().presence(me, onSync),
   // friends, split into accepted, waiting on me, and waiting on them
   async friends(me) {
