@@ -248,22 +248,49 @@ function matchQuality(hands) {
 /* =========================================================================
    PROGRESSION: cosmetics, login streak, challenges, season pass
    ========================================================================= */
+// Every back and felt is its own drawn pattern, laid over the item's colors.
+const svgBg = (w, h, body) => `url("data:image/svg+xml,${encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' width='${w}' height='${h}' viewBox='0 0 ${w} ${h}'>${body}</svg>`)}")`;
+const PAT = (() => {
+  const W = "#FFFFFF";
+  const ring = (cx, cy) => Array.from({ length: 12 }, (_, k) => { const a = (k * 30 * Math.PI) / 180; return `<circle cx='${(cx + 5 * Math.cos(a)).toFixed(2)}' cy='${(cy + 5 * Math.sin(a)).toFixed(2)}' r='8.5' fill='none' stroke='${W}' stroke-opacity='0.42' stroke-width='0.45'/>`; }).join("");
+  const rays = Array.from({ length: 18 }, (_, k) => { const a = (k * 20 * Math.PI) / 180, d = (3.2 * Math.PI) / 180, R = 60; const p = (t) => `${(20 + R * Math.cos(t)).toFixed(1)},${(28 + R * Math.sin(t)).toFixed(1)}`; return `<polygon points='20,28 ${p(a - d)} ${p(a + d)}' fill='#F2C14E' fill-opacity='0.2'/>`; }).join("");
+  const spade = (x, y, sc, fill, op) => `<path transform='translate(${x} ${y}) scale(${sc})' d='M5 0C5 0 0 4.2 0 6.6C0 8.4 1.9 9.4 3.5 8.3L2.7 10.4H7.3L6.5 8.3C8.1 9.4 10 8.4 10 6.6C10 4.2 5 0 5 0Z' fill='${fill}' fill-opacity='${op}'/>`;
+  const club = (x, y, sc, fill, op) => `<g transform='translate(${x} ${y}) scale(${sc})' fill='${fill}' fill-opacity='${op}'><circle cx='5' cy='2.6' r='2.5'/><circle cx='2.5' cy='6.4' r='2.5'/><circle cx='7.5' cy='6.4' r='2.5'/><path d='M4.2 6H5.8L6.9 10.4H3.1Z'/></g>`;
+  return {
+    classicTile: svgBg(6, 6, `<path d='M0 6L6 0M-1 1L1 -1M5 7L7 5' stroke='${W}' stroke-opacity='0.16' stroke-width='1.1'/><path d='M0 0L6 6' stroke='${W}' stroke-opacity='0.07' stroke-width='0.8'/>`),
+    classicMark: svgBg(40, 56, `<ellipse cx='20' cy='28' rx='9' ry='12' fill='none' stroke='${W}' stroke-opacity='0.5' stroke-width='0.9'/><path d='M20 21.5L24 28L20 34.5L16 28Z' fill='${W}' fill-opacity='0.55'/>`),
+    rosette: svgBg(40, 56, `${ring(20, 28)}<circle cx='20' cy='28' r='2' fill='${W}' fill-opacity='0.5'/>`),
+    waves: svgBg(10, 5, `<path d='M0 2.5Q2.5 0.5 5 2.5T10 2.5' fill='none' stroke='${W}' stroke-opacity='0.14' stroke-width='0.6'/>`),
+    suits: svgBg(16, 16, `${spade(1.5, 1.5, 0.5, W, 0.2)}${club(9.5, 9.5, 0.5, W, 0.2)}`),
+    sunburst: svgBg(40, 56, `${rays}<circle cx='20' cy='28' r='6' fill='none' stroke='#F2C14E' stroke-opacity='0.75' stroke-width='0.8'/><circle cx='20' cy='28' r='2.2' fill='#F2C14E' fill-opacity='0.8'/>`),
+    synthGrid: svgBg(8, 8, `<path d='M0 0.25H8M0.25 0V8' stroke='#FFD1F0' stroke-opacity='0.28' stroke-width='0.5'/>`),
+    synthSun: svgBg(40, 56, `<defs><clipPath id='c'><circle cx='20' cy='26' r='9'/></clipPath></defs><g clip-path='url(#c)'><rect x='10' y='16' width='20' height='20' fill='#FFC46B' fill-opacity='0.85'/>${[27, 30, 33].map((y) => `<rect x='10' y='${y}' width='20' height='1.3' fill='#2A1150'/>`).join("")}</g>`),
+    carbon: svgBg(6, 6, `<rect width='3' height='3' fill='${W}' fill-opacity='0.07'/><rect x='3' y='3' width='3' height='3' fill='${W}' fill-opacity='0.07'/><path d='M0 0.4H3M3 3.4H6' stroke='${W}' stroke-opacity='0.12' stroke-width='0.5'/>`),
+    quilt: svgBg(10, 10, `<path d='M5 0L10 5L5 10L0 5Z' fill='none' stroke='#FFF6D6' stroke-opacity='0.55' stroke-width='0.6'/><path d='M5 0.9L9.1 5' stroke='#7A4E0E' stroke-opacity='0.35' stroke-width='0.6'/>`),
+    foilMark: svgBg(40, 56, `<circle cx='20' cy='28' r='9.5' fill='#8A5A12' fill-opacity='0.55'/><circle cx='20' cy='28' r='9.5' fill='none' stroke='#FFF3C4' stroke-opacity='0.8' stroke-width='0.7'/>${spade(16, 23.5, 0.8, "#FFF3C4", 0.95)}`),
+    // felts
+    herring: svgBg(16, 8, `<path d='M0 8L8 0M8 8L16 0' stroke='${W}' stroke-opacity='0.05' stroke-width='2.4'/><path d='M8 8L0 0M16 8L8 0' stroke='#000' stroke-opacity='0.05' stroke-width='2.4'/>`),
+    lattice: svgBg(22, 22, `<path d='M11 0L22 11L11 22L0 11Z' fill='none' stroke='${W}' stroke-opacity='0.05'/>`),
+    ripple: svgBg(60, 60, `${[8, 16, 24].map((r) => `<circle cx='30' cy='30' r='${r}' fill='none' stroke='${W}' stroke-opacity='0.045' stroke-width='1.2'/>`).join("")}`),
+    hex: svgBg(14, 24, `<path d='M7 0L14 4V12L7 16L0 12V4Z M7 16V24' fill='none' stroke='${W}' stroke-opacity='0.06' stroke-width='0.8'/>`),
+  };
+})();
 const CARD_BACKS = [
-  { key: "blue", label: "Classic Blue", cost: 0, a: "#2F6FDE", b: "#1F4FA8", ring: "#FFFFFF" },
-  { key: "crimson", label: "Crimson", cost: 800, a: "#D23C4E", b: "#9E2233", ring: "#FFFFFF" },
-  { key: "emerald", label: "Emerald", cost: 800, a: "#16A06A", b: "#0D7149", ring: "#FFFFFF" },
-  { key: "midnight", label: "Midnight Gold", cost: 2500, a: "var(--t-panel)", b: "var(--t-bg)", ring: "var(--t-accent)" },
-  { key: "neon", label: "Neon", pass: 10, a: "#8B5CF6", b: "#DB2777", ring: "#FFFFFF" },
-  { key: "carbon", label: "Carbon", pass: 20, a: "#2A2F38", b: "#16191F", ring: "#9AA4B2" },
-  { key: "foil", label: "Gold Foil", pass: 30, a: "#F5C451", b: "#B7791F", ring: "#FFF3C4" },
+  { key: "blue", label: "Classic", cost: 0, a: "#2F6FDE", b: "#1F4FA8", ring: "#FFFFFF", img: `${PAT.classicMark}, ${PAT.classicTile}`, size: "100% 100%, 6px 6px" },
+  { key: "crimson", label: "Banknote", cost: 800, a: "#B8333F", b: "#7E1C27", ring: "#F4E9D8", img: `${PAT.rosette}, ${PAT.waves}`, size: "100% 100%, 10px 5px" },
+  { key: "emerald", label: "Clubhouse", cost: 800, a: "#127A52", b: "#0A5238", ring: "#F2F5EF", img: PAT.suits, size: "12px 12px" },
+  { key: "midnight", label: "Sunburst", cost: 2500, a: "#141C33", b: "#0A0F1F", ring: "#F2C14E", img: PAT.sunburst, size: "100% 100%" },
+  { key: "neon", label: "Synthwave", pass: 10, a: "#5B2AA8", b: "#C02679", ring: "#FFD1F0", img: `${PAT.synthSun}, ${PAT.synthGrid}, linear-gradient(180deg, #3A1670, #C02679)`, size: "100% 100%, 7px 7px, 100% 100%" },
+  { key: "carbon", label: "Carbon", pass: 20, a: "#22262E", b: "#121418", ring: "#9AA4B2", img: PAT.carbon, size: "5px 5px" },
+  { key: "foil", label: "Gold Foil", pass: 30, a: "#D9A53A", b: "#9C6A16", ring: "#FFF3C4", img: `${PAT.foilMark}, ${PAT.quilt}, linear-gradient(135deg, #F6D77A, #C88F27 50%, #F2CB6A)`, size: "100% 100%, 8px 8px, 100% 100%" },
 ];
 const FELTS = [
   { key: "green", label: "Classic Green", cost: 0, c1: "#22A866", c2: "#138048", c3: "#0B5C33", rail: "#5A3A20" },
-  { key: "royal", label: "Royal Blue", cost: 1500, c1: "#3483E6", c2: "#1C5BB8", c3: "#103C80", rail: "#3B2A1A" },
-  { key: "crimson", label: "Crimson", cost: 1500, c1: "#D04256", c2: "#9C2234", c3: "#6E1422", rail: "#2E1F16" },
-  { key: "purple", label: "Velvet", pass: 5, c1: "#9659E0", c2: "#6A35B0", c3: "#45207A", rail: "#2B2140" },
-  { key: "ocean", label: "Ocean", pass: 15, c1: "#22C2BC", c2: "#12857F", c3: "#0A5753", rail: "#3A2A1C" },
-  { key: "blackout", label: "Blackout", cost: 4000, c1: "#343C48", c2: "#1C2129", c3: "#101318", rail: "#C9A24D" },
+  { key: "royal", label: "Herringbone", cost: 1500, c1: "#2F76D6", c2: "#1B52A8", c3: "#0F3673", rail: "#2B2018", tex: PAT.herring, texSize: "16px 8px" },
+  { key: "crimson", label: "Bordeaux", cost: 1500, c1: "#9E2F3E", c2: "#701C2A", c3: "#4A0F1A", rail: "#24170F", tex: PAT.lattice, texSize: "22px 22px", line: "rgba(233,190,110,0.55)" },
+  { key: "purple", label: "Velvet", pass: 5, c1: "#8A4FD6", c2: "#5E2DA3", c3: "#3B1A6E", rail: "#221A33", tex: "radial-gradient(40% 30% at 30% 30%, rgba(255,255,255,0.10), transparent 70%), radial-gradient(35% 28% at 72% 68%, rgba(255,255,255,0.07), transparent 70%), radial-gradient(30% 40% at 60% 20%, rgba(0,0,0,0.12), transparent 70%)", texSize: "100% 100%" },
+  { key: "ocean", label: "Lagoon", pass: 15, c1: "#1FB5AE", c2: "#0F7E78", c3: "#09524E", rail: "#E8DCC0", tex: PAT.ripple, texSize: "60px 60px" },
+  { key: "blackout", label: "Onyx", cost: 4000, c1: "#2C323C", c2: "#191D24", c3: "#0D0F13", rail: "#C9A24D", tex: PAT.hex, texSize: "14px 24px", line: "rgba(201,162,77,0.5)" },
 ];
 const findBack = (k) => CARD_BACKS.find((b) => b.key === k) || CARD_BACKS[0];
 const findFelt = (k) => FELTS.find((f) => f.key === k) || FELTS[0];
@@ -1000,6 +1027,26 @@ async function saveData(data) {
 function defaultData() {
   return { name: "You", avatar: "🫵", chips: 2000, unlocked: ["🫵", "🙂", "😎", "🐱"], friends: [], achievements: [], lastDailyBonus: null, stats: { handsPlayed: 0, handsWon: 0, biggestPot: 0, netChips: 0, curWinStreak: 0, bestWinStreak: 0, pos: { late: [0, 0], early: [0, 0], blinds: [0, 0] } }, settings: { winTipSeen: false, colorblind: false, cardSize: "normal", animSpeed: "normal", runTwice: false, squeeze: true }, ranked: defaultRanked(), skill: defaultSkill(), cosmetics: defaultCosmetics(), streak: { count: 0, last: null }, challenges: ensureChallenges(null), pass: ensurePass(null), history: { bankroll: [], best: [] }, titles: defaultTitles(), themes: defaultThemes() };
 }
+// a phone photo comes in huge: center-crop it to a small square so it saves fast and loads instantly
+function shrinkPhoto(file, size = 256) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error("read"));
+    reader.onload = () => {
+      const img = new Image();
+      img.onerror = () => reject(new Error("decode"));
+      img.onload = () => {
+        const side = Math.min(img.width, img.height);
+        const c = document.createElement("canvas"); c.width = size; c.height = size;
+        const g = c.getContext("2d"); g.imageSmoothingQuality = "high";
+        g.drawImage(img, (img.width - side) / 2, (img.height - side) / 2, side, side, 0, 0, size, size);
+        resolve(c.toDataURL("image/jpeg", 0.84));
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
 function vibrate(pattern) { try { if (navigator.vibrate) navigator.vibrate(pattern); } catch (e) { /* not supported */ } }
 function todayStr() { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; }
 
@@ -1049,6 +1096,7 @@ const ICON_PATHS = {
   cap: ["M22 10 12 5 2 10l10 5 10-5z", "M6 12v5c3 2 9 2 12 0v-5"],
   bolt: ["M13 2 3 14h9l-1 8 10-12h-9l1-8z"],
   chart: ["M3 3v18h18", "m7 14 4-4 3 3 5-6"],
+  camera: ["M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z", "M12 17a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"],
   coach: ["M9 18h6", "M10 22h4", "M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.2 1 2V17h6v-.3c0-.8.4-1.5 1-2A7 7 0 0 0 12 2z"],
 };
 function Icon({ name, size = 16, stroke = 1.8, style }) {
@@ -1220,7 +1268,7 @@ function computePots(players) {
 /* =========================================================================
    POKER TABLE
    ========================================================================= */
-function PokerTable({ startStack, name, avatar, soundOn, setSoundOn, onExit, onHandResolved, stakes, tableSize, tournament, ranked, rankedState, skill, tourneyBuyIn = 0, bankroll, botSkill = 0.4, opponentRating = null, frameColor, tutorial, variant = "holdem", turbo = false, runTwice = false, squeeze = false, cardBack = null, felt = null, title = null, vip = false, prestige = 0, colorblind, cardSize, animSpeed, showWinTip, onDismissWinTip }) {
+function PokerTable({ startStack, name, avatar, photo = null, soundOn, setSoundOn, onExit, onHandResolved, stakes, tableSize, tournament, ranked, rankedState, skill, tourneyBuyIn = 0, bankroll, botSkill = 0.4, opponentRating = null, frameColor, tutorial, variant = "holdem", turbo = false, runTwice = false, squeeze = false, cardBack = null, felt = null, title = null, vip = false, prestige = 0, colorblind, cardSize, animSpeed, showWinTip, onDismissWinTip }) {
   const suitColor = colorblind ? SUIT_COLOR_CB : SUIT_COLOR;
   const cardScale = cardSize === "large" ? 1.18 : 1;
   const speedMult = animSpeed === "fast" ? 0.55 : 1;
@@ -1879,7 +1927,7 @@ function PokerTable({ startStack, name, avatar, soundOn, setSoundOn, onExit, onH
       : tutorial ? "Practice, nothing at stake" : vip ? `${stakes?.label || "High Roller"} · ${SB.toLocaleString()} / ${BB.toLocaleString()}` : `${gameTag ? `${gameTag} cash` : "Cash game"}, blinds ${SB}/${BB}`;
 
   return (
-    <div data-felt={felt ? felt.key : "green"} data-back={cardBack ? cardBack.key : "blue"} className={`table-wrap${drama ? " is-drama" : ""}${vip ? " vip" : ""}${bots.length >= 7 ? " crowded" : ""}`} style={{ ...(cardBack ? { "--back-a": cardBack.a, "--back-b": cardBack.b, "--back-ring": cardBack.ring } : {}), ...(felt ? { "--felt1": felt.c1, "--felt2": felt.c2, "--felt3": felt.c3, "--rail": felt.rail } : {}) }}>
+    <div data-felt={felt ? felt.key : "green"} data-back={cardBack ? cardBack.key : "blue"} className={`table-wrap${drama ? " is-drama" : ""}${vip ? " vip" : ""}${bots.length >= 7 ? " crowded" : ""}`} style={{ ...(cardBack ? { "--back-a": cardBack.a, "--back-b": cardBack.b, "--back-ring": cardBack.ring, ...(cardBack.img ? { "--back-img": cardBack.img, "--back-size": cardBack.size } : {}) } : {}), ...(felt ? { "--felt1": felt.c1, "--felt2": felt.c2, "--felt3": felt.c3, "--rail": felt.rail, ...(felt.tex ? { "--felt-tex": felt.tex, "--felt-tex-size": felt.texSize } : {}), ...(felt.line ? { "--felt-line": felt.line } : {}) } : {}) }}>
       <div className="table-top">
         <button className="iconbtn" onClick={handleBack} aria-label="Leave table"><Icon name="back" size={15} /></button>
         <div style={{ textAlign: "center", minWidth: 0 }}>
@@ -2028,7 +2076,7 @@ function PokerTable({ startStack, name, avatar, soundOn, setSoundOn, onExit, onH
             {humanTurn && (<svg width="44" height="44" style={{ position: "absolute", top: 0, left: 0, transform: "rotate(-90deg)" }}>
               <circle cx="22" cy="22" r="20" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="2.5" />
               <circle cx="22" cy="22" r="20" fill="none" stroke={timeLeft < 8 ? "#FF6B6B" : ringColor} strokeWidth="2.5" strokeDasharray={2 * Math.PI * 20} strokeDashoffset={2 * Math.PI * 20 * (1 - timeLeft / turnSeconds)} style={{ transition: "stroke-dashoffset .25s linear" }} strokeLinecap="round" /></svg>)}
-            <div style={{ position: "absolute", top: 3, left: 3, width: 38, height: 38, borderRadius: "50%", background: "var(--t-panel2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, opacity: human?.folded ? 0.4 : 1, boxShadow: frameColor ? `0 0 0 2px ${frameColor}` : "none" }}>{human?.avatar}</div>
+            <div style={{ position: "absolute", top: 3, left: 3, width: 38, height: 38, borderRadius: "50%", background: "var(--t-panel2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, opacity: human?.folded ? 0.4 : 1, boxShadow: frameColor ? `0 0 0 2px ${frameColor}` : "none", overflow: "hidden" }}>{photo ? <img src={photo} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} /> : human?.avatar}</div>
             {dealerIdx === 0 && <div className="dealer-chip" style={{ bottom: -1, right: -1 }}>D</div>}
           </div>
           <div style={{ minWidth: 0 }}>
@@ -3184,10 +3232,14 @@ function CoachScreen({ data }) {
    SHOP TAB
    ========================================================================= */
 function BackSwatch({ b, w = 44 }) {
-  return <div className="back-sw" style={{ width: w, height: w * 1.4, background: `repeating-linear-gradient(45deg, ${b.a} 0 5px, ${b.b} 5px 10px)`, boxShadow: `inset 0 0 0 3px ${b.ring}, 0 4px 10px rgba(0,0,0,0.35)` }} />;
+  return <div className="back-sw" style={{ width: w, height: w * 1.4, backgroundColor: b.a, backgroundImage: b.img, backgroundSize: b.size, backgroundPosition: "center", boxShadow: `inset 0 0 0 2px ${b.ring}, inset 0 0 0 3.5px ${b.b}, 0 4px 10px rgba(0,0,0,0.35)` }} />;
 }
 function FeltSwatch({ f }) {
-  return <div className="felt-sw" style={{ background: `radial-gradient(ellipse at 50% 40%, ${f.c1} 0%, ${f.c2} 55%, ${f.c3} 100%)`, borderColor: f.rail }} />;
+  return (
+    <div className="felt-sw" style={{ backgroundColor: f.c2, backgroundImage: `${f.tex ? `${f.tex}, ` : ""}radial-gradient(ellipse at 50% 40%, ${f.c1} 0%, ${f.c2} 55%, ${f.c3} 100%)`, backgroundSize: f.tex ? `${f.texSize}, 100% 100%` : undefined, borderColor: f.rail }}>
+      {f.line && <span className="felt-sw-line" style={{ borderColor: f.line }} />}
+    </div>
+  );
 }
 function CosmeticTile({ item, owned, equipped, chips, onBuy, onEquip, children }) {
   const canAfford = item.cost != null && chips >= item.cost;
@@ -3279,7 +3331,7 @@ function ShopScreen({ data, onClaimChips, onBuyAvatar, onClaimDaily, onBuyCosmet
       <div className="cos-grid" style={{ marginBottom: 24 }}>
         {CARD_BACKS.map((b) => (
           <CosmeticTile key={b.key} item={b} owned={cos.backs.includes(b.key)} equipped={cos.cardBack === b.key} chips={data.chips} onBuy={() => onBuyCosmetic("back", b)} onEquip={() => onEquipCosmetic("back", b.key)}>
-            <BackSwatch b={b} w={34} />
+            <BackSwatch b={b} w={42} />
           </CosmeticTile>
         ))}
       </div>
@@ -3490,7 +3542,7 @@ function BestHands({ list, suitColor }) {
   );
 }
 
-function ProfileScreen({ data, onUpdateName, onSelectAvatar, onSelectFrame, onAddFriend, onUpdateSettings, onExportData, onImportData, onResetProfile, onEquipTitle, onPrestige }) {
+function ProfileScreen({ data, onUpdateName, onSelectAvatar, onSetPhoto, onUsePhoto, onSelectFrame, onAddFriend, onUpdateSettings, onExportData, onImportData, onResetProfile, onEquipTitle, onPrestige }) {
   const importRef = useRef(null);
   const [ladder, setLadder] = useState(false);
   const [transfer, setTransfer] = useState(false);
@@ -3525,7 +3577,7 @@ function ProfileScreen({ data, onUpdateName, onSelectAvatar, onSelectFrame, onAd
         <button className="iconbtn" onClick={() => setShowSettings(true)} aria-label="Settings"><Icon name="settings" size={14} /></button>
       </div>
       <div style={{ textAlign: "center", margin: "0 0 24px" }}>
-        <button onClick={() => setPickingAvatar(true)} className="profile-av" style={{ boxShadow: frameColor ? `0 0 0 3px #0B1426, 0 0 0 6px ${frameColor}` : "none" }} aria-label="Change avatar">{data.avatar}</button>
+        <button onClick={() => setPickingAvatar(true)} className="profile-av" style={{ boxShadow: frameColor ? `0 0 0 3px #0B1426, 0 0 0 6px ${frameColor}` : "none" }} aria-label="Change avatar">{data.usePhoto && data.photo ? <img src={data.photo} alt="" className="av-photo" /> : data.avatar}<span className="av-edit"><Icon name="edit" size={11} stroke={2.2} /></span></button>
         {editingName ? (
           <form onSubmit={(e) => { e.preventDefault(); saveName(); }} style={{ display: "flex", gap: 6, justifyContent: "center", alignItems: "center" }}>
             <input autoFocus value={nameInput} maxLength={16} onChange={(e) => setNameInput(e.target.value)} className="input" style={{ width: 160, textAlign: "center", fontWeight: 600 }} aria-label="Display name" />
@@ -3689,9 +3741,17 @@ function ProfileScreen({ data, onUpdateName, onSelectAvatar, onSelectFrame, onAd
       )}
       {pickingAvatar && (
         <Modal title="Choose avatar" onClose={() => setPickingAvatar(false)}>
+          <div className="photo-row">
+            <label className="btn photo-up">
+              <Icon name="camera" size={15} stroke={2} />{data.photo ? "New photo" : "Upload a photo"}
+              <input type="file" accept="image/*" onChange={async (e) => { const f = e.target.files && e.target.files[0]; e.target.value = ""; if (!f) return; try { const url = await shrinkPhoto(f); onSetPhoto(url); setPickingAvatar(false); } catch (err) { onSetPhoto(null, "That photo didn't load. Try another one."); } }} />
+            </label>
+            {data.photo && <button className={`avatar-tile photo-tile${data.usePhoto ? " on" : ""}`} onClick={() => { onUsePhoto(true); setPickingAvatar(false); }} aria-pressed={!!data.usePhoto} aria-label="Use my photo"><img src={data.photo} alt="" /></button>}
+            {data.photo && <button className="iconbtn" onClick={() => onSetPhoto(null)} aria-label="Remove photo"><Icon name="close" size={13} /></button>}
+          </div>
           <div className="avatar-grid">
             {data.unlocked.map((emoji) => (
-              <button key={emoji} onClick={() => { onSelectAvatar(emoji); setPickingAvatar(false); }} className="avatar-tile" style={{ borderColor: emoji === data.avatar ? "var(--t-good)" : undefined }} aria-pressed={emoji === data.avatar}>
+              <button key={emoji} onClick={() => { onSelectAvatar(emoji); setPickingAvatar(false); }} className="avatar-tile" style={{ borderColor: emoji === data.avatar && !data.usePhoto ? "var(--t-good)" : undefined }} aria-pressed={emoji === data.avatar && !data.usePhoto}>
                 <div style={{ fontSize: 26 }}>{emoji}</div>
               </button>
             ))}
@@ -3985,7 +4045,12 @@ export default function App() {
     sound.coin();
     persist({ ...data, chips: data.chips - avatarObj.cost, unlocked: [...data.unlocked, avatarObj.emoji] });
   };
-  const handleSelectAvatar = (emoji) => { sound.tap(); persist({ ...data, avatar: emoji }); };
+  const handleSelectAvatar = (emoji) => { sound.tap(); persist({ ...data, avatar: emoji, usePhoto: false }); };
+  const handleSetPhoto = (url, err) => {
+    if (err) { showToast({ title: "Photo", label: err }, 2600); return; }
+    sound.tap(); persist(url ? { ...data, photo: url, usePhoto: true } : { ...data, photo: null, usePhoto: false });
+  };
+  const handleUsePhoto = (on) => { sound.tap(); persist({ ...data, usePhoto: !!on && !!data.photo }); };
   const handleSelectFrame = (frameKey) => { sound.tap(); persist({ ...data, ranked: { ...data.ranked, frame: frameKey } }); };
   const handleUpdateName = (name) => { sound.tap(); persist({ ...data, name }); };
   const handleAddFriend = (name) => { sound.tap(); persist({ ...data, friends: [...data.friends, name] }); };
@@ -4135,7 +4200,7 @@ export default function App() {
         <PokerTable
           key={tableKey}
           startStack={isPractice ? 2000 : isTournament ? TOURNEY_STACK : isRanked ? (session?.buyIn ?? RANKED_BUYIN) : (session?.startChips ?? data.chips)}
-          name={data.name} avatar={data.avatar} soundOn={soundOn} setSoundOn={setSoundOn}
+          name={data.name} avatar={data.avatar} photo={data.usePhoto ? data.photo : null} soundOn={soundOn} setSoundOn={setSoundOn}
           onExit={handleExitTable} onHandResolved={handleHandResolved}
           stakes={session?.stakes} tableSize={session?.tableSize} tournament={isTournament} ranked={isRanked}
           rankedState={data.ranked} skill={data.skill} tourneyBuyIn={session?.buyIn || 0} bankroll={data.chips} botSkill={botSkill} opponentRating={opponentRating} frameColor={frameColor} tutorial={isPractice}
@@ -4157,7 +4222,7 @@ export default function App() {
           {tab === "home" && <HomeMenu onPlayAI={handlePlayAI} data={data} chips={data.chips} ranked={data.ranked} onClaimDaily={handleClaimDaily} onClaimChallenge={handleClaimChallenge} onSpin={handleSpin} onPrestige={handlePrestige} sound={sound} goShop={() => setTab("shop")} />}
           {tab === "leaderboard" && <LeaderboardScreen data={data} />}
           {tab === "coach" && <CoachScreen data={data} />}
-          {tab === "profile" && <ProfileScreen data={data} onUpdateName={handleUpdateName} onSelectAvatar={handleSelectAvatar} onSelectFrame={handleSelectFrame} onAddFriend={handleAddFriend} onUpdateSettings={handleUpdateSettings} onExportData={handleExportData} onImportData={handleImportData} onResetProfile={handleResetProfile} onEquipTitle={handleEquipTitle} onPrestige={handlePrestige} />}
+          {tab === "profile" && <ProfileScreen data={data} onUpdateName={handleUpdateName} onSelectAvatar={handleSelectAvatar} onSetPhoto={handleSetPhoto} onUsePhoto={handleUsePhoto} onSelectFrame={handleSelectFrame} onAddFriend={handleAddFriend} onUpdateSettings={handleUpdateSettings} onExportData={handleExportData} onImportData={handleImportData} onResetProfile={handleResetProfile} onEquipTitle={handleEquipTitle} onPrestige={handlePrestige} />}
         </div>
       </main>
       <BottomNav tab={tab} setTab={(t) => { sound.tap(); setTab(t); if (t !== "shop") setPreviewTheme(null); }} />
@@ -4471,14 +4536,14 @@ input[type=range] { accent-color: var(--t-accent); }
 .cos-tile:active:not(:disabled) { transform: scale(0.96); }
 .cos-tile.on { border-color: var(--t-good); box-shadow: 0 0 0 3px rgba(52,211,153,0.15); }
 .cos-tile:disabled { cursor: default; }
-.cos-prev { height: 50px; display: flex; align-items: center; justify-content: center; }
+.cos-prev { height: 62px; display: flex; align-items: center; justify-content: center; }
 .cos-name { font-size: 11.5px; font-weight: 600; text-align: center; }
 .cos-tag { display: inline-flex; align-items: center; gap: 4px; font-size: 10.5px; font-weight: 700; padding: 3px 8px; border-radius: 10px; background: rgba(244,247,252,0.08); color: var(--t-text2); }
 .cos-tag.eq { background: rgba(52,211,153,0.16); color: var(--t-good); }
 .cos-tag.buy { background: rgba(245,184,61,0.16); color: var(--t-accent); }
 .cos-tag.locked { color: var(--t-faint); }
 .back-sw { border-radius: 6px; }
-.felt-sw { width: 64px; height: 40px; border-radius: 999px; border: 4px solid; box-shadow: 0 4px 10px rgba(0,0,0,0.35), inset 0 4px 10px rgba(0,0,0,0.3); }
+.felt-sw { width: 78px; height: 48px; border-radius: 999px; border: 4px solid; box-shadow: 0 4px 10px rgba(0,0,0,0.35), inset 0 4px 10px rgba(0,0,0,0.3); }
 
 .chart-dot { position: absolute; width: 10px; height: 10px; margin: -5px 0 0 -5px; border-radius: 50%; box-shadow: 0 0 0 2px var(--t-panel); pointer-events: none; }
 .best-row { display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 12px; background: rgba(244,247,252,0.04); }
@@ -4888,6 +4953,23 @@ body.theme-montecarlo .pc-index { top: 11px; left: 11px; } body.theme-montecarlo
   .table-wrap .controls .btn { padding-top: 11px; padding-bottom: 11px; }
   .table-wrap .pre-btn { padding-top: 10px; padding-bottom: 10px; }
 }
+/* drawn card backs and felt textures (patterns come from the item, colors from its vars) */
+.card.back, .sq-cover { background-image: var(--back-img, repeating-linear-gradient(45deg, rgba(255,255,255,0.14) 0 3px, transparent 3px 7px)); background-size: var(--back-size, auto); background-position: center; }
+.backs .card.mini.back { background-size: var(--back-size, auto); }
+.felt-oval { background-image: var(--felt-tex, linear-gradient(transparent, transparent)), repeating-radial-gradient(circle at 30% 40%, rgba(255,255,255,0.022) 0 1px, transparent 1px 3px), radial-gradient(ellipse at 50% 40%, var(--felt1, #22A866) 0%, var(--felt2, #138048) 52%, var(--felt3, #0B5C33) 100%); background-size: var(--felt-tex-size, 100% 100%), auto, 100% 100%; }
+.felt-oval::before { content: ""; position: absolute; top: 9px; right: 9px; bottom: 9px; left: 9px; border-radius: 999px; border: 1.5px solid var(--felt-line, transparent); pointer-events: none; }
+.felt-sw { position: relative; }
+.felt-sw-line { position: absolute; top: 3px; right: 3px; bottom: 3px; left: 3px; border-radius: 999px; border: 1px solid; }
+/* profile photo */
+.profile-av { position: relative; overflow: visible; }
+.av-photo { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; display: block; }
+.av-edit { position: absolute; right: -2px; bottom: -2px; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: var(--t-text); color: var(--t-bg); box-shadow: 0 0 0 3px var(--t-bg); }
+.photo-row { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+.photo-up { position: relative; display: inline-flex; align-items: center; justify-content: center; gap: 8px; overflow: hidden; }
+.photo-up input { position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; font-size: 0; }
+.photo-tile { width: 48px; height: 48px; padding: 0 !important; flex-shrink: 0; overflow: hidden; border-radius: 50% !important; }
+.photo-tile img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.photo-tile.on { box-shadow: 0 0 0 2px var(--t-good) !important; }
 /* ---------- High Roller Room: black lacquer, emerald baize, champagne gold ---------- */
 .vip-card { width: 100%; display: flex; flex-direction: column; gap: 0; padding: 16px 18px 15px; border-radius: 18px; cursor: pointer; text-align: left; color: #F3EDE0; background-color: #0C0B09; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4' height='4'%3E%3Cpath d='M0 4L4 0' stroke='%23FFFFFF' stroke-opacity='0.025'/%3E%3C/svg%3E"), radial-gradient(120% 90% at 85% 0%, rgba(217,180,106,0.16), transparent 55%), linear-gradient(160deg, #1A1713 0%, #0B0A08 60%, #121009 100%); border: 1px solid rgba(217,180,106,0.32); position: relative; overflow: hidden; transition: transform .14s ease, box-shadow .3s ease; box-shadow: inset 0 1px 0 rgba(255,240,210,0.08), 0 10px 26px rgba(0,0,0,0.35); }
 .vip-card::before { content: ""; position: absolute; top: 5px; right: 5px; bottom: 5px; left: 5px; border-radius: 14px; border: 1px solid rgba(217,180,106,0.14); pointer-events: none; }
