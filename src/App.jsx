@@ -251,7 +251,7 @@ const CARD_BACKS = [
   { key: "blue", label: "Classic Blue", cost: 0, a: "#2F6FDE", b: "#1F4FA8", ring: "#FFFFFF" },
   { key: "crimson", label: "Crimson", cost: 800, a: "#D23C4E", b: "#9E2233", ring: "#FFFFFF" },
   { key: "emerald", label: "Emerald", cost: 800, a: "#16A06A", b: "#0D7149", ring: "#FFFFFF" },
-  { key: "midnight", label: "Midnight Gold", cost: 2500, a: "#14223D", b: "#0B1426", ring: "#F5B83D" },
+  { key: "midnight", label: "Midnight Gold", cost: 2500, a: "#134A39", b: "#0B2A20", ring: "#F5B83D" },
   { key: "neon", label: "Neon", pass: 10, a: "#8B5CF6", b: "#DB2777", ring: "#FFFFFF" },
   { key: "carbon", label: "Carbon", pass: 20, a: "#2A2F38", b: "#16191F", ring: "#9AA4B2" },
   { key: "foil", label: "Gold Foil", pass: 30, a: "#F5C451", b: "#B7791F", ring: "#FFF3C4" },
@@ -358,7 +358,7 @@ function trackHistory(prev, next, best) {
 /* =========================================================================
    TITLES: shown under your name at the table, on your profile and the leaderboard
    ========================================================================= */
-const TITLE_RARITY = { common: "#A9B8D0", rare: "#6FA8FF", epic: "#B98BFF", legendary: "#F5C451" };
+const TITLE_RARITY = { common: "#C3D9CF", rare: "#6FA8FF", epic: "#B98BFF", legendary: "#F5C451" };
 const TITLES = [
   { key: "rookie", label: "Rookie", rarity: "common", how: "Everyone starts here" },
   // earned
@@ -904,7 +904,7 @@ function defaultData() {
 function vibrate(pattern) { try { if (navigator.vibrate) navigator.vibrate(pattern); } catch (e) { /* not supported */ } }
 function todayStr() { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; }
 
-const DISPLAY_FONT = "'Fraunces', Georgia, serif";
+const DISPLAY_FONT = "'Archivo Variable', 'Archivo', -apple-system, sans-serif";
 const BODY_FONT = "'Inter', -apple-system, sans-serif";
 function useGoogleFonts() {
   useEffect(() => {
@@ -912,7 +912,7 @@ function useGoogleFonts() {
     const link = document.createElement("link");
     link.id = "felt-fonts";
     link.rel = "stylesheet";
-    link.href = "https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700;800&display=swap";
+    link.href = "https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&display=swap";
     document.head.appendChild(link);
   }, []);
 }
@@ -1091,8 +1091,8 @@ function MiniCard({ code, suitColor, dim }) {
 function SectionLabel({ children, right }) {
   return (
     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", margin: "0 2px 10px" }}>
-      <div style={{ fontSize: 13, fontWeight: 600, color: "#8FA1BE" }}>{children}</div>
-      {right && <div style={{ fontSize: 12, color: "#5E7196" }}>{right}</div>}
+      <div style={{ fontSize: 13, fontWeight: 600, color: "#A9C7BA" }}>{children}</div>
+      {right && <div style={{ fontSize: 12, color: "#6F9584" }}>{right}</div>}
     </div>
   );
 }
@@ -1741,9 +1741,9 @@ function PokerTable({ startStack, name, avatar, soundOn, setSoundOn, onExit, onH
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 4, maxWidth: colWidth }}>
                 {botRating != null && <TierBadge tier={tierForRating(botRating)} size={13} />}
-                <span style={{ fontSize: compact ? 10.5 : 11.5, fontWeight: 600, color: "#C8D3E6", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.name}</span>
+                <span style={{ fontSize: compact ? 10.5 : 11.5, fontWeight: 600, color: "#E3EEE8", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.name}</span>
               </div>
-              <div className="num" style={{ fontSize: 10.5, color: "#7587A6" }}>{p.eliminated ? "Out" : fmt(p.stack)}</div>
+              <div className="num" style={{ fontSize: 10.5, color: "#93B5A6" }}>{p.eliminated ? "Out" : fmt(p.stack)}</div>
               {tendencyTag && !p.eliminated && !tiny && <div style={{ fontSize: 9.5, fontWeight: 600, color: tendencyTag === "Aggressive" ? "#FF6B6B" : "#34D399" }}>{tendencyTag}</div>}
               <div style={{ height: tiny ? 30 : 34, display: "flex", alignItems: "center", justifyContent: "center", gap: 3 }}>
                 {revealed && p.hole.map((c, i2) => (<div key={c.id} className={`card mini${hc > 2 ? " m4" : ""}${dim(c.id) ? " dim" : ""}${winningIds && winningIds.has(c.id) ? " win" : ""}`} style={{ marginLeft: hc > 2 && i2 ? -7 : 0, animation: `flipIn .4s cubic-bezier(.2,.8,.2,1) ${i2 * 0.08}s backwards` }}><div style={{ color: suitColor[c.s], fontSize: 9, fontWeight: 700 }}>{rankLabel(c.r)}{SUIT_GLYPH[c.s]}</div></div>))}
@@ -1787,21 +1787,21 @@ function PokerTable({ startStack, name, avatar, soundOn, setSoundOn, onExit, onH
             <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 13.5, fontWeight: 600, color: winnerBanner.won ? "#34D399" : "#EAF0F8" }}>{winnerBanner.text}</div>
-                {winnerBanner.text2 && <div style={{ fontSize: 13, fontWeight: 600, color: "#C8D3E6", marginTop: 2 }}>{winnerBanner.text2}</div>}
+                {winnerBanner.text2 && <div style={{ fontSize: 13, fontWeight: 600, color: "#E3EEE8", marginTop: 2 }}>{winnerBanner.text2}</div>}
               </div>
               <button className="iconbtn" onClick={() => setShareOpen(true)} aria-label="Share this hand"><Icon name="share" size={13} /></button>
             </div>
             {winnerBanner.summary && winnerBanner.summary.length > 1 && (
               <div style={{ display: "flex", flexDirection: "column", gap: 3, paddingTop: 7, marginTop: 7, borderTop: "1px solid rgba(244,247,252,0.08)" }}>
                 {winnerBanner.summary.map((s) => (
-                  <div key={s.id} style={{ display: "flex", justifyContent: "space-between", gap: 10, fontSize: 11.5, color: s.isWinner ? "#34D399" : "#8FA1BE", fontWeight: s.isWinner ? 600 : 400 }}>
+                  <div key={s.id} style={{ display: "flex", justifyContent: "space-between", gap: 10, fontSize: 11.5, color: s.isWinner ? "#34D399" : "#A9C7BA", fontWeight: s.isWinner ? 600 : 400 }}>
                     <span>{s.name}</span><span>{s.desc}</span>
                   </div>
                 ))}
               </div>
             )}
             {winnerBanner.potLines && winnerBanner.potLines.length > 1 && (
-              <div style={{ fontSize: 10.5, color: "#7587A6", paddingTop: 5 }}>{winnerBanner.potLines.join(". ")}</div>
+              <div style={{ fontSize: 10.5, color: "#93B5A6", paddingTop: 5 }}>{winnerBanner.potLines.join(". ")}</div>
             )}
           </div>
         )}
@@ -1809,8 +1809,8 @@ function PokerTable({ startStack, name, avatar, soundOn, setSoundOn, onExit, onH
 
       <div style={{ width: "100%", maxWidth: 460, flexShrink: 0, height: handLabel ? 46 : 0, overflow: "hidden", transition: "height .2s ease", marginBottom: handLabel ? 8 : 0 }}>
         {handLabel && (<div className="hand-strip" style={{ borderColor: heroEq != null && heroEq >= 50 ? "rgba(52,211,153,0.4)" : "rgba(255,107,107,0.32)" }}>
-          <span style={{ fontSize: 13, fontWeight: 600, color: "#C8D3E6", position: "relative" }}>{handLabel}</span>
-          <span className="num" style={{ fontSize: 14.5, fontWeight: 700, position: "relative", color: heroEq == null ? "#7587A6" : eqShown >= 50 ? "#34D399" : "#FF6B6B" }}>{heroEq == null ? "…" : `${eqShown}% to win`}</span>
+          <span style={{ fontSize: 13, fontWeight: 600, color: "#E3EEE8", position: "relative" }}>{handLabel}</span>
+          <span className="num" style={{ fontSize: 14.5, fontWeight: 700, position: "relative", color: heroEq == null ? "#93B5A6" : eqShown >= 50 ? "#34D399" : "#FF6B6B" }}>{heroEq == null ? "…" : `${eqShown}% to win`}</span>
           <div className="eq-meter" style={{ width: `${heroEq == null ? 0 : eqShown}%`, background: eqShown >= 50 ? "rgba(52,211,153,0.16)" : "rgba(255,107,107,0.13)" }} />
         </div>)}
       </div>
@@ -1843,13 +1843,13 @@ function PokerTable({ startStack, name, avatar, soundOn, setSoundOn, onExit, onH
             {humanTurn && (<svg width="44" height="44" style={{ position: "absolute", top: 0, left: 0, transform: "rotate(-90deg)" }}>
               <circle cx="22" cy="22" r="20" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="2.5" />
               <circle cx="22" cy="22" r="20" fill="none" stroke={timeLeft < 8 ? "#FF6B6B" : "#34D399"} strokeWidth="2.5" strokeDasharray={2 * Math.PI * 20} strokeDashoffset={2 * Math.PI * 20 * (1 - timeLeft / turnSeconds)} style={{ transition: "stroke-dashoffset .25s linear" }} strokeLinecap="round" /></svg>)}
-            <div style={{ position: "absolute", top: 3, left: 3, width: 38, height: 38, borderRadius: "50%", background: "#25395F", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, opacity: human?.folded ? 0.4 : 1, boxShadow: frameColor ? `0 0 0 2px ${frameColor}` : "none" }}>{human?.avatar}</div>
+            <div style={{ position: "absolute", top: 3, left: 3, width: 38, height: 38, borderRadius: "50%", background: "#1B5A45", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, opacity: human?.folded ? 0.4 : 1, boxShadow: frameColor ? `0 0 0 2px ${frameColor}` : "none" }}>{human?.avatar}</div>
             {dealerIdx === 0 && <div className="dealer-chip" style={{ bottom: -1, right: -1 }}>D</div>}
           </div>
           <div style={{ minWidth: 0 }}>
             <div style={{ fontSize: 13.5, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", display: "flex", alignItems: "center", gap: 5 }}>{human?.name}<PrestigeBadge n={prestige} size={15} /></div>
             {title && title !== "rookie" && <TitleTag k={title} size={10.5} style={{ display: "block", marginTop: -1 }} />}
-            <div className="num" style={{ fontSize: 12, color: "#8FA1BE" }}>{(human?.stack ?? 0).toLocaleString()}{ranked && handsCount > 0 && !rankedResult && <span className="standing">{ordinal(rankedPlace)} of {players.length}</span>}</div>
+            <div className="num" style={{ fontSize: 12, color: "#A9C7BA" }}>{(human?.stack ?? 0).toLocaleString()}{ranked && handsCount > 0 && !rankedResult && <span className="standing">{ordinal(rankedPlace)} of {players.length}</span>}</div>
             {human?.streetContributed > 0 && <div className={`chip-badge${collecting ? " collecting" : ""}`} style={{ marginTop: 3 }}><ChipStack amount={human.streetContributed} small />{human.streetContributed.toLocaleString()}</div>}
           </div>
         </div>
@@ -1897,13 +1897,13 @@ function PokerTable({ startStack, name, avatar, soundOn, setSoundOn, onExit, onH
         ) : tournamentOver ? (
           <div style={{ textAlign: "center", width: "100%" }}>
             <div style={{ fontFamily: DISPLAY_FONT, fontSize: 20, fontWeight: 600, color: tournamentOver.won ? "#34D399" : "#EAF0F8", marginBottom: 4 }}>{tournamentOver.won ? "You won the tournament" : `You finished ${ordinal(tournamentOver.placement)}`}</div>
-            <div className="num" style={{ fontSize: 12.5, color: "#7587A6", marginBottom: 12 }}>{tournamentOver.won ? `Outlasted ${tournamentOver.total - 1} players.` : `Out of ${tournamentOver.total} players.`}{tourneyBuyIn > 0 ? (tourneyPrize(tournamentOver.total, tournamentOver.placement, tourneyBuyIn) > 0 ? ` You cashed ${tourneyPrize(tournamentOver.total, tournamentOver.placement, tourneyBuyIn).toLocaleString()} chips.` : " Outside the money.") : ""}</div>
+            <div className="num" style={{ fontSize: 12.5, color: "#93B5A6", marginBottom: 12 }}>{tournamentOver.won ? `Outlasted ${tournamentOver.total - 1} players.` : `Out of ${tournamentOver.total} players.`}{tourneyBuyIn > 0 ? (tourneyPrize(tournamentOver.total, tournamentOver.placement, tourneyBuyIn) > 0 ? ` You cashed ${tourneyPrize(tournamentOver.total, tournamentOver.placement, tourneyBuyIn).toLocaleString()} chips.` : " Outside the money.") : ""}</div>
             <button className="btn btn-raise" style={{ width: "100%" }} onClick={() => onExit(startStack, tournamentOver)}>Back to lobby</button>
           </div>
         ) : tableCleared && !ranked && !tournament && betweenHands ? (
           <div style={{ textAlign: "center", width: "100%" }}>
             <div style={{ fontFamily: DISPLAY_FONT, fontSize: 20, fontWeight: 600, marginBottom: 4 }}>You cleared the table</div>
-            <div className="num" style={{ fontSize: 12.5, color: "#7587A6", marginBottom: 12 }}>{tutorial ? "Nice. Practice chips don't count toward your balance." : `${signed(human.stack - startStack)} chips this session.`}</div>
+            <div className="num" style={{ fontSize: 12.5, color: "#93B5A6", marginBottom: 12 }}>{tutorial ? "Nice. Practice chips don't count toward your balance." : `${signed(human.stack - startStack)} chips this session.`}</div>
             <div style={{ display: "flex", gap: 8 }}>
               <button className="btn" onClick={() => onExit(human.stack)}>{tutorial ? "Lobby" : "Cash out"}</button>
               <button className="btn btn-raise" onClick={newTable}>New table</button>
@@ -1936,7 +1936,7 @@ function PokerTable({ startStack, name, avatar, soundOn, setSoundOn, onExit, onH
               return <button key={o.key} className={`pre-btn${on ? " on" : ""}`} aria-pressed={on} onClick={() => { sound.tap(); setPreAction(on ? null : k); }}><span className="pre-box">{on && <Icon name="check" size={11} stroke={3} />}</span>{o.label}</button>;
             })}
           </div>
-        ) : (<div style={{ fontSize: 12.5, color: "#5E7196", padding: "12px 0" }}>Waiting on the table</div>)}
+        ) : (<div style={{ fontSize: 12.5, color: "#6F9584", padding: "12px 0" }}>Waiting on the table</div>)}
       </div>
 
       <div className="flights" aria-hidden="true">
@@ -1961,7 +1961,7 @@ function PokerTable({ startStack, name, avatar, soundOn, setSoundOn, onExit, onH
             {history.map((h) => (
               <div key={h.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 2px", borderBottom: "1px solid rgba(244,247,252,0.06)" }}>
                 <span style={{ width: 7, height: 7, borderRadius: "50%", flexShrink: 0, background: h.won ? "#34D399" : "rgba(244,247,252,0.2)" }} />
-                <span style={{ fontSize: 12.5, color: h.won ? "#34D399" : "#C8D3E6" }}>{h.text}</span>
+                <span style={{ fontSize: 12.5, color: h.won ? "#34D399" : "#E3EEE8" }}>{h.text}</span>
               </div>
             ))}
           </div>
@@ -2049,7 +2049,7 @@ function drawShareImage(hand) {
   const cv = document.createElement("canvas"); cv.width = W; cv.height = H;
   const g = cv.getContext("2d");
   const sans = "-apple-system, 'Inter', 'Helvetica Neue', Arial, sans-serif";
-  const bg = g.createRadialGradient(W / 2, -150, 80, W / 2, 380, 1250); bg.addColorStop(0, "#1E427E"); bg.addColorStop(0.62, "#0B1426"); bg.addColorStop(1, "#0B1426");
+  const bg = g.createRadialGradient(W / 2, -150, 80, W / 2, 380, 1250); bg.addColorStop(0, "#1E427E"); bg.addColorStop(0.62, "#0B2A20"); bg.addColorStop(1, "#0B2A20");
   g.fillStyle = bg; g.fillRect(0, 0, W, H);
   const rr = (x, y, w, h, r) => { g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); };
   // table
@@ -2075,13 +2075,13 @@ function drawShareImage(hand) {
   row(hand.hero, 868, hw, hh, 20);
   // words
   g.textAlign = "left"; g.fillStyle = "#F4F7FC"; g.font = `700 76px Georgia, 'Times New Roman', serif`; g.fillText("felt", 72, 130);
-  g.textAlign = "right"; g.fillStyle = "#8FA1BE"; g.font = `500 30px ${sans}`;
+  g.textAlign = "right"; g.fillStyle = "#A9C7BA"; g.font = `500 30px ${sans}`;
   g.fillText(`${VARIANTS[hand.variant] ? VARIANTS[hand.variant].label : "Hold'em"}, ${new Date(hand.at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`, W - 72, 122);
   g.textAlign = "center";
   const fit = (text, size, weight, color, y) => { let s = size; g.font = `${weight} ${s}px ${sans}`; while (g.measureText(text).width > W - 120 && s > 26) { s -= 2; g.font = `${weight} ${s}px ${sans}`; } g.fillStyle = color; g.fillText(text, W / 2, y); };
   fit(hand.headline, 50, 800, hand.won ? "#34D399" : "#F4F7FC", 1186);
-  if (hand.headline2) fit(hand.headline2, 38, 700, "#C8D3E6", 1240);
-  else if (hand.heroDesc) fit(`You had ${hand.heroDesc}`, 36, 600, "#A9B8D0", 1240);
+  if (hand.headline2) fit(hand.headline2, 38, 700, "#E3EEE8", 1240);
+  else if (hand.heroDesc) fit(`You had ${hand.heroDesc}`, 36, 600, "#C3D9CF", 1240);
   return cv.toDataURL("image/png");
 }
 function ShareModal({ hand, onClose }) {
@@ -2100,7 +2100,7 @@ function ShareModal({ hand, onClose }) {
       {url ? <img src={url} alt={hand.headline} style={{ width: "100%", borderRadius: 14, display: "block" }} />
         : url === "" ? <div className="empty">Couldn't draw the image on this device.</div>
         : <div className="spinner" style={{ margin: "40px auto" }} />}
-      <div style={{ fontSize: 12, color: "#7587A6", textAlign: "center", margin: "10px 0 12px" }}>Press and hold the image to save it, or tap Share.</div>
+      <div style={{ fontSize: 12, color: "#93B5A6", textAlign: "center", margin: "10px 0 12px" }}>Press and hold the image to save it, or tap Share.</div>
       <button className="btn btn-raise" style={{ width: "100%" }} disabled={!url} onClick={share}>Share</button>
     </Modal>
   );
@@ -2185,7 +2185,7 @@ function RankedResults({ result, rankedState, skill, tableLabel, canPlayAgain, o
         <button className="btn" disabled={!ready} onClick={() => onLobby(extra)}>Lobby</button>
         {canPlayAgain && <button className="btn btn-raise" disabled={!ready} onClick={() => onAgain(extra)}>{result.placement && !result.placementFinal ? "Next placement" : "Play again"}</button>}
       </div>
-      {!canPlayAgain && <div style={{ fontSize: 12, color: "#7587A6", marginTop: 10, textAlign: "center" }}>You need {RANKED_BUYIN.toLocaleString()} chips to queue again.</div>}
+      {!canPlayAgain && <div style={{ fontSize: 12, color: "#93B5A6", marginTop: 10, textAlign: "center" }}>You need {RANKED_BUYIN.toLocaleString()} chips to queue again.</div>}
       <button className="linkbtn" onClick={onReview}>Look at the table</button>
     </>
   );
@@ -2217,8 +2217,8 @@ function RankedResults({ result, rankedState, skill, tableLabel, canPlayAgain, o
             <div className="results-tier" style={{ marginTop: 16 }}>
               <SkillDial sr={assess.sk.sr} size={52} />
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontWeight: 700 }}>Skill Rating {assess.sk.sr} <span style={{ color: "#7587A6", fontWeight: 500 }}>±{assess.sk.margin}</span></div>
-                <div style={{ fontSize: 12, color: "#8FA1BE", marginTop: 2 }}>{assess.sk.label}. Full breakdown in the Coach tab.</div>
+                <div style={{ fontWeight: 700 }}>Skill Rating {assess.sk.sr} <span style={{ color: "#93B5A6", fontWeight: 500 }}>±{assess.sk.margin}</span></div>
+                <div style={{ fontSize: 12, color: "#A9C7BA", marginTop: 2 }}>{assess.sk.label}. Full breakdown in the Coach tab.</div>
               </div>
             </div>
           )}
@@ -2276,14 +2276,14 @@ function RatedResults({ result, headline, sub, tableLabel, stats, buttons }) {
               <span className="num" style={{ fontWeight: 600 }}>{shown.toLocaleString()} RP</span>
             </div>
             <div className="bar" style={{ marginTop: 8 }}><div style={{ width: `${prog.pct * 100}%`, background: tierNow.color }} /></div>
-            <div style={{ fontSize: 11.5, color: "#7587A6", marginTop: 6 }}>{prog.nextLabel ? `${prog.toNext} RP to ${prog.nextLabel}` : "Top of the ladder"}</div>
+            <div style={{ fontSize: 11.5, color: "#93B5A6", marginTop: 6 }}>{prog.nextLabel ? `${prog.toNext} RP to ${prog.nextLabel}` : "Top of the ladder"}</div>
           </div>
         </div>
         {(divMoved || frameUnlocked) && (
           <div className="results-note" style={{ borderColor: result.after < result.before ? "rgba(255,107,107,0.4)" : `${tierAfter.color}88` }}>
             {divMoved && result.after > result.before && <div style={{ fontWeight: 700, color: tierAfter.color }}>{moved > 0 ? "Promoted" : "Moved up"} to {rankName(result.after)}</div>}
             {divMoved && result.after < result.before && <div style={{ fontWeight: 700, color: "#FF6B6B" }}>Dropped to {rankName(result.after)}</div>}
-            {frameUnlocked && <div style={{ color: "#A9B8D0", marginTop: divMoved ? 2 : 0 }}>{frameUnlocked.label} avatar frame unlocked. Equip it from your profile.</div>}
+            {frameUnlocked && <div style={{ color: "#C3D9CF", marginTop: divMoved ? 2 : 0 }}>{frameUnlocked.label} avatar frame unlocked. Equip it from your profile.</div>}
           </div>
         )}
         <div className="results-lines">
@@ -2313,7 +2313,7 @@ function Confetti() {
 function RankingsModal({ onClose, suitColor = SUIT_COLOR, variant = "holdem" }) {
   return (
     <Modal title="Hand rankings" onClose={onClose} width={400}>
-      <div style={{ fontSize: 12, color: "#7587A6", margin: "-6px 2px 8px" }}>Strongest first. Faded cards are kickers and only break ties.</div>
+      <div style={{ fontSize: 12, color: "#93B5A6", margin: "-6px 2px 8px" }}>Strongest first. Faded cards are kickers and only break ties.</div>
       {variant === "short" && <div className="tip" style={{ color: "#F5B83D", borderColor: "rgba(245,184,61,0.35)", background: "rgba(245,184,61,0.08)", marginTop: 4 }}><span>Short Deck changes two things: a flush beats a full house, and three of a kind beats a straight. A-6-7-8-9 is the lowest straight.</span></div>}
       {variant === "omaha" && <div className="tip" style={{ color: "#F5B83D", borderColor: "rgba(245,184,61,0.35)", background: "rgba(245,184,61,0.08)", marginTop: 4 }}><span>Omaha: your hand must use exactly 2 of your 4 cards plus 3 from the board.</span></div>}
       <div style={{ maxHeight: "62vh", overflowY: "auto", margin: "0 -4px" }}>
@@ -2322,7 +2322,7 @@ function RankingsModal({ onClose, suitColor = SUIT_COLOR, variant = "holdem" }) 
             <div className="rank-num num">{i + 1}</div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: 13.5, fontWeight: 600 }}>{r.name}</div>
-              <div style={{ fontSize: 11.5, color: "#7587A6", marginTop: 1 }}>{r.desc}</div>
+              <div style={{ fontSize: 11.5, color: "#93B5A6", marginTop: 1 }}>{r.desc}</div>
             </div>
             <div style={{ display: "flex", gap: 3, flexShrink: 0 }}>
               {r.cards.map((c, j) => <MiniCard key={c} code={c} suitColor={suitColor} dim={j >= r.uses} />)}
@@ -2364,7 +2364,7 @@ function RankLadderModal({ ranked, onClose, onPrestige }) {
         <TierBadge tier={myTier} size={52} div={placed ? divisionOf(ranked.rating) : null} />
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 6, fontFamily: DISPLAY_FONT, fontSize: 20, fontWeight: 600, color: myTier.color }}>{placed ? rankName(ranked.rating) : "Unranked"}<PrestigeBadge n={ranked.prestige} size={18} /></div>
-          <div className="num" style={{ fontSize: 12, color: "#A9B8D0", marginTop: 2 }}>{placed ? `${rating.toLocaleString()} RP${prog.nextLabel ? `, ${prog.toNext} to ${prog.nextLabel}` : ""}` : `${(ranked.placementGames || []).length} of ${PLACEMENT_MATCHES} placement matches played`}</div>
+          <div className="num" style={{ fontSize: 12, color: "#C3D9CF", marginTop: 2 }}>{placed ? `${rating.toLocaleString()} RP${prog.nextLabel ? `, ${prog.toNext} to ${prog.nextLabel}` : ""}` : `${(ranked.placementGames || []).length} of ${PLACEMENT_MATCHES} placement matches played`}</div>
           {placed && prestigeBoost(ranked) > 1 && <div style={{ fontSize: 11.5, color: "#E9B8FF", marginTop: 3 }}>Matched at {rankName(matchRating(ranked))}, wins count x{prestigeBoost(ranked)}</div>}
           {placed && <div className="bar" style={{ marginTop: 8, height: 6 }}><div style={{ width: `${prog.pct * 100}%`, background: myTier.color }} /></div>}
         </div>
@@ -2381,7 +2381,7 @@ function RankLadderModal({ ranked, onClose, onPrestige }) {
                 <TierBadge tier={t} size={38} />
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 15, fontWeight: 700, color: t.color }}>{t.label}</div>
-                  <div style={{ fontSize: 11, color: "#7587A6" }}>{isChamp ? "1,500 RP and up" : `${t.min.toLocaleString()} to ${(t.min + 299).toLocaleString()} RP`}{t.min > 0 ? (owned ? ", frame unlocked" : ", unlocks a frame") : ""}</div>
+                  <div style={{ fontSize: 11, color: "#93B5A6" }}>{isChamp ? "1,500 RP and up" : `${t.min.toLocaleString()} to ${(t.min + 299).toLocaleString()} RP`}{t.min > 0 ? (owned ? ", frame unlocked" : ", unlocks a frame") : ""}</div>
                 </div>
               </div>
               <div className="ladder-divs">
@@ -2391,7 +2391,7 @@ function RankLadderModal({ ranked, onClose, onPrestige }) {
                   return (
                     <div key={dv.label} ref={here ? meRef : null} className={`ladder-div${here ? " here" : ""}${passed ? " passed" : ""}`} style={here ? { borderColor: t.color, background: `${t.color}1F` } : undefined}>
                       <span style={{ fontWeight: here ? 700 : 500, display: "flex", alignItems: "center", gap: 8 }}><TierBadge tier={t} size={24} div={isChamp ? null : [3, 2, 1][divs.indexOf(dv)]} />{dv.label}</span>
-                      <span className="num" style={{ color: "#7587A6" }}>{here ? <b style={{ color: t.color }}>You</b> : passed ? <Icon name="check" size={13} stroke={2.4} style={{ color: "#34D399" }} /> : `${dv.min.toLocaleString()} RP`}</span>
+                      <span className="num" style={{ color: "#93B5A6" }}>{here ? <b style={{ color: t.color }}>You</b> : passed ? <Icon name="check" size={13} stroke={2.4} style={{ color: "#34D399" }} /> : `${dv.min.toLocaleString()} RP`}</span>
                     </div>
                   );
                 })}
@@ -2412,7 +2412,7 @@ function RankLadderModal({ ranked, onClose, onPrestige }) {
           <PrestigeBadge n={(ranked.prestige || 0) + 1} size={34} />
           <div style={{ flex: 1 }}>
             <div className="ladder-h" style={{ margin: 0 }}>Prestige</div>
-            <div style={{ fontSize: 11.5, color: "#C9B8F5" }}>{ranked.prestige ? `You're Prestige ${ranked.prestige}` : "Not prestiged yet"}</div>
+            <div style={{ fontSize: 11.5, color: "#93B5A6" }}>{ranked.prestige ? `You're Prestige ${ranked.prestige}` : "Not prestiged yet"}</div>
           </div>
         </div>
         <div className="ladder-p" style={{ marginTop: 8 }}>Hit Champion, then reset to Bronze to climb again. You get {PRESTIGE_REWARD.toLocaleString()} chips and a badge next to your name that counts every prestige. You keep your frames, titles and stats, and you still get matched against players at your real level, not Bronze. Wins count up to 3x until your badge catches up.</div>
@@ -2432,21 +2432,21 @@ function RankedCard({ ranked, chips, onPlay, onPrestige, onInfo }) {
   const locked = chips < RANKED_BUYIN;
   const month = new Date().toLocaleString("en-US", { month: "long" });
   return (
-    <section className="panel" style={{ background: `linear-gradient(160deg, ${tier.color}2E 0%, #14223D 58%)`, borderColor: `${tier.color}55` }}>
-      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "#7587A6" }}>
-        <button className="ranked-info" onClick={onInfo} aria-label="See all ranks"><span style={{ fontWeight: 600, color: "#A9B8D0" }}>Ranked</span><Icon name="help" size={14} stroke={2} /></button>
+    <section className="panel" style={{ background: `linear-gradient(160deg, ${tier.color}2E 0%, #134A39 58%)`, borderColor: `${tier.color}55` }}>
+      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "#93B5A6" }}>
+        <button className="ranked-info" onClick={onInfo} aria-label="See all ranks"><span style={{ fontWeight: 600, color: "#C3D9CF" }}>Ranked</span><Icon name="help" size={14} stroke={2} /></button>
         <span>{month} season ends in {daysLeftInSeason()} days</span>
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 14, margin: "16px 0 14px" }}>
         <button className="ranked-badge-btn" onClick={onInfo} aria-label="See all ranks"><TierBadge tier={tier} size={58} div={placed ? divisionOf(ranked.rating) : null} /></button>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontFamily: DISPLAY_FONT, fontSize: 25, fontWeight: 600, color: tier.color, lineHeight: 1.05, display: "flex", alignItems: "center", gap: 8 }}>{placed ? rankName(ranked.rating) : "Unranked"}<PrestigeBadge n={ranked.prestige} size={20} /></div>
-          <div className="num" style={{ fontSize: 13, color: "#A9B8D0", marginTop: 4 }}>{placed ? `${Math.round(ranked.rating).toLocaleString()} RP` : `${games.length} of ${PLACEMENT_MATCHES} placement matches`}</div>
+          <div className="num" style={{ fontSize: 13, color: "#C3D9CF", marginTop: 4 }}>{placed ? `${Math.round(ranked.rating).toLocaleString()} RP` : `${games.length} of ${PLACEMENT_MATCHES} placement matches`}</div>
           {placed && prestigeBoost(ranked) > 1 && <div style={{ fontSize: 11.5, color: "#E9B8FF", marginTop: 2 }}>Matched at {rankName(matchRating(ranked))}, wins x{prestigeBoost(ranked)}</div>}
         </div>
         {placed && ranked.wins + ranked.losses > 0 && (
           <div style={{ textAlign: "right" }}>
-            <div className="num" style={{ fontSize: 15, fontWeight: 600 }}>{ranked.wins}<span style={{ color: "#5E7196" }}> W</span> {ranked.losses}<span style={{ color: "#5E7196" }}> L</span></div>
+            <div className="num" style={{ fontSize: 15, fontWeight: 600 }}>{ranked.wins}<span style={{ color: "#6F9584" }}> W</span> {ranked.losses}<span style={{ color: "#6F9584" }}> L</span></div>
             {ranked.streak >= 2 && <div style={{ fontSize: 11.5, color: "#34D399", marginTop: 2 }}>{ranked.streak} in a row</div>}
           </div>
         )}
@@ -2454,12 +2454,12 @@ function RankedCard({ ranked, chips, onPlay, onPrestige, onInfo }) {
       {placed ? (
         <>
           <div className="bar"><div style={{ width: `${prog.pct * 100}%`, background: tier.color }} /></div>
-          <div style={{ fontSize: 12, color: "#7587A6", marginTop: 7 }}>{prog.nextLabel ? `${prog.toNext} RP to ${prog.nextLabel}` : "Top of the ladder"}</div>
+          <div style={{ fontSize: 12, color: "#93B5A6", marginTop: 7 }}>{prog.nextLabel ? `${prog.toNext} RP to ${prog.nextLabel}` : "Top of the ladder"}</div>
         </>
       ) : (
         <>
           <PlacementDots games={games} size={14} />
-          <div style={{ fontSize: 12, color: "#7587A6", marginTop: 10, textAlign: "center" }}>Play {PLACEMENT_MATCHES} matches and we'll read your game to set your rank.</div>
+          <div style={{ fontSize: 12, color: "#93B5A6", marginTop: 10, textAlign: "center" }}>Play {PLACEMENT_MATCHES} matches and we'll read your game to set your rank.</div>
         </>
       )}
       {canPrestige(ranked) && onPrestige && <button className="btn prestige-btn" style={{ width: "100%", marginTop: 14 }} onClick={onPrestige}>Prestige for a badge and {PRESTIGE_REWARD / 1000}k chips</button>}
@@ -2492,7 +2492,7 @@ function TurboRow({ on, onToggle, tournament }) {
         <div className="turbo-ic"><Icon name="bolt" size={15} stroke={2} /></div>
         <div>
           <div style={{ fontSize: 13.5, fontWeight: 600 }}>Turbo</div>
-          <div style={{ fontSize: 11.5, color: "#7587A6" }}>{tournament ? "12 second clock, blinds up every 3 hands" : "12 second clock, faster bots"}</div>
+          <div style={{ fontSize: 11.5, color: "#93B5A6" }}>{tournament ? "12 second clock, blinds up every 3 hands" : "12 second clock, faster bots"}</div>
         </div>
       </div>
       <Toggle on={on} onClick={onToggle} label="Turbo" />
@@ -2541,7 +2541,7 @@ function ChallengesCard({ challenges, onClaim }) {
                 <div style={{ fontSize: 13.5, fontWeight: 600, marginBottom: 6 }}>{challengeText(c)}</div>
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                   <div className="bar" style={{ flex: 1, height: 6 }}><div style={{ width: `${(c.progress / c.target) * 100}%`, background: done ? "#34D399" : "linear-gradient(90deg,#6FA8FF,#8B5CF6)" }} /></div>
-                  <span className="num" style={{ fontSize: 11.5, color: "#8FA1BE", minWidth: 34, textAlign: "right" }}>{c.progress}/{c.target}</span>
+                  <span className="num" style={{ fontSize: 11.5, color: "#A9C7BA", minWidth: 34, textAlign: "right" }}>{c.progress}/{c.target}</span>
                 </div>
               </div>
               {c.claimed ? <div className="chal-done"><Icon name="check" size={15} stroke={2.4} /></div>
@@ -2550,7 +2550,7 @@ function ChallengesCard({ challenges, onClaim }) {
           );
         })}
       </div>
-      <div style={{ fontSize: 11.5, color: "#5E7196", marginTop: 12 }}>
+      <div style={{ fontSize: 11.5, color: "#6F9584", marginTop: 12 }}>
         {which === "daily" ? `New ones in ${hoursLeftToday()}h. Each pays ${rw.chips} chips and ${rw.xp} XP.` : `Resets in ${weekResetDays()} day${weekResetDays() === 1 ? "" : "s"}. Each pays ${rw.chips.toLocaleString()} chips and ${rw.xp} XP.`}
       </div>
     </section>
@@ -2577,12 +2577,12 @@ function PassCard({ pass, onOpen }) {
         <div className="pass-lvl num"><div style={{ fontSize: 10, fontWeight: 700, opacity: 0.8, letterSpacing: "0.06em" }}>LVL</div>{lvl}</div>
         <div style={{ flex: 1, minWidth: 0, textAlign: "left" }}>
           <div style={{ fontSize: 15, fontWeight: 700 }}>{month} season pass</div>
-          <div style={{ fontSize: 12, color: "#D6C7FF", marginTop: 2 }}>{maxed ? "Maxed out. Nice." : `Next: ${passRewardLabel(nextR)}`}</div>
+          <div style={{ fontSize: 12, color: "#A9C7BA", marginTop: 2 }}>{maxed ? "Maxed out. Nice." : `Next: ${passRewardLabel(nextR)}`}</div>
         </div>
         {nextR && <PassRewardIcon r={nextR} size={34} />}
       </div>
       <div className="bar" style={{ marginTop: 12, height: 8, background: "rgba(255,255,255,0.14)" }}><div style={{ width: `${maxed ? 100 : (into / PASS_XP) * 100}%`, background: "linear-gradient(90deg,#F5B83D,#FF7AB8)" }} /></div>
-      <div className="num" style={{ display: "flex", justifyContent: "space-between", fontSize: 11.5, color: "#C9B8F5", marginTop: 6 }}>
+      <div className="num" style={{ display: "flex", justifyContent: "space-between", fontSize: 11.5, color: "#93B5A6", marginTop: 6 }}>
         <span>{maxed ? `${p.xp.toLocaleString()} XP` : `${into} / ${PASS_XP} XP`}</span><span>Ends in {daysLeftInSeason()} days</span>
       </div>
     </button>
@@ -2596,7 +2596,7 @@ function PassModal({ pass, onClose }) {
   useEffect(() => { const el = ref.current && ref.current.querySelector(".pass-row.next"); if (el && el.scrollIntoView) el.scrollIntoView({ block: "center" }); }, []);
   return (
     <Modal title="Season pass" onClose={onClose} width={400}>
-      <div style={{ fontSize: 12, color: "#7587A6", margin: "-6px 2px 10px" }}>Earn XP from every hand, ranked match, tournament and challenge. Rewards unlock on their own. Resets each month.</div>
+      <div style={{ fontSize: 12, color: "#93B5A6", margin: "-6px 2px 10px" }}>Earn XP from every hand, ranked match, tournament and challenge. Rewards unlock on their own. Resets each month.</div>
       <div ref={ref} style={{ maxHeight: "58vh", overflowY: "auto", margin: "0 -4px", padding: "0 4px" }}>
         {Array.from({ length: PASS_LEVELS }, (_, i) => i + 1).map((l) => {
           const r = passReward(l), got = l <= lvl, special = r.type !== "chips";
@@ -2605,7 +2605,7 @@ function PassModal({ pass, onClose }) {
               <div className="num pass-row-n">{l}</div>
               <PassRewardIcon r={r} size={30} />
               <div style={{ flex: 1, fontSize: 13, fontWeight: special ? 700 : 500 }}>{passRewardLabel(r)}</div>
-              {got ? <Icon name="check" size={15} stroke={2.4} style={{ color: "#34D399" }} /> : <span className="num" style={{ fontSize: 11, color: "#5E7196" }}>{(l * PASS_XP).toLocaleString()} XP</span>}
+              {got ? <Icon name="check" size={15} stroke={2.4} style={{ color: "#34D399" }} /> : <span className="num" style={{ fontSize: 11, color: "#6F9584" }}>{(l * PASS_XP).toLocaleString()} XP</span>}
             </div>
           );
         })}
@@ -2620,9 +2620,9 @@ function SpinCard({ ready, onOpen }) {
       <div className="spin-ic"><Icon name="wheel" size={20} stroke={2} /></div>
       <div style={{ flex: 1, minWidth: 0, textAlign: "left" }}>
         <div style={{ fontSize: 14, fontWeight: 700 }}>{ready ? "Daily spin is ready" : "Daily spin"}</div>
-        <div style={{ fontSize: 11.5, color: ready ? "#CFE6FF" : "#7587A6", marginTop: 1 }}>{ready ? "Chips, XP, or a 5,000 chip jackpot" : `Next spin in ${hoursUntilTomorrow()}h`}</div>
+        <div style={{ fontSize: 11.5, color: ready ? "#CFE6FF" : "#93B5A6", marginTop: 1 }}>{ready ? "Chips, XP, or a 5,000 chip jackpot" : `Next spin in ${hoursUntilTomorrow()}h`}</div>
       </div>
-      {ready ? <span className="btn btn-raise btn-sm shine" style={{ pointerEvents: "none" }}>Spin</span> : <Icon name="lock" size={14} style={{ color: "#5E7196" }} />}
+      {ready ? <span className="btn btn-raise btn-sm shine" style={{ pointerEvents: "none" }}>Spin</span> : <Icon name="lock" size={14} style={{ color: "#6F9584" }} />}
     </button>
   );
 }
@@ -2660,7 +2660,7 @@ function SpinModal({ ready, onSpin, onClose, sound }) {
             const [sx, sy] = pt(i * SEG + SEG / 2, r * 0.44);
             return (
               <g key={i}>
-                <path d={`M${cx} ${cy} L${x1} ${y1} A${r} ${r} 0 0 1 ${x2} ${y2} Z`} fill={p.color} stroke="#0B1426" strokeWidth="2" />
+                <path d={`M${cx} ${cy} L${x1} ${y1} A${r} ${r} 0 0 1 ${x2} ${y2} Z`} fill={p.color} stroke="#0B2A20" strokeWidth="2" />
                 <g transform={`rotate(${i * SEG + SEG / 2} ${lx} ${ly})`}><text x={lx} y={ly + 6} textAnchor="middle" fontSize="19" fontWeight="800" fill="#FFFFFF" fontFamily="Inter, -apple-system, sans-serif">{p.label}</text></g>
                 <g transform={`rotate(${i * SEG + SEG / 2} ${sx} ${sy})`}><text x={sx} y={sy + 4} textAnchor="middle" fontSize="9.5" fontWeight="700" fill="rgba(255,255,255,0.8)" fontFamily="Inter, -apple-system, sans-serif">{p.sub.toUpperCase()}</text></g>
               </g>
@@ -2668,13 +2668,13 @@ function SpinModal({ ready, onSpin, onClose, sound }) {
           })}
           <circle cx={cx} cy={cy} r={r} fill="none" stroke="#F5C451" strokeWidth="5" />
           {SPIN_PRIZES.map((_, i) => { const [x, y] = pt(i * SEG, r - 1); return <circle key={i} cx={x} cy={y} r="3.5" fill="#FFF3C4" />; })}
-          <circle cx={cx} cy={cy} r="20" fill="#0B1426" stroke="#F5C451" strokeWidth="3" />
+          <circle cx={cx} cy={cy} r="20" fill="#0B2A20" stroke="#F5C451" strokeWidth="3" />
           <text x={cx} y={cy + 6} textAnchor="middle" fontSize="17" fill="#F5C451">{"♠"}</text>
         </svg>
       </div>
       {result ? (
         <div className="spin-result">
-          <div style={{ fontSize: 12, color: "#8FA1BE" }}>{result.big ? "Jackpot" : "You won"}</div>
+          <div style={{ fontSize: 12, color: "#A9C7BA" }}>{result.big ? "Jackpot" : "You won"}</div>
           <div style={{ fontFamily: DISPLAY_FONT, fontSize: 26, fontWeight: 700, color: "#F5C451" }}>{result.text}</div>
           <button className="btn btn-raise" style={{ width: "100%", marginTop: 12 }} onClick={onClose}>Nice</button>
         </div>
@@ -2714,9 +2714,9 @@ function HomeMenu({ onPlayAI, data, chips, ranked, onClaimDaily, onClaimChalleng
   const st = streakState(data.streak);
   const streakCount = st.claimedToday ? data.streak.count : st.nextDay > 1 ? st.nextDay - 1 : 0;
   const modes = [
-    { key: "cash", title: "Cash", sub: "Rebuy anytime", icon: "chips", act: () => setModal("cash") },
-    { key: "tournament", title: "Tournament", sub: "Real payouts", icon: "trophy", act: () => setModal("tournament") },
-    { key: "practice", title: "Practice", sub: "Tips as you play", icon: "cap", act: () => onPlayAI({ mode: "practice", tableSize: TABLE_SIZES[1], stakes: { sb: 10, bb: 20 } }) },
+    { key: "cash", title: "Cash", sub: "Rebuy anytime", icon: "chips", rank: "K", suit: "d", act: () => setModal("cash") },
+    { key: "tournament", title: "Tourney", sub: "Real payouts", icon: "trophy", rank: "A", suit: "s", act: () => setModal("tournament") },
+    { key: "practice", title: "Practice", sub: "Tips as you play", icon: "cap", rank: "Q", suit: "h", act: () => onPlayAI({ mode: "practice", tableSize: TABLE_SIZES[1], stakes: { sb: 10, bb: 20 } }) },
   ];
   return (
     <div className="screen screen-fade">
@@ -2735,10 +2735,12 @@ function HomeMenu({ onPlayAI, data, chips, ranked, onClaimDaily, onClaimChalleng
 
       <div className="mode-grid">
         {modes.map((o) => (
-          <button key={o.key} className={`mode-tile m-${o.key}`} onClick={o.act}>
-            <div className="mode-ic"><Icon name={o.icon} size={20} stroke={2} /></div>
-            <div className="mode-title">{o.title}</div>
-            <div className="mode-sub">{o.sub}</div>
+          <button key={o.key} className={`mode-tile m-${o.key} suit-${o.suit}`} onClick={o.act}>
+            <span className="pc-index"><b>{o.rank}</b><i>{SUIT_GLYPH[o.suit]}</i></span>
+            <span className="pc-pip" aria-hidden="true">{SUIT_GLYPH[o.suit]}</span>
+            <span className="mode-title">{o.title}</span>
+            <span className="mode-sub">{o.sub}</span>
+            <span className="pc-index flip" aria-hidden="true"><b>{o.rank}</b><i>{SUIT_GLYPH[o.suit]}</i></span>
           </button>
         ))}
       </div>
@@ -2820,7 +2822,7 @@ function HomeMenu({ onPlayAI, data, chips, ranked, onClaimDaily, onClaimChalleng
                     <div className="row-title">{t.label}</div>
                     <div className="row-sub num">Blinds {t.sb}/{t.bb}{locked ? `, needs ${t.minBankroll.toLocaleString()} chips` : ""}</div>
                   </div>
-                  <Icon name={locked ? "lock" : "chevron"} size={15} style={{ color: "#5E7196", flexShrink: 0 }} />
+                  <Icon name={locked ? "lock" : "chevron"} size={15} style={{ color: "#6F9584", flexShrink: 0 }} />
                 </button>
               );
             })}
@@ -2835,7 +2837,7 @@ function HomeMenu({ onPlayAI, data, chips, ranked, onClaimDaily, onClaimChalleng
         return (
           <Modal title="Tournament" onClose={close} width={380}>
             <SizePicker value={size} onChange={setSize} />
-            <div style={{ fontSize: 12, color: "#7587A6", margin: "14px 2px 6px" }}>Buy-in</div>
+            <div style={{ fontSize: 12, color: "#93B5A6", margin: "14px 2px 6px" }}>Buy-in</div>
             <div className="seg">
               {TOURNEY_BUYINS.map((b) => (
                 <button key={b.key} className={`segbtn${tBuyIn.key === b.key ? " on" : ""}`} disabled={chips < b.buyIn} style={{ opacity: chips < b.buyIn ? 0.4 : 1 }} onClick={() => setTBuyIn(b)}>{b.label}</button>
@@ -2875,7 +2877,7 @@ function CoachScreen({ data }) {
           <div style={{ fontFamily: DISPLAY_FONT, fontSize: 22, fontWeight: 700 }}>Play a few hands first</div>
           <p className="sheet-body" style={{ margin: "8px 0 16px" }}>Your Skill Rating looks at eight things: decisions against the odds, preflop discipline, aggression, position, showdowns, luck-adjusted results, composure and tournaments. It needs {need} hands to start.</p>
           <div className="bar" style={{ maxWidth: 220, margin: "0 auto" }}><div style={{ width: `${(k.hands / need) * 100}%`, background: "#F5B83D" }} /></div>
-          <div className="num" style={{ fontSize: 12, color: "#7587A6", marginTop: 8 }}>{k.hands} of {need} hands</div>
+          <div className="num" style={{ fontSize: 12, color: "#93B5A6", marginTop: 8 }}>{k.hands} of {need} hands</div>
         </section>
       </div>
     );
@@ -2887,15 +2889,15 @@ function CoachScreen({ data }) {
       <section className="panel" style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 14 }}>
         <SkillDial sr={sk.sr} size={88} />
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 12, color: "#7587A6" }}>Skill Rating</div>
+          <div style={{ fontSize: 12, color: "#93B5A6" }}>Skill Rating</div>
           <div style={{ fontFamily: DISPLAY_FONT, fontSize: 26, fontWeight: 700, color: scoreColor(sk.sr), lineHeight: 1.1 }}>{sk.label}</div>
-          <div className="num" style={{ fontSize: 12.5, color: "#8FA1BE", marginTop: 4 }}>±{sk.margin} from {k.hands.toLocaleString()} hands. The margin shrinks as you play.</div>
+          <div className="num" style={{ fontSize: 12.5, color: "#A9C7BA", marginTop: 4 }}>±{sk.margin} from {k.hands.toLocaleString()} hands. The margin shrinks as you play.</div>
         </div>
       </section>
 
       <section className="panel" style={{ marginBottom: 14 }}>
         <div className="report-head" style={{ marginBottom: 6 }}><span>Scouting report</span></div>
-        <p style={{ fontSize: 13.5, lineHeight: 1.55, color: "#C8D3E6", margin: 0 }}>{skillReport(sk)}</p>
+        <p style={{ fontSize: 13.5, lineHeight: 1.55, color: "#E3EEE8", margin: 0 }}>{skillReport(sk)}</p>
       </section>
 
       <SectionLabel right="Score out of 100">Breakdown</SectionLabel>
@@ -2903,42 +2905,42 @@ function CoachScreen({ data }) {
         {sk.comps.slice().sort((a, b) => b.weight - a.weight).map((c) => (
           <div key={c.key} className="comp-row" style={{ opacity: c.enough ? 1 : 0.62 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 10 }}>
-              <div style={{ fontSize: 13.5, fontWeight: 600 }}>{c.label} <span style={{ fontSize: 11, color: "#5E7196", fontWeight: 500 }}>{Math.round(c.weight * 100)}%</span></div>
-              <div className="num" style={{ fontSize: 15, fontWeight: 700, color: c.enough ? scoreColor(c.score) : "#7587A6" }}>{c.enough ? c.score : "–"}</div>
+              <div style={{ fontSize: 13.5, fontWeight: 600 }}>{c.label} <span style={{ fontSize: 11, color: "#6F9584", fontWeight: 500 }}>{Math.round(c.weight * 100)}%</span></div>
+              <div className="num" style={{ fontSize: 15, fontWeight: 700, color: c.enough ? scoreColor(c.score) : "#93B5A6" }}>{c.enough ? c.score : "–"}</div>
             </div>
             <div className="bar" style={{ marginTop: 7, height: 5 }}><div style={{ width: `${c.enough ? c.score : 0}%`, background: scoreColor(c.score) }} /></div>
-            <div style={{ fontSize: 11.5, color: "#8FA1BE", marginTop: 6, lineHeight: 1.4 }}>{c.detail}</div>
+            <div style={{ fontSize: 11.5, color: "#A9C7BA", marginTop: 6, lineHeight: 1.4 }}>{c.detail}</div>
           </div>
         ))}
       </div>
 
       {recent.length > 1 && (
         <section className="panel" style={{ marginBottom: 14 }}>
-          <div style={{ fontSize: 12, color: "#7587A6" }}>Decision quality, last {recent.length} hands</div>
+          <div style={{ fontSize: 12, color: "#93B5A6" }}>Decision quality, last {recent.length} hands</div>
           <div className="spark" aria-label="Decision quality by hand, oldest to newest">
             {recent.map((q, i) => <div key={i} style={{ height: `${Math.max(8, q * 100)}%`, background: q >= 0.7 ? "#34D399" : q >= 0.5 ? "#F5B83D" : "#FF6B6B" }} title={pctStr(q)} />)}
           </div>
-          <div style={{ fontSize: 11, color: "#5E7196", marginTop: 6 }}>Newest on the right</div>
+          <div style={{ fontSize: 11, color: "#6F9584", marginTop: 6 }}>Newest on the right</div>
         </section>
       )}
 
       <SectionLabel right={`${idx.toLocaleString()} pts`}>Tournament index</SectionLabel>
       <section className="panel" style={{ marginBottom: 14 }}>
         {tourneys.length === 0 ? (
-          <div style={{ fontSize: 13, color: "#8FA1BE", lineHeight: 1.5 }}>Works like the Global Poker Index. Each cash scores buy-in size times how deep you went against the field, then fades as it ages. Your best 8 count.</div>
+          <div style={{ fontSize: 13, color: "#A9C7BA", lineHeight: 1.5 }}>Works like the Global Poker Index. Each cash scores buy-in size times how deep you went against the field, then fades as it ages. Your best 8 count.</div>
         ) : (
           <>
             {tourneys.slice(0, 6).map((r, i) => (
               <div key={r.at + "-" + i} className="kv" style={{ alignItems: "center" }}>
-                <span>{ordinal(r.place)} of {r.field}, {r.buyIn ? `${r.buyIn.toLocaleString()} buy-in` : "freeroll"} <span style={{ color: "#5E7196" }}>{new Date(r.at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</span></span>
-                <b className="num" style={{ color: r.pts > 0 ? "#34D399" : "#5E7196" }}>{r.pts > 0 ? `+${r.pts}` : "0"}</b>
+                <span>{ordinal(r.place)} of {r.field}, {r.buyIn ? `${r.buyIn.toLocaleString()} buy-in` : "freeroll"} <span style={{ color: "#6F9584" }}>{new Date(r.at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</span></span>
+                <b className="num" style={{ color: r.pts > 0 ? "#34D399" : "#6F9584" }}>{r.pts > 0 ? `+${r.pts}` : "0"}</b>
               </div>
             ))}
-            <div style={{ fontSize: 11.5, color: "#5E7196", marginTop: 10, lineHeight: 1.45 }}>Only paid finishes score. Results lose value after a week and drop off after 90 days, like the GPI.</div>
+            <div style={{ fontSize: 11.5, color: "#6F9584", marginTop: 10, lineHeight: 1.45 }}>Only paid finishes score. Results lose value after a week and drop off after 90 days, like the GPI.</div>
           </>
         )}
       </section>
-      <div style={{ fontSize: 11.5, color: "#5E7196", margin: "0 4px", lineHeight: 1.5 }}>Every decision is graded against your real odds at that moment. All-in pots count the equity you had when the chips went in, so bad beats don't hurt your rating and lucky rivers don't help it. Results against tougher opponents count more.</div>
+      <div style={{ fontSize: 11.5, color: "#6F9584", margin: "0 4px", lineHeight: 1.5 }}>Every decision is graded against your real odds at that moment. All-in pots count the equity you had when the chips went in, so bad beats don't hurt your rating and lucky rivers don't help it. Results against tougher opponents count more.</div>
     </div>
   );
 }
@@ -2985,7 +2987,7 @@ function ShopScreen({ data, onClaimChips, onBuyAvatar, onClaimDaily, onBuyCosmet
             <div className="sec-ic" style={{ background: "rgba(255,138,76,0.18)", color: "#FF8A4C" }}><Icon name="flame" size={15} stroke={2} /></div>
             <div>
               <div style={{ fontSize: 15, fontWeight: 700 }}>Daily streak</div>
-              <div style={{ fontSize: 11.5, color: "#A9B8D0" }}>{st.claimedToday ? "Claimed. Come back tomorrow." : "Miss a day and it starts over"}</div>
+              <div style={{ fontSize: 11.5, color: "#C3D9CF" }}>{st.claimedToday ? "Claimed. Come back tomorrow." : "Miss a day and it starts over"}</div>
             </div>
           </div>
           <button className={`btn btn-raise btn-sm${st.claimedToday ? "" : " shine"}`} disabled={st.claimedToday} onClick={onClaimDaily}>{st.claimedToday ? "Claimed" : "Claim"}</button>
@@ -3033,14 +3035,14 @@ function ShopScreen({ data, onClaimChips, onBuyAvatar, onClaimDaily, onBuyCosmet
             <div key={t.key} className="title-row">
               <div style={{ flex: 1, minWidth: 0 }}>
                 <TitleTag k={t.key} size={14} />
-                <div style={{ fontSize: 11, color: "#5E7196", marginTop: 2, textTransform: "capitalize" }}>{t.rarity}</div>
+                <div style={{ fontSize: 11, color: "#6F9584", marginTop: 2, textTransform: "capitalize" }}>{t.rarity}</div>
               </div>
               {owned ? <span className="cos-tag eq">Owned</span>
                 : <button className="btn btn-sm" disabled={!can} onClick={() => onBuyTitle(t)} style={{ display: "inline-flex", alignItems: "center", gap: 6 }}><span className="chip-dot" style={{ width: 10, height: 10 }} /><span className="num">{t.cost.toLocaleString()}</span></button>}
             </div>
           );
         })}
-        <div style={{ fontSize: 11.5, color: "#5E7196", padding: "4px 2px 0" }}>More titles are earned by playing. See them all on your profile.</div>
+        <div style={{ fontSize: 11.5, color: "#6F9584", padding: "4px 2px 0" }}>More titles are earned by playing. See them all on your profile.</div>
       </div>
 
       <SectionLabel right="Rank frames come from ranked play">Avatars</SectionLabel>
@@ -3051,7 +3053,7 @@ function ShopScreen({ data, onClaimChips, onBuyAvatar, onClaimDaily, onBuyCosmet
           return (
             <button key={a.emoji} disabled={owned || !canAfford} onClick={() => onBuyAvatar(a)} className="avatar-tile" style={{ opacity: owned || canAfford ? 1 : 0.4 }}>
               <div style={{ fontSize: 26 }}>{a.emoji}</div>
-              <div className="num" style={{ fontSize: 10.5, color: owned ? "#34D399" : "#A9B8D0", marginTop: 4, fontWeight: 600 }}>{owned ? "Owned" : a.cost === 0 ? "Free" : a.cost.toLocaleString()}</div>
+              <div className="num" style={{ fontSize: 10.5, color: owned ? "#34D399" : "#C3D9CF", marginTop: 4, fontWeight: 600 }}>{owned ? "Owned" : a.cost === 0 ? "Free" : a.cost.toLocaleString()}</div>
             </button>
           );
         })}
@@ -3106,14 +3108,14 @@ function LeaderboardScreen({ data }) {
   const renderRow = (p, i, pinned = false) => {
     const tier = isRanked ? tierForRating(p.rating) : null;
     return (
-      <div key={(pinned ? "pin-" : "") + p.name + (p.isYou ? "-you" : "")} ref={p.isYou && !pinned ? meRef : null} className={`lb-row${pinned ? " lb-pinned" : ""}`} style={{ background: p.isYou ? "rgba(52,211,153,0.1)" : "#14223D", borderColor: p.isYou ? "rgba(52,211,153,0.4)" : "rgba(244,247,252,0.06)" }}>
-        <div className="num" style={{ width: 26, fontSize: 13.5, fontWeight: 700, color: i < 3 ? medal[i] : "#5E7196" }}>{i + 1}</div>
+      <div key={(pinned ? "pin-" : "") + p.name + (p.isYou ? "-you" : "")} ref={p.isYou && !pinned ? meRef : null} className={`lb-row${pinned ? " lb-pinned" : ""}`} style={{ background: p.isYou ? "rgba(52,211,153,0.1)" : "#134A39", borderColor: p.isYou ? "rgba(52,211,153,0.4)" : "rgba(244,247,252,0.06)" }}>
+        <div className="num" style={{ width: 26, fontSize: 13.5, fontWeight: 700, color: i < 3 ? medal[i] : "#6F9584" }}>{i + 1}</div>
         {tier && <TierBadge tier={tier} size={30} />}
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 14, fontWeight: 600, color: p.isYou ? "#34D399" : "#F4F7FC", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.isYou && p.name !== "You" ? `${p.name} (you)` : p.name}{p.prestige ? <PrestigeBadge n={p.prestige} size={15} /> : null}</div>
           {(tier || (p.title && p.title !== "rookie")) && <div style={{ fontSize: 11, display: "flex", gap: 8, alignItems: "baseline", whiteSpace: "nowrap", overflow: "hidden" }}>{tier && <span style={{ color: tier.color }}>{rankName(p.rating)}</span>}{p.title && p.title !== "rookie" && <TitleTag k={p.title} size={10.5} />}</div>}
         </div>
-        <div className="num" style={{ fontSize: 13.5, fontWeight: 600, color: "#C8D3E6" }}>{value(p)}</div>
+        <div className="num" style={{ fontSize: 13.5, fontWeight: 600, color: "#E3EEE8" }}>{value(p)}</div>
       </div>
     );
   };
@@ -3124,19 +3126,19 @@ function LeaderboardScreen({ data }) {
         <button onClick={() => setTab("ranked")} className={`segbtn${isRanked ? " on" : ""}`}>Ranked</button>
         <button onClick={() => setTab("index")} className={`segbtn${!isRanked ? " on" : ""}`}>Tournament index</button>
       </div>
-      <div style={{ fontSize: 12, color: "#7587A6", margin: "0 2px 12px" }}>
+      <div style={{ fontSize: 12, color: "#93B5A6", margin: "0 2px 12px" }}>
         {isRanked ? `${month} season, ends in ${daysLeftInSeason()} days. Ranked by RP.` : "Best 8 tournament cashes. Results fade over 90 days."}
       </div>
       <div className="list" style={{ gap: 6, flex: 1 }}>
         {visible.map((p, i) => renderRow(p, i))}
-        <div style={{ fontSize: 11, color: "#5E7196", textAlign: "center", padding: "8px 0 4px" }}>Other players are samples until online play is added.</div>
+        <div style={{ fontSize: 11, color: "#6F9584", textAlign: "center", padding: "8px 0 4px" }}>Other players are samples until online play is added.</div>
       </div>
       {/* your spot stays visible at the bottom, even when you're off the list */}
       <div className="lb-dock">
         {isRanked && !placed ? (
-          <div className="lb-row" style={{ background: "#14223D", borderColor: "rgba(244,247,252,0.1)" }}>
+          <div className="lb-row" style={{ background: "#134A39", borderColor: "rgba(244,247,252,0.1)" }}>
             <TierBadge tier={UNRANKED} size={26} />
-            <div style={{ flex: 1, fontSize: 13, color: "#A9B8D0" }}>Finish {PLACEMENT_MATCHES - (data.ranked.placementGames || []).length} more placement {PLACEMENT_MATCHES - (data.ranked.placementGames || []).length === 1 ? "match" : "matches"} to get on the board</div>
+            <div style={{ flex: 1, fontSize: 13, color: "#C3D9CF" }}>Finish {PLACEMENT_MATCHES - (data.ranked.placementGames || []).length} more placement {PLACEMENT_MATCHES - (data.ranked.placementGames || []).length === 1 ? "match" : "matches"} to get on the board</div>
           </div>
         ) : myPos >= 0 && !meVisible ? renderRow(pool[myPos], myPos, true) : null}
       </div>
@@ -3168,7 +3170,7 @@ function BankrollChart({ points }) {
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 8 }}>
         <div className="num" style={{ fontSize: 22, fontWeight: 700 }}>{(h ? h.v : last).toLocaleString()}</div>
-        <div className="num" style={{ fontSize: 12.5, fontWeight: 600, color: h ? "#8FA1BE" : color }}>{h ? new Date(h.t).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }) : `${signed(last - first)} over ${points.length} updates`}</div>
+        <div className="num" style={{ fontSize: 12.5, fontWeight: 600, color: h ? "#A9C7BA" : color }}>{h ? new Date(h.t).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }) : `${signed(last - first)} over ${points.length} updates`}</div>
       </div>
       <div style={{ position: "relative" }}>
         <svg ref={svgRef} viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" style={{ width: "100%", height: 120, display: "block", touchAction: "pan-y" }}
@@ -3181,7 +3183,7 @@ function BankrollChart({ points }) {
         </svg>
         {h && <div className="chart-dot" style={{ left: `${(x(hover) / W) * 100}%`, top: y(h.v), background: color }} />}
       </div>
-      <div className="num" style={{ display: "flex", justifyContent: "space-between", fontSize: 10.5, color: "#5E7196", marginTop: 4 }}>
+      <div className="num" style={{ display: "flex", justifyContent: "space-between", fontSize: 10.5, color: "#6F9584", marginTop: 4 }}>
         <span>Low {Math.min(...vals).toLocaleString()}</span><span>High {Math.max(...vals).toLocaleString()}</span>
       </div>
     </div>
@@ -3202,12 +3204,12 @@ function PositionBars({ pos }) {
         <div key={r.k}>
           <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12.5, marginBottom: 5 }}>
             <span style={{ fontWeight: 600 }}>{r.label}</span>
-            <span className="num" style={{ color: "#8FA1BE" }}><b style={{ color: "#F4F7FC" }}>{Math.round(r.pct * 100)}%</b> of {r.hands.toLocaleString()}</span>
+            <span className="num" style={{ color: "#A9C7BA" }}><b style={{ color: "#F4F7FC" }}>{Math.round(r.pct * 100)}%</b> of {r.hands.toLocaleString()}</span>
           </div>
           <div className="bar" style={{ height: 8 }}><div style={{ width: `${r.pct * 100}%`, background: r === best && r.hands >= 5 ? "#34D399" : "#6FA8FF" }} /></div>
         </div>
       ))}
-      <div style={{ fontSize: 11.5, color: "#5E7196" }}>Most players win more from late position. If yours is lower, you might be playing too many hands up front.</div>
+      <div style={{ fontSize: 11.5, color: "#6F9584" }}>Most players win more from late position. If yours is lower, you might be playing too many hands up front.</div>
     </div>
   );
 }
@@ -3221,7 +3223,7 @@ function BestHands({ list, suitColor }) {
           <div className="num best-n">{i + 1}</div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 13.5, fontWeight: 600 }}>{b.desc}</div>
-            <div style={{ fontSize: 11, color: "#5E7196" }}>{new Date(b.at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</div>
+            <div style={{ fontSize: 11, color: "#6F9584" }}>{new Date(b.at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</div>
           </div>
           <div style={{ display: "flex", gap: 3 }}>{(b.cards || []).slice(0, 5).map((c) => <MiniCard key={c} code={idToCode(c)} suitColor={suitColor} />)}</div>
         </div>
@@ -3265,16 +3267,16 @@ function ProfileScreen({ data, onUpdateName, onSelectAvatar, onSelectFrame, onAd
         <button className="iconbtn" onClick={() => setShowSettings(true)} aria-label="Settings"><Icon name="settings" size={14} /></button>
       </div>
       <div style={{ textAlign: "center", margin: "0 0 24px" }}>
-        <button onClick={() => setPickingAvatar(true)} className="profile-av" style={{ boxShadow: frameColor ? `0 0 0 3px #0B1426, 0 0 0 6px ${frameColor}` : "none" }} aria-label="Change avatar">{data.avatar}</button>
+        <button onClick={() => setPickingAvatar(true)} className="profile-av" style={{ boxShadow: frameColor ? `0 0 0 3px #0B2A20, 0 0 0 6px ${frameColor}` : "none" }} aria-label="Change avatar">{data.avatar}</button>
         {editingName ? (
           <form onSubmit={(e) => { e.preventDefault(); saveName(); }} style={{ display: "flex", gap: 6, justifyContent: "center", alignItems: "center" }}>
             <input autoFocus value={nameInput} maxLength={16} onChange={(e) => setNameInput(e.target.value)} className="input" style={{ width: 160, textAlign: "center", fontWeight: 600 }} aria-label="Display name" />
             <button type="submit" className="iconbtn" aria-label="Save name"><Icon name="check" size={13} /></button>
           </form>
         ) : (
-          <button onClick={() => setEditingName(true)} className="name-btn">{data.name}<PrestigeBadge n={rk.prestige} size={20} /><Icon name="edit" size={12} style={{ color: "#5E7196", marginLeft: 6 }} /></button>
+          <button onClick={() => setEditingName(true)} className="name-btn">{data.name}<PrestigeBadge n={rk.prestige} size={20} /><Icon name="edit" size={12} style={{ color: "#6F9584", marginLeft: 6 }} /></button>
         )}
-        <button className="title-btn" onClick={() => setPickingTitle(true)} aria-label="Change title"><TitleTag k={tt.equipped} size={12.5} /><Icon name="chevron" size={11} style={{ color: "#5E7196", transform: "rotate(90deg)" }} /></button>
+        <button className="title-btn" onClick={() => setPickingTitle(true)} aria-label="Change title"><TitleTag k={tt.equipped} size={12.5} /><Icon name="chevron" size={11} style={{ color: "#6F9584", transform: "rotate(90deg)" }} /></button>
         <div style={{ display: "flex", justifyContent: "center", gap: 8, marginTop: 8 }}>
           <span className="chip-pill num"><span className="chip-dot" />{data.chips.toLocaleString()}</span>
           <span className="chip-pill" style={{ color: tier.color }}><TierBadge tier={tier} size={16} />{placed ? rankName(rk.rating) : "Unranked"}</span>
@@ -3288,21 +3290,21 @@ function ProfileScreen({ data, onUpdateName, onSelectAvatar, onSelectFrame, onAd
           <TierBadge tier={tier} size={46} div={placed ? divisionOf(rk.rating) : null} />
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 15, fontWeight: 700, color: tier.color }}>{placed ? rankName(rk.rating) : "Unranked"}</div>
-            <div className="num" style={{ fontSize: 12, color: "#7587A6", marginTop: 1 }}>{placed ? `${Math.round(rk.rating).toLocaleString()} RP${prog.nextLabel ? `, ${prog.toNext} to ${prog.nextLabel}` : ""}` : `${(rk.placementGames || []).length} of ${PLACEMENT_MATCHES} placements played`}</div>
+            <div className="num" style={{ fontSize: 12, color: "#93B5A6", marginTop: 1 }}>{placed ? `${Math.round(rk.rating).toLocaleString()} RP${prog.nextLabel ? `, ${prog.toNext} to ${prog.nextLabel}` : ""}` : `${(rk.placementGames || []).length} of ${PLACEMENT_MATCHES} placements played`}</div>
           </div>
           <div style={{ textAlign: "right" }}>
             <div className="num" style={{ fontSize: 14, fontWeight: 600 }}>{rk.wins}W {rk.losses}L</div>
-            <div className="num" style={{ fontSize: 11, color: "#7587A6" }}>{rk.wins + rk.losses > 0 ? `${Math.round((rk.wins / (rk.wins + rk.losses)) * 100)}% won` : "No matches yet"}</div>
+            <div className="num" style={{ fontSize: 11, color: "#93B5A6" }}>{rk.wins + rk.losses > 0 ? `${Math.round((rk.wins / (rk.wins + rk.losses)) * 100)}% won` : "No matches yet"}</div>
           </div>
         </div>
         {placed ? <div className="bar" style={{ marginTop: 14 }}><div style={{ width: `${prog.pct * 100}%`, background: tier.color }} /></div> : <div style={{ marginTop: 14 }}><PlacementDots games={rk.placementGames || []} /></div>}
 
         {(rk.recent || []).length > 0 && (
           <div style={{ marginTop: 16 }}>
-            <div style={{ fontSize: 11.5, color: "#7587A6", marginBottom: 7 }}>{rk.recent.length === 1 ? "Last match" : `Last ${rk.recent.length} matches, newest first`}</div>
+            <div style={{ fontSize: 11.5, color: "#93B5A6", marginBottom: 7 }}>{rk.recent.length === 1 ? "Last match" : `Last ${rk.recent.length} matches, newest first`}</div>
             <div style={{ display: "flex", gap: 4 }}>
               {rk.recent.map((m, i) => (
-                <div key={i} title={`${m.won ? "Win" : "Loss"}${m.placement ? ", placement" : `, ${signed(m.delta)} RP`}`} className="num" style={{ flex: 1, maxWidth: 34, textAlign: "center", fontSize: 10, fontWeight: 700, padding: "5px 0", borderRadius: 6, color: m.won ? "#0B1426" : "#FF6B6B", background: m.won ? "#34D399" : "rgba(255,107,107,0.16)" }}>{m.placement ? (m.won ? "W" : "L") : signed(m.delta)}</div>
+                <div key={i} title={`${m.won ? "Win" : "Loss"}${m.placement ? ", placement" : `, ${signed(m.delta)} RP`}`} className="num" style={{ flex: 1, maxWidth: 34, textAlign: "center", fontSize: 10, fontWeight: 700, padding: "5px 0", borderRadius: 6, color: m.won ? "#0B2A20" : "#FF6B6B", background: m.won ? "#34D399" : "rgba(255,107,107,0.16)" }}>{m.placement ? (m.won ? "W" : "L") : signed(m.delta)}</div>
               ))}
             </div>
           </div>
@@ -3310,14 +3312,14 @@ function ProfileScreen({ data, onUpdateName, onSelectAvatar, onSelectFrame, onAd
 
         {rk.history.length > 0 && (
           <div style={{ marginTop: 16 }}>
-            <div style={{ fontSize: 11.5, color: "#7587A6", marginBottom: 7 }}>Past seasons</div>
+            <div style={{ fontSize: 11.5, color: "#93B5A6", marginBottom: 7 }}>Past seasons</div>
             <div style={{ display: "flex", gap: 12, overflowX: "auto" }}>
               {rk.history.slice().reverse().map((h) => {
                 const label = new Date(`${h.seasonId}-15`).toLocaleString("en-US", { month: "short", year: "numeric" });
                 return (
                   <div key={h.seasonId} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, flexShrink: 0 }}>
                     <TierBadge tier={tierForRating(h.rating)} size={26} />
-                    <div style={{ fontSize: 10, color: "#7587A6" }}>{label}</div>
+                    <div style={{ fontSize: 10, color: "#93B5A6" }}>{label}</div>
                   </div>
                 );
               })}
@@ -3326,7 +3328,7 @@ function ProfileScreen({ data, onUpdateName, onSelectAvatar, onSelectFrame, onAd
         )}
 
         <div style={{ marginTop: 16, paddingTop: 14, borderTop: "1px solid rgba(244,247,252,0.06)" }}>
-          <div style={{ fontSize: 11.5, color: "#7587A6", marginBottom: 9 }}>Avatar frame{rk.frames.length === 0 ? ". Reach Silver to unlock your first." : ""}</div>
+          <div style={{ fontSize: 11.5, color: "#93B5A6", marginBottom: 9 }}>Avatar frame{rk.frames.length === 0 ? ". Reach Silver to unlock your first." : ""}</div>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             {RANK_TIERS.filter((t) => t.min > 0).map((t) => {
               const owned = rk.frames.includes(t.key);
@@ -3334,7 +3336,7 @@ function ProfileScreen({ data, onUpdateName, onSelectAvatar, onSelectFrame, onAd
               return (
                 <button key={t.key} disabled={!owned} onClick={() => onSelectFrame(on ? null : t.key)} className="frame-swatch" aria-pressed={on} title={owned ? `${t.label} frame` : `Reach ${t.label} to unlock`}
                   style={{ borderColor: owned ? t.color : "rgba(244,247,252,0.12)", background: on ? `${t.color}33` : "transparent", opacity: owned ? 1 : 0.45 }}>
-                  {owned ? <span style={{ width: 8, height: 8, borderRadius: "50%", background: t.color, display: "block" }} /> : <Icon name="lock" size={11} style={{ color: "#5E7196" }} />}
+                  {owned ? <span style={{ width: 8, height: 8, borderRadius: "50%", background: t.color, display: "block" }} /> : <Icon name="lock" size={11} style={{ color: "#6F9584" }} />}
                   <span>{t.label}</span>
                 </button>
               );
@@ -3370,12 +3372,12 @@ function ProfileScreen({ data, onUpdateName, onSelectAvatar, onSelectFrame, onAd
           const cur = Math.max(0, Math.min(a.target, data.stats[a.stat] || 0));
           return (
             <div key={a.id} className="ach-row">
-              <div className="ach-mark" style={{ background: done ? "#34D399" : "transparent", borderColor: done ? "#34D399" : "rgba(244,247,252,0.18)", color: "#0B1426" }}>{done && <Icon name="check" size={12} stroke={2.6} />}</div>
+              <div className="ach-mark" style={{ background: done ? "#34D399" : "transparent", borderColor: done ? "#34D399" : "rgba(244,247,252,0.18)", color: "#0B2A20" }}>{done && <Icon name="check" size={12} stroke={2.6} />}</div>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 13.5, fontWeight: 600, color: done ? "#F4F7FC" : "#A9B8D0" }}>{a.label}</div>
-                <div style={{ fontSize: 11.5, color: "#7587A6" }}>{a.desc}</div>
+                <div style={{ fontSize: 13.5, fontWeight: 600, color: done ? "#F4F7FC" : "#C3D9CF" }}>{a.label}</div>
+                <div style={{ fontSize: 11.5, color: "#93B5A6" }}>{a.desc}</div>
               </div>
-              {!done && <div className="num" style={{ fontSize: 11.5, color: "#5E7196" }}>{cur.toLocaleString()}/{a.target.toLocaleString()}</div>}
+              {!done && <div className="num" style={{ fontSize: 11.5, color: "#6F9584" }}>{cur.toLocaleString()}/{a.target.toLocaleString()}</div>}
             </div>
           );
         })}
@@ -3389,7 +3391,7 @@ function ProfileScreen({ data, onUpdateName, onSelectAvatar, onSelectFrame, onAd
       <div className="list" style={{ gap: 6 }}>
         {data.friends.length === 0 && <div className="empty">No friends added yet.</div>}
         {data.friends.map((f, i) => (
-          <div key={i} className="lb-row" style={{ background: "#14223D", borderColor: "rgba(244,247,252,0.06)" }}>
+          <div key={i} className="lb-row" style={{ background: "#134A39", borderColor: "rgba(244,247,252,0.06)" }}>
             <div className="bot-av" style={{ position: "static", width: 28, height: 28, background: AVATAR_COLORS[i % AVATAR_COLORS.length], fontSize: 12 }}>{f[0].toUpperCase()}</div>
             <div style={{ fontSize: 13.5, fontWeight: 600 }}>{f}</div>
           </div>
@@ -3399,18 +3401,18 @@ function ProfileScreen({ data, onUpdateName, onSelectAvatar, onSelectFrame, onAd
       {ladder && <RankLadderModal ranked={rk} onClose={() => setLadder(false)} onPrestige={() => { onPrestige(); setLadder(false); }} />}
       {transfer && (
         <Modal title="Move my profile" onClose={() => setTransfer(false)} width={400}>
-          <div style={{ fontSize: 12.5, color: "#8FA1BE", marginBottom: 8 }}>1. On the old copy, copy this code.</div>
+          <div style={{ fontSize: 12.5, color: "#A9C7BA", marginBottom: 8 }}>1. On the old copy, copy this code.</div>
           <textarea ref={codeRef} readOnly value={profileCode} className="input code-box" onFocus={(e) => e.target.select()} aria-label="Your profile code" />
           <button className="btn btn-sm" style={{ marginTop: 8, width: "100%" }} onClick={copyCode}>{copied ? "Copied" : "Copy code"}</button>
-          <div style={{ fontSize: 12.5, color: "#8FA1BE", margin: "18px 0 8px" }}>2. On the new copy, paste it here.</div>
+          <div style={{ fontSize: 12.5, color: "#A9C7BA", margin: "18px 0 8px" }}>2. On the new copy, paste it here.</div>
           <textarea value={pasted} onChange={(e) => setPasted(e.target.value)} className="input code-box" placeholder="Paste your code" aria-label="Paste a profile code" />
           <button className="btn btn-raise btn-sm" style={{ marginTop: 8, width: "100%" }} disabled={!pasted.trim()} onClick={() => { onImportData(pasted); setTransfer(false); }}>Import</button>
-          <div style={{ fontSize: 11.5, color: "#5E7196", marginTop: 10 }}>Importing replaces the profile on this copy.</div>
+          <div style={{ fontSize: 11.5, color: "#6F9584", marginTop: 10 }}>Importing replaces the profile on this copy.</div>
         </Modal>
       )}
       {pickingTitle && (
         <Modal title="Titles" onClose={() => setPickingTitle(false)} width={400}>
-          <div style={{ fontSize: 12, color: "#7587A6", margin: "-6px 2px 10px" }}>{tt.owned.length} of {TITLES.length} unlocked. Earn them by playing or buy some in the shop.</div>
+          <div style={{ fontSize: 12, color: "#93B5A6", margin: "-6px 2px 10px" }}>{tt.owned.length} of {TITLES.length} unlocked. Earn them by playing or buy some in the shop.</div>
           <div style={{ maxHeight: "60vh", overflowY: "auto", display: "flex", flexDirection: "column", gap: 6 }}>
             {TITLES.slice().sort((a, b) => (tt.owned.includes(b.key) ? 1 : 0) - (tt.owned.includes(a.key) ? 1 : 0)).map((t) => {
               const owned = tt.owned.includes(t.key); const on = tt.equipped === t.key;
@@ -3418,9 +3420,9 @@ function ProfileScreen({ data, onUpdateName, onSelectAvatar, onSelectFrame, onAd
                 <button key={t.key} className={`title-row${on ? " on" : ""}`} disabled={!owned} onClick={() => { onEquipTitle(t.key); setPickingTitle(false); }} style={{ opacity: owned ? 1 : 0.55, cursor: owned ? "pointer" : "default", textAlign: "left" }}>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <TitleTag k={t.key} size={14} />
-                    <div style={{ fontSize: 11, color: "#7587A6", marginTop: 2 }}>{t.how || (t.cost ? `Shop, ${t.cost.toLocaleString()} chips` : "")}</div>
+                    <div style={{ fontSize: 11, color: "#93B5A6", marginTop: 2 }}>{t.how || (t.cost ? `Shop, ${t.cost.toLocaleString()} chips` : "")}</div>
                   </div>
-                  {on ? <span className="cos-tag eq">Equipped</span> : owned ? <span className="cos-tag">Equip</span> : <Icon name="lock" size={13} style={{ color: "#5E7196" }} />}
+                  {on ? <span className="cos-tag eq">Equipped</span> : owned ? <span className="cos-tag">Equip</span> : <Icon name="lock" size={13} style={{ color: "#6F9584" }} />}
                 </button>
               );
             })}
@@ -3436,7 +3438,7 @@ function ProfileScreen({ data, onUpdateName, onSelectAvatar, onSelectFrame, onAd
               </button>
             ))}
           </div>
-          <div style={{ fontSize: 12, color: "#7587A6", marginTop: 12, textAlign: "center" }}>Buy more in the shop.</div>
+          <div style={{ fontSize: 12, color: "#93B5A6", marginTop: 12, textAlign: "center" }}>Buy more in the shop.</div>
         </Modal>
       )}
 
@@ -3460,15 +3462,15 @@ function ProfileScreen({ data, onUpdateName, onSelectAvatar, onSelectFrame, onAd
           <div className="list" style={{ marginTop: 16, gap: 8 }}>
             <button className="row" onClick={onExportData}>
               <div style={{ textAlign: "left" }}><div className="row-title">Export my data</div><div className="row-sub">Download your profile as a file</div></div>
-              <Icon name="download" size={15} style={{ color: "#8FA1BE" }} />
+              <Icon name="download" size={15} style={{ color: "#A9C7BA" }} />
             </button>
             <button className="row" onClick={() => { setTransfer(true); setShowSettings(false); setCopied(false); setPasted(""); }}>
               <div style={{ textAlign: "left" }}><div className="row-title">Move my profile</div><div className="row-sub">Copy a code here, paste it into another copy of felt</div></div>
-              <Icon name="share" size={15} style={{ color: "#8FA1BE" }} />
+              <Icon name="share" size={15} style={{ color: "#A9C7BA" }} />
             </button>
             <button className="row" onClick={() => importRef.current && importRef.current.click()}>
               <div style={{ textAlign: "left" }}><div className="row-title">Import from a file</div><div className="row-sub">Use a file you exported before</div></div>
-              <Icon name="download" size={15} style={{ color: "#8FA1BE", transform: "rotate(180deg)" }} />
+              <Icon name="download" size={15} style={{ color: "#A9C7BA", transform: "rotate(180deg)" }} />
             </button>
             <input ref={importRef} type="file" accept="application/json,.json" style={{ display: "none" }} onChange={(e) => { onImportData(e.target.files && e.target.files[0]); e.target.value = ""; }} />
             <button className="row" style={{ borderColor: confirmReset ? "rgba(255,107,107,0.5)" : undefined }} onClick={() => { if (confirmReset) { onResetProfile(); setShowSettings(false); setConfirmReset(false); } else setConfirmReset(true); }}>
@@ -3486,7 +3488,7 @@ function SettingRow({ label, sub, children }) {
     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: "12px 0", borderBottom: "1px solid rgba(244,247,252,0.06)" }}>
       <div>
         <div style={{ fontSize: 13.5, fontWeight: 600 }}>{label}</div>
-        <div style={{ fontSize: 11.5, color: "#7587A6" }}>{sub}</div>
+        <div style={{ fontSize: 11.5, color: "#93B5A6" }}>{sub}</div>
       </div>
       {children}
     </div>
@@ -3512,7 +3514,7 @@ function StatCard({ label, value }) {
   return (
     <div className="stat">
       <div className="num" style={{ fontSize: 20, fontWeight: 600, fontFamily: DISPLAY_FONT }}>{value}</div>
-      <div style={{ fontSize: 11.5, color: "#7587A6", marginTop: 2 }}>{label}</div>
+      <div style={{ fontSize: 11.5, color: "#93B5A6", marginTop: 2 }}>{label}</div>
     </div>
   );
 }
@@ -3880,7 +3882,7 @@ export default function App() {
       {toast && (
         <div className="toast" role="status">
           <div style={{ fontSize: 12, fontWeight: 700, color: "#F5B83D" }}>{toast.title}</div>
-          <div style={{ fontSize: 12.5, color: "#C8D3E6" }}>{toast.label}</div>
+          <div style={{ fontSize: 12.5, color: "#E3EEE8" }}>{toast.label}</div>
         </div>
       )}
     </div>
@@ -3891,7 +3893,7 @@ function BottomNav({ tab, setTab }) {
   const side = (it) => {
     const active = tab === it.key;
     return (
-      <button key={it.key} onClick={() => setTab(it.key)} className="navbtn" aria-current={active ? "page" : undefined} style={{ color: active ? "#F4F7FC" : "#566A90" }}>
+      <button key={it.key} onClick={() => setTab(it.key)} className="navbtn" aria-current={active ? "page" : undefined} style={{ color: active ? "#F4F7FC" : "#6F9584" }}>
         <Icon name={it.icon} size={20} stroke={active ? 2 : 1.7} />
         <div style={{ fontSize: 10.5, fontWeight: 600, marginTop: 3 }}>{it.label}</div>
       </button>
@@ -3903,8 +3905,7 @@ function BottomNav({ tab, setTab }) {
       {side({ key: "shop", icon: "bag", label: "Shop" })}
       {side({ key: "leaderboard", icon: "ranks", label: "Ranks" })}
       <button onClick={() => setTab("home")} className={`play-fab${playActive ? " on" : ""}`} aria-current={playActive ? "page" : undefined} aria-label="Play">
-        <span className="play-fab-disc"><span style={{ fontSize: 20, lineHeight: 1 }}>{"♠"}</span></span>
-        <span style={{ fontSize: 10.5, fontWeight: 700, marginTop: 3 }}>Play</span>
+        <span className="play-fab-disc"><span className="puck-ring" /><span className="puck-text">PLAY</span></span>
       </button>
       {side({ key: "coach", icon: "coach", label: "Coach" })}
       {side({ key: "profile", icon: "user", label: "Profile" })}
@@ -3914,7 +3915,7 @@ function BottomNav({ tab, setTab }) {
 
 const GLOBAL_STYLE = `
 * { box-sizing: border-box; }
-body { margin: 0; background: #0B1426; }
+body { margin: 0; background: #0B2A20; }
 button { font-family: inherit; color: inherit; }
 :focus-visible { outline: 2px solid #34D399; outline-offset: 2px; }
 @keyframes potBump { 0% { transform: scale(1);} 45% { transform: scale(1.12);} 100% { transform: scale(1);} }
@@ -3933,8 +3934,8 @@ button { font-family: inherit; color: inherit; }
 @keyframes spin { to { transform: rotate(360deg); } }
 @keyframes badgePop { 0% { opacity: 0; transform: scale(.4) rotate(-20deg); } 60% { opacity: 1; transform: scale(1.12) rotate(4deg); } 100% { transform: scale(1) rotate(0); } }
 
-.app { font-family: 'Inter', -apple-system, sans-serif; background: radial-gradient(130% 70% at 50% -15%, #1E427E 0%, #0B1426 62%); height: 100vh; height: 100dvh; color: #F4F7FC; display: flex; flex-direction: column; align-items: center; overflow: hidden; }
-.app-table { height: 100vh; height: 100dvh; background: radial-gradient(130% 70% at 50% -15%, #1E427E 0%, #0B1426 62%); }
+.app { font-family: 'Inter', -apple-system, sans-serif; background: radial-gradient(130% 70% at 50% -15%, #1E427E 0%, #0B2A20 62%); height: 100vh; height: 100dvh; color: #F4F7FC; display: flex; flex-direction: column; align-items: center; overflow: hidden; }
+.app-table { height: 100vh; height: 100dvh; background: radial-gradient(130% 70% at 50% -15%, #1E427E 0%, #0B2A20 62%); }
 .app-main { flex: 1; width: 100%; display: flex; justify-content: center; overflow: hidden; padding-top: 16px; }
 .screen { width: 100%; max-width: 460px; height: 100%; overflow-y: auto; padding: 0 16px 40px; }
 .screen-fade { animation: screenIn 0.2s ease; }
@@ -3943,61 +3944,61 @@ button { font-family: inherit; color: inherit; }
 .wordmark-sm { font-family: 'Fraunces', Georgia, serif; font-size: 18px; font-weight: 700; letter-spacing: -0.01em; line-height: 1.1; }
 .num { font-variant-numeric: tabular-nums; }
 .chip-pill { display: inline-flex; align-items: center; gap: 6px; background: rgba(244,247,252,0.06); border: 1px solid rgba(244,247,252,0.1); border-radius: 20px; padding: 5px 11px; font-size: 13px; font-weight: 600; }
-.chip-dot { width: 12px; height: 12px; border-radius: 50%; background: #F5B83D; box-shadow: inset 0 0 0 2.5px #0B1426, inset 0 0 0 4px #F5B83D; display: inline-block; }
-.panel { background: #14223D; border: 1px solid rgba(244,247,252,0.08); border-radius: 20px; padding: 16px 18px 18px; }
+.chip-dot { width: 12px; height: 12px; border-radius: 50%; background: #F5B83D; box-shadow: inset 0 0 0 2.5px #0B2A20, inset 0 0 0 4px #F5B83D; display: inline-block; }
+.panel { background: #134A39; border: 1px solid rgba(244,247,252,0.08); border-radius: 20px; padding: 16px 18px 18px; }
 .list { display: flex; flex-direction: column; gap: 8px; }
-.row { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; background: #14223D; border: 1px solid rgba(244,247,252,0.07); border-radius: 16px; padding: 14px 16px; cursor: pointer; text-align: left; transition: border-color .15s ease, background .15s ease; }
+.row { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; background: #134A39; border: 1px solid rgba(244,247,252,0.07); border-radius: 16px; padding: 14px 16px; cursor: pointer; text-align: left; transition: border-color .15s ease, background .15s ease; }
 div.row { cursor: default; }
 button.row:hover:not(:disabled) { border-color: rgba(244,247,252,0.18); }
-button.row:active:not(:disabled) { background: #1A2B4B; }
+button.row:active:not(:disabled) { background: #185542; }
 .row:disabled { opacity: 0.45; cursor: default; }
 .row-title { font-size: 14.5px; font-weight: 600; }
-.row-sub { font-size: 12px; color: #7587A6; margin-top: 2px; }
+.row-sub { font-size: 12px; color: #93B5A6; margin-top: 2px; }
 .bar { height: 7px; border-radius: 4px; background: rgba(244,247,252,0.1); overflow: hidden; }
 .bar > div { height: 100%; border-radius: 4px; transition: width .35s ease, background .35s ease; }
-.stat { background: #14223D; border: 1px solid rgba(244,247,252,0.07); border-radius: 14px; padding: 12px 14px; }
-.comp-row { background: #14223D; border: 1px solid rgba(244,247,252,0.06); border-radius: 14px; padding: 12px 14px; }
+.stat { background: #134A39; border: 1px solid rgba(244,247,252,0.07); border-radius: 14px; padding: 12px 14px; }
+.comp-row { background: #134A39; border: 1px solid rgba(244,247,252,0.06); border-radius: 14px; padding: 12px 14px; }
 .segbtn:disabled { cursor: not-allowed; }
 .spark { display: flex; align-items: flex-end; gap: 3px; height: 42px; margin-top: 12px; }
 .spark > div { flex: 1; border-radius: 2px; min-width: 4px; }
-.report { margin-top: 16px; background: #14223D; border: 1px solid rgba(244,247,252,0.08); border-radius: 16px; padding: 14px 16px; }
-.report p { font-size: 13.5px; line-height: 1.55; color: #C8D3E6; margin: 6px 0 0; }
-.report-head { display: flex; justify-content: space-between; font-size: 12px; font-weight: 600; color: #A9B8D0; }
-.ach-row { display: flex; align-items: center; gap: 12px; padding: 10px 14px; background: #14223D; border: 1px solid rgba(244,247,252,0.06); border-radius: 12px; }
+.report { margin-top: 16px; background: #134A39; border: 1px solid rgba(244,247,252,0.08); border-radius: 16px; padding: 14px 16px; }
+.report p { font-size: 13.5px; line-height: 1.55; color: #E3EEE8; margin: 6px 0 0; }
+.report-head { display: flex; justify-content: space-between; font-size: 12px; font-weight: 600; color: #C3D9CF; }
+.ach-row { display: flex; align-items: center; gap: 12px; padding: 10px 14px; background: #134A39; border: 1px solid rgba(244,247,252,0.06); border-radius: 12px; }
 .ach-mark { width: 20px; height: 20px; border-radius: 50%; border: 1.5px solid; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-.lb-dock { position: sticky; bottom: 0; padding: 10px 0 34px; background: linear-gradient(180deg, rgba(11,20,38,0) 0%, #0B1426 30%); }
+.lb-dock { position: sticky; bottom: 0; padding: 10px 0 34px; background: linear-gradient(180deg, rgba(11,20,38,0) 0%, #0B2A20 30%); }
 .lb-pinned { box-shadow: 0 -6px 18px rgba(0,0,0,0.35); }
 .lb-row { display: flex; align-items: center; gap: 10px; border-radius: 12px; padding: 10px 14px; border: 1px solid transparent; }
-.empty { font-size: 12.5px; color: #5E7196; padding: 8px 2px; }
-.input { background: #14223D; border: 1px solid rgba(244,247,252,0.1); border-radius: 12px; padding: 10px 12px; color: #F4F7FC; font-size: 14px; font-family: inherit; }
+.empty { font-size: 12.5px; color: #6F9584; padding: 8px 2px; }
+.input { background: #134A39; border: 1px solid rgba(244,247,252,0.1); border-radius: 12px; padding: 10px 12px; color: #F4F7FC; font-size: 14px; font-family: inherit; }
 .input:focus { outline: none; border-color: rgba(52,211,153,0.6); }
-.profile-av { background: #25395F; border: none; width: 76px; height: 76px; border-radius: 50%; font-size: 34px; display: flex; align-items: center; justify-content: center; margin: 0 auto 12px; cursor: pointer; }
+.profile-av { background: #1B5A45; border: none; width: 76px; height: 76px; border-radius: 50%; font-size: 34px; display: flex; align-items: center; justify-content: center; margin: 0 auto 12px; cursor: pointer; }
 .name-btn { background: none; border: none; font-size: 19px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; padding: 2px 4px; }
 .frame-swatch { display: inline-flex; align-items: center; gap: 6px; border: 1.5px solid; border-radius: 20px; padding: 5px 11px 5px 9px; font-size: 12px; font-weight: 600; cursor: pointer; background: transparent; }
 .frame-swatch:disabled { cursor: default; }
 .avatar-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
-.avatar-tile { display: flex; flex-direction: column; align-items: center; justify-content: center; background: #14223D; border: 1px solid rgba(244,247,252,0.07); border-radius: 14px; padding: 12px 4px 10px; cursor: pointer; }
+.avatar-tile { display: flex; flex-direction: column; align-items: center; justify-content: center; background: #134A39; border: 1px solid rgba(244,247,252,0.07); border-radius: 14px; padding: 12px 4px 10px; cursor: pointer; }
 .avatar-tile:disabled { cursor: default; }
 .seg { display: flex; gap: 3px; background: rgba(244,247,252,0.06); border-radius: 12px; padding: 3px; }
-.segbtn { flex: 1; border: none; border-radius: 9px; padding: 8px 6px; font-size: 12px; font-weight: 600; cursor: pointer; background: transparent; color: #A9B8D0; transition: background .15s ease, color .15s ease; white-space: nowrap; }
-.segbtn.on { background: #F4F7FC; color: #0B1426; }
+.segbtn { flex: 1; border: none; border-radius: 9px; padding: 8px 6px; font-size: 12px; font-weight: 600; cursor: pointer; background: transparent; color: #C3D9CF; transition: background .15s ease, color .15s ease; white-space: nowrap; }
+.segbtn.on { background: #F4F7FC; color: #0B2A20; }
 .kv-list { margin: 14px 0 4px; border-top: 1px solid rgba(244,247,252,0.06); }
-.kv { display: flex; justify-content: space-between; align-items: baseline; font-size: 13px; padding: 9px 2px; border-bottom: 1px solid rgba(244,247,252,0.06); color: #8FA1BE; }
+.kv { display: flex; justify-content: space-between; align-items: baseline; font-size: 13px; padding: 9px 2px; border-bottom: 1px solid rgba(244,247,252,0.06); color: #A9C7BA; }
 .kv b { color: #F4F7FC; font-weight: 600; }
 .scrim { position: fixed; top: 0; right: 0; bottom: 0; left: 0; background: rgba(3,8,20,0.74); display: flex; align-items: center; justify-content: center; padding: 16px; z-index: 30; animation: screenIn .15s ease; }
-.sheet { background: #14223D; border: 1px solid rgba(244,247,252,0.1); border-radius: 20px; padding: 18px; width: 100%; max-height: 86vh; overflow-y: auto; animation: sheetIn .22s cubic-bezier(.2,.9,.3,1); box-shadow: 0 24px 60px rgba(0,0,0,0.5); }
+.sheet { background: #134A39; border: 1px solid rgba(244,247,252,0.1); border-radius: 20px; padding: 18px; width: 100%; max-height: 86vh; overflow-y: auto; animation: sheetIn .22s cubic-bezier(.2,.9,.3,1); box-shadow: 0 24px 60px rgba(0,0,0,0.5); }
 .sheet-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
 .sheet-title { font-family: 'Fraunces', Georgia, serif; font-size: 19px; font-weight: 700; }
-.sheet-body { font-size: 13px; line-height: 1.5; color: #8FA1BE; margin: 12px 2px 16px; }
-.toast { position: fixed; top: 18px; left: 50%; transform: translateX(-50%); z-index: 40; background: #14223D; border: 1px solid rgba(245,184,61,0.45); border-radius: 14px; padding: 10px 16px; animation: sheetIn .25s ease; box-shadow: 0 10px 30px rgba(0,0,0,0.45); min-width: 200px; text-align: center; }
+.sheet-body { font-size: 13px; line-height: 1.5; color: #A9C7BA; margin: 12px 2px 16px; }
+.toast { position: fixed; top: 18px; left: 50%; transform: translateX(-50%); z-index: 40; background: #134A39; border: 1px solid rgba(245,184,61,0.45); border-radius: 14px; padding: 10px 16px; animation: sheetIn .25s ease; box-shadow: 0 10px 30px rgba(0,0,0,0.45); min-width: 200px; text-align: center; }
 .bottom-nav { width: 100%; max-width: 460px; display: flex; justify-content: space-around; align-items: center; padding: 6px 6px calc(8px + env(safe-area-inset-bottom)); border-top: 1px solid rgba(244,247,252,0.08); flex-shrink: 0; background: rgba(11,20,38,0.88); }
 .navbtn { background: none; border: none; display: flex; flex-direction: column; align-items: center; cursor: pointer; padding: 6px 8px; transition: color .15s ease; flex: 1; }
 .play-fab { background: none; border: none; display: flex; flex-direction: column; align-items: center; cursor: pointer; padding: 2px 4px 0; flex: 1; color: #F4F7FC; }
-.play-fab-disc { width: 46px; height: 46px; margin-top: 0; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #0B1426; background: radial-gradient(circle at 35% 30%, #FFE08A, #F5B83D 70%); box-shadow: 0 0 12px rgba(245,184,61,0.35); transition: transform .18s ease; }
+.play-fab-disc { width: 46px; height: 46px; margin-top: 0; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #0B2A20; background: radial-gradient(circle at 35% 30%, #FFE08A, #F5B83D 70%); box-shadow: 0 0 12px rgba(245,184,61,0.35); transition: transform .18s ease; }
 .play-fab:active .play-fab-disc { transform: scale(0.93); }
 .play-fab:not(.on) .play-fab-disc { filter: saturate(0.85) brightness(0.92); }
 
-.loading { position: fixed; top: 0; right: 0; bottom: 0; left: 0; background: radial-gradient(130% 70% at 50% -15%, #1E427E 0%, #0B1426 62%); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 50; transition: opacity .6s ease; color: #F4F7FC; }
+.loading { position: fixed; top: 0; right: 0; bottom: 0; left: 0; background: radial-gradient(130% 70% at 50% -15%, #1E427E 0%, #0B2A20 62%); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 50; transition: opacity .6s ease; color: #F4F7FC; }
 .loading-word { font-family: 'Fraunces', Georgia, serif; font-size: 48px; font-weight: 700; letter-spacing: -0.03em; animation: suitIn .8s ease both; }
 .loading-suits { display: flex; gap: 14px; margin-top: 10px; font-size: 20px; }
 .loading-suits span { animation: suitIn .5s ease both; }
@@ -4008,8 +4009,8 @@ button.row:active:not(:disabled) { background: #1A2B4B; }
 .table-wrap { font-family: 'Inter', -apple-system, sans-serif; height: 100%; color: #F4F7FC; display: flex; flex-direction: column; align-items: center; padding: 12px 14px; overflow: hidden; position: relative; }
 .table-top { width: 100%; max-width: 460px; display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-shrink: 0; }
 .table-top > div:first-of-type { flex: 1; }
-.table-sub { font-size: 10.5px; color: #7587A6; margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.status { width: 100%; max-width: 460px; text-align: center; font-size: 12.5px; color: #A9B8D0; font-weight: 500; min-height: 18px; margin: 8px 0 2px; flex-shrink: 0; animation: fadeSlide 0.25s ease; }
+.table-sub { font-size: 10.5px; color: #93B5A6; margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.status { width: 100%; max-width: 460px; text-align: center; font-size: 12.5px; color: #C3D9CF; font-weight: 500; min-height: 18px; margin: 8px 0 2px; flex-shrink: 0; animation: fadeSlide 0.25s ease; }
 .seats { width: 100%; max-width: 460px; display: flex; justify-content: space-around; flex-wrap: wrap; row-gap: 6px; flex-shrink: 0; margin-top: 4px; }
 .bot-av { position: absolute; top: 3px; left: 3px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: 'Fraunces', Georgia, serif; font-weight: 700; color: #FFFFFF; }
 .backs { display: flex; align-items: center; }
@@ -4024,40 +4025,40 @@ button.row:active:not(:disabled) { background: #1A2B4B; }
 .hand-strip { position: relative; overflow: hidden; display: flex; align-items: center; justify-content: space-between; background: rgba(244,247,252,0.04); border: 1px solid; border-radius: 12px; padding: 9px 14px; height: 38px; }
 .tip { width: 100%; max-width: 460px; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; gap: 10px; border: 1px solid; border-radius: 12px; padding: 8px 12px; font-size: 11.5px; line-height: 1.4; }
 .tip .iconbtn { flex-shrink: 0; color: inherit; }
-.hero-seat { width: 100%; max-width: 460px; flex-shrink: 0; background: #14223D; border: 1px solid; transition: border-color .4s ease, box-shadow .4s ease; border-radius: 20px; padding: 12px 14px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.hero-seat { width: 100%; max-width: 460px; flex-shrink: 0; background: #134A39; border: 1px solid; transition: border-color .4s ease, box-shadow .4s ease; border-radius: 20px; padding: 12px 14px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .controls { width: 100%; max-width: 460px; display: flex; flex-direction: column; align-items: center; gap: 8px; flex-shrink: 0; padding-top: 10px; padding-bottom: env(safe-area-inset-bottom); }
 .slider-row { display: flex; align-items: center; gap: 10px; background: rgba(244,247,252,0.06); padding: 8px 8px 8px 14px; border-radius: 14px; width: 100%; }
 .rank-row { display: flex; align-items: center; gap: 12px; padding: 10px 4px; border-bottom: 1px solid rgba(244,247,252,0.06); }
 .rank-row:last-child { border-bottom: none; }
-.rank-num { width: 18px; font-size: 12px; font-weight: 600; color: #5E7196; text-align: right; flex-shrink: 0; }
+.rank-num { width: 18px; font-size: 12px; font-weight: 600; color: #6F9584; text-align: right; flex-shrink: 0; }
 .mcard { width: 21px; height: 30px; border-radius: 4px; background: #FFFFFF; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 9.5px; font-weight: 700; line-height: 1.05; box-shadow: 0 1px 2px rgba(0,0,0,0.3); }
-.mm { position: fixed; top: 0; right: 0; bottom: 0; left: 0; z-index: 36; background: radial-gradient(130% 70% at 50% -15%, #1E427E 0%, #0B1426 62%); display: flex; align-items: center; justify-content: center; transition: opacity .4s ease; }
+.mm { position: fixed; top: 0; right: 0; bottom: 0; left: 0; z-index: 36; background: radial-gradient(130% 70% at 50% -15%, #1E427E 0%, #0B2A20 62%); display: flex; align-items: center; justify-content: center; transition: opacity .4s ease; }
 .mm-inner { display: flex; flex-direction: column; align-items: center; gap: 12px; animation: sheetIn .3s ease; }
 .mm-title { font-family: 'Fraunces', Georgia, serif; font-size: 26px; font-weight: 700; }
-.mm-sub { font-size: 13.5px; color: #8FA1BE; }
+.mm-sub { font-size: 13.5px; color: #A9C7BA; }
 
-.results { position: fixed; top: 0; right: 0; bottom: 0; left: 0; z-index: 35; background: radial-gradient(130% 70% at 50% -15%, #1E427E 0%, #0B1426 62%); display: flex; align-items: center; justify-content: center; padding: 20px 16px; overflow-y: auto; animation: resultsIn .35s ease; }
+.results { position: fixed; top: 0; right: 0; bottom: 0; left: 0; z-index: 35; background: radial-gradient(130% 70% at 50% -15%, #1E427E 0%, #0B2A20 62%); display: flex; align-items: center; justify-content: center; padding: 20px 16px; overflow-y: auto; animation: resultsIn .35s ease; }
 .results-inner { width: 100%; max-width: 380px; display: flex; flex-direction: column; margin: auto 0; }
 .results-inner > * { animation: riseIn .5s cubic-bezier(.2,.9,.3,1) both; }
 .results-inner > *:nth-child(2) { animation-delay: .05s; } .results-inner > *:nth-child(3) { animation-delay: .1s; }
 .results-inner > *:nth-child(4) { animation-delay: .18s; } .results-inner > *:nth-child(5) { animation-delay: .26s; }
 .results-inner > *:nth-child(n+6) { animation-delay: .34s; }
 .badge-pop { animation: badgePop .7s cubic-bezier(.2,.9,.3,1.2) .2s both; filter: drop-shadow(0 10px 30px rgba(0,0,0,0.5)); }
-.results-kicker { font-size: 12.5px; color: #7587A6; text-align: center; }
+.results-kicker { font-size: 12.5px; color: #93B5A6; text-align: center; }
 .results-head { font-family: 'Fraunces', Georgia, serif; font-size: 52px; font-weight: 700; letter-spacing: -0.03em; line-height: 1; text-align: center; margin: 8px 0 8px; }
-.results-sub { font-size: 14px; color: #8FA1BE; text-align: center; }
+.results-sub { font-size: 14px; color: #A9C7BA; text-align: center; }
 .results-delta { font-family: 'Fraunces', Georgia, serif; font-size: 42px; font-weight: 700; text-align: center; margin: 22px 0 18px; letter-spacing: -0.02em; }
 .results-delta span { font-family: 'Inter', sans-serif; font-size: 15px; font-weight: 600; margin-left: 6px; opacity: .8; letter-spacing: 0; }
-.results-tier { display: flex; align-items: center; gap: 14px; background: #14223D; border: 1px solid rgba(244,247,252,0.08); border-radius: 16px; padding: 14px 16px; }
+.results-tier { display: flex; align-items: center; gap: 14px; background: #134A39; border: 1px solid rgba(244,247,252,0.08); border-radius: 16px; padding: 14px 16px; }
 .results-note { margin-top: 10px; border: 1px solid; border-radius: 12px; padding: 10px 14px; font-size: 13px; text-align: center; }
 .results-lines { margin-top: 16px; }
-.results-lines > div { display: flex; justify-content: space-between; font-size: 13px; color: #A9B8D0; padding: 7px 2px; border-bottom: 1px solid rgba(244,247,252,0.06); }
+.results-lines > div { display: flex; justify-content: space-between; font-size: 13px; color: #C3D9CF; padding: 7px 2px; border-bottom: 1px solid rgba(244,247,252,0.06); }
 .results-lines b { font-weight: 600; }
 .results-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 16px; }
-.results-stats > div { background: #14223D; border-radius: 12px; padding: 10px 8px; text-align: center; }
+.results-stats > div { background: #134A39; border-radius: 12px; padding: 10px 8px; text-align: center; }
 .results-stats b { display: block; font-size: 16px; font-weight: 600; }
-.results-stats span { font-size: 11px; color: #7587A6; }
-.linkbtn { background: none; border: none; color: #7587A6; font-size: 12.5px; margin-top: 14px; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; align-self: center; padding: 4px; }
+.results-stats span { font-size: 11px; color: #93B5A6; }
+.linkbtn { background: none; border: none; color: #93B5A6; font-size: 12.5px; margin-top: 14px; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; align-self: center; padding: 4px; }
 
 .card { position: relative; width: clamp(30px,8.5vw,40px); height: clamp(43px,12vw,57px); border-radius: 7px; background: #FFFFFF; display:flex; flex-direction:column; align-items:center; justify-content:center; font-weight:800; font-size:clamp(11px,3.2vw,14px); box-shadow: 0 1px 0 rgba(255,255,255,0.7) inset, 0 2px 3px rgba(0,0,0,0.2), 0 8px 14px rgba(0,0,0,0.28); transition: opacity .35s ease, filter .35s ease; will-change: transform, opacity; backface-visibility: hidden; }
 .card.dim { opacity: 0.3; filter: grayscale(0.7); }
@@ -4073,13 +4074,13 @@ button.row:active:not(:disabled) { background: #1A2B4B; }
 .btn-sm { flex: none; padding: 8px 16px; font-size: 13px; border-radius: 11px; }
 .btn-fold { border-color: rgba(255,107,107,0.45); color: #FF6B6B; background: rgba(255,107,107,0.08); }
 .btn-go { border-color: rgba(52,211,153,0.5); color: #34D399; background: rgba(52,211,153,0.08); }
-.btn-raise { background: linear-gradient(180deg, #FFD666, #F5B83D); color: #0B1426; border-color: transparent; box-shadow: 0 6px 18px rgba(245,184,61,0.28); }
+.btn-raise { background: linear-gradient(180deg, #FFD666, #F5B83D); color: #0B2A20; border-color: transparent; box-shadow: 0 6px 18px rgba(245,184,61,0.28); }
 .btn-raise:hover:not(:disabled) { background: linear-gradient(180deg, #FFE08A, #FFC94D); border-color: transparent; }
-.iconbtn { background: rgba(244,247,252,0.06); border: 1px solid rgba(244,247,252,0.14); color: #C8D3E6; width: 30px; height: 30px; border-radius: 50%; cursor: pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0; transition: background .15s ease; padding: 0; }
+.iconbtn { background: rgba(244,247,252,0.06); border: 1px solid rgba(244,247,252,0.14); color: #E3EEE8; width: 30px; height: 30px; border-radius: 50%; cursor: pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0; transition: background .15s ease; padding: 0; }
 .iconbtn:hover { background: rgba(244,247,252,0.12); }
 .chip-badge { font-size: 10.5px; background: #0E1A30; color: #F5B83D; border: 1px solid rgba(245,184,61,0.5); padding: 2px 8px; border-radius: 20px; font-weight: 700; font-variant-numeric: tabular-nums; transition: transform .5s cubic-bezier(.5,0,.3,1), opacity .5s ease; display: inline-block; }
 .chip-badge.collecting { transform: translateY(-60px) scale(0.4); opacity: 0; }
-.dealer-chip { position: absolute; bottom: -2px; right: -2px; width: 15px; height: 15px; border-radius: 50%; background: #FFFFFF; color: #0B1426; font-size: 8.5px; font-weight: 800; display:flex; align-items:center; justify-content:center; box-shadow: 0 1px 3px rgba(0,0,0,0.4); }
+.dealer-chip { position: absolute; bottom: -2px; right: -2px; width: 15px; height: 15px; border-radius: 50%; background: #FFFFFF; color: #0B2A20; font-size: 8.5px; font-weight: 800; display:flex; align-items:center; justify-content:center; box-shadow: 0 1px 3px rgba(0,0,0,0.4); }
 input[type=range] { accent-color: #F5B83D; }
 .preset-btn { display: flex; flex-direction: column; gap: 1px; padding: 8px 6px; border-color: rgba(245,184,61,0.45); color: #F5B83D; background: rgba(245,184,61,0.08); }
 
@@ -4092,13 +4093,13 @@ input[type=range] { accent-color: #F5B83D; }
 .card.big.o4 { width: clamp(38px,11vw,48px); height: clamp(54px,15.5vw,68px); font-size: clamp(14px,4vw,18px); border-radius: 8px; }
 .card.mini.m4 { width: 17px; height: 26px; font-size: 8.5px; }
 .pre-row { display: flex; gap: 6px; width: 100%; }
-.pre-btn { flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; border: 1px solid rgba(244,247,252,0.14); background: rgba(244,247,252,0.04); color: #A9B8D0; border-radius: 12px; padding: 12px 4px; font-size: 12.5px; font-weight: 600; cursor: pointer; transition: border-color .15s ease, color .15s ease, background .15s ease; white-space: nowrap; }
+.pre-btn { flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; border: 1px solid rgba(244,247,252,0.14); background: rgba(244,247,252,0.04); color: #C3D9CF; border-radius: 12px; padding: 12px 4px; font-size: 12.5px; font-weight: 600; cursor: pointer; transition: border-color .15s ease, color .15s ease, background .15s ease; white-space: nowrap; }
 .pre-btn.on { border-color: rgba(245,184,61,0.65); color: #F5B83D; background: rgba(245,184,61,0.1); }
 .pre-box { width: 14px; height: 14px; border-radius: 4px; border: 1.5px solid currentColor; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .squeeze { display: flex; gap: 6px; position: relative; touch-action: none; cursor: grab; -webkit-user-select: none; user-select: none; }
 .card.sq { overflow: hidden; }
 .sq-cover { position: absolute; top: 0; right: 0; bottom: 0; left: 0; border-radius: inherit; background-color: var(--back-a, #2F6FDE); background-image: repeating-linear-gradient(45deg, rgba(255,255,255,0.14) 0 3px, transparent 3px 7px); box-shadow: inset 0 0 0 2px var(--back-ring, #FFFFFF), inset 0 0 0 3.5px var(--back-b, #1F4FA8); }
-.sq-hint { position: absolute; left: 0; right: 0; bottom: -15px; text-align: center; font-size: 10px; font-weight: 600; color: #8FA1BE; pointer-events: none; animation: hintPulse 1.6s ease-in-out infinite; }
+.sq-hint { position: absolute; left: 0; right: 0; bottom: -15px; text-align: center; font-size: 10px; font-weight: 600; color: #A9C7BA; pointer-events: none; animation: hintPulse 1.6s ease-in-out infinite; }
 .flights { position: fixed; top: 0; right: 0; bottom: 0; left: 0; pointer-events: none; z-index: 26; }
 .flight { position: absolute; width: 0; height: 0; }
 .fchip { position: absolute; left: -9px; top: -9px; width: 18px; height: 18px; border-radius: 50%; border: 3px dashed rgba(255,255,255,0.88); box-shadow: 0 2px 5px rgba(0,0,0,0.45); animation: chipFly .62s cubic-bezier(.3,.6,.25,1) both; }
@@ -4117,13 +4118,13 @@ input[type=range] { accent-color: #F5B83D; }
 @keyframes hintPulse { 0%, 100% { opacity: .5; } 50% { opacity: 1; } }
 @keyframes shimmer { 0%, 72% { left: -60%; } 100% { left: 130%; } }
 /* ---- progression + color pass ---- */
-.app { position: relative; isolation: isolate; background: #0B1426; }
+.app { position: relative; isolation: isolate; background: #0B2A20; }
 .app::before { content: ""; position: absolute; top: -20%; left: -20%; right: -20%; height: 90%; pointer-events: none; z-index: -1; background: radial-gradient(40% 45% at 22% 18%, rgba(59,130,246,0.38), transparent 70%), radial-gradient(35% 40% at 85% 10%, rgba(139,92,246,0.30), transparent 70%), radial-gradient(40% 40% at 60% 70%, rgba(20,184,166,0.16), transparent 70%); animation: aurora 22s ease-in-out infinite alternate; }
 .app { overflow: hidden; }
 @keyframes aurora { 0% { transform: translate3d(0,0,0) scale(1); } 50% { transform: translate3d(4%,3%,0) scale(1.06); } 100% { transform: translate3d(-4%,1%,0) scale(1.02); } }
 .panel { background: linear-gradient(180deg, rgba(25,43,77,0.94), rgba(18,32,58,0.94)); box-shadow: 0 10px 30px rgba(0,0,0,0.22); }
 .row, .stat, .avatar-tile { background: rgba(22,38,68,0.9); }
-.panel-label { display: flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 600; color: #8FA1BE; margin-bottom: 12px; }
+.panel-label { display: flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 600; color: #A9C7BA; margin-bottom: 12px; }
 .sec-ic { width: 28px; height: 28px; border-radius: 9px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .badge-dot { min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: #FF5C7A; color: #FFFFFF; font-size: 11px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; animation: badgePop .35s ease; }
 .streak-pill { color: #FF9A4C; border-color: rgba(255,138,76,0.4); background: rgba(255,138,76,0.12); }
@@ -4133,7 +4134,7 @@ input[type=range] { accent-color: #F5B83D; }
 @keyframes flameBob { 0%, 100% { transform: translateY(0) rotate(-3deg); } 50% { transform: translateY(-2px) rotate(3deg); } }
 .streak-panel { background: linear-gradient(160deg, rgba(255,122,61,0.2) 0%, rgba(25,43,77,0.94) 55%); border-color: rgba(255,138,76,0.3); }
 .streak-row { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; margin-top: 14px; }
-.streak-day { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 0 7px; border-radius: 11px; background: rgba(244,247,252,0.05); border: 1px solid rgba(244,247,252,0.07); color: #8FA1BE; }
+.streak-day { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 0 7px; border-radius: 11px; background: rgba(244,247,252,0.05); border: 1px solid rgba(244,247,252,0.07); color: #A9C7BA; }
 .streak-day .sd-n { font-size: 9.5px; font-weight: 600; }
 .streak-day .sd-amt { font-size: 11px; font-weight: 700; color: #F4F7FC; }
 .streak-day.got { background: rgba(52,211,153,0.14); border-color: rgba(52,211,153,0.4); color: #34D399; }
@@ -4160,7 +4161,7 @@ input[type=range] { accent-color: #F5B83D; }
 .pass-row.special { background: rgba(139,92,246,0.1); }
 .pass-row.got { opacity: 0.62; }
 .pass-row.next { border-color: rgba(245,184,61,0.6); background: rgba(245,184,61,0.08); opacity: 1; }
-.pass-row-n { width: 22px; text-align: center; font-size: 12px; font-weight: 700; color: #8FA1BE; }
+.pass-row-n { width: 22px; text-align: center; font-size: 12px; font-weight: 700; color: #A9C7BA; }
 
 .chal-panel { border-color: rgba(52,211,153,0.2); }
 .chal { display: flex; align-items: center; gap: 12px; padding: 11px 12px; border-radius: 14px; background: rgba(244,247,252,0.04); border: 1px solid rgba(244,247,252,0.06); }
@@ -4170,7 +4171,7 @@ input[type=range] { accent-color: #F5B83D; }
 .var-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 12px; }
 .var-tile { border: 1.5px solid rgba(244,247,252,0.1); background: rgba(244,247,252,0.04); border-radius: 14px; padding: 10px 9px; text-align: left; cursor: pointer; transition: border-color .15s ease, background .15s ease; }
 .var-name { font-size: 13px; font-weight: 700; }
-.var-sub { font-size: 10.5px; color: #7587A6; margin-top: 2px; line-height: 1.3; }
+.var-sub { font-size: 10.5px; color: #93B5A6; margin-top: 2px; line-height: 1.3; }
 .var-tile.on.v-holdem { border-color: #34D399; background: rgba(52,211,153,0.12); }
 .var-tile.on.v-omaha { border-color: #A78BFA; background: rgba(139,92,246,0.14); }
 .var-tile.on.v-short { border-color: #FF9A4C; background: rgba(255,138,76,0.13); }
@@ -4184,14 +4185,14 @@ input[type=range] { accent-color: #F5B83D; }
 .cos-tile:disabled { cursor: default; }
 .cos-prev { height: 50px; display: flex; align-items: center; justify-content: center; }
 .cos-name { font-size: 11.5px; font-weight: 600; text-align: center; }
-.cos-tag { display: inline-flex; align-items: center; gap: 4px; font-size: 10.5px; font-weight: 700; padding: 3px 8px; border-radius: 10px; background: rgba(244,247,252,0.08); color: #C8D3E6; }
+.cos-tag { display: inline-flex; align-items: center; gap: 4px; font-size: 10.5px; font-weight: 700; padding: 3px 8px; border-radius: 10px; background: rgba(244,247,252,0.08); color: #E3EEE8; }
 .cos-tag.eq { background: rgba(52,211,153,0.16); color: #34D399; }
 .cos-tag.buy { background: rgba(245,184,61,0.16); color: #F5B83D; }
-.cos-tag.locked { color: #5E7196; }
+.cos-tag.locked { color: #6F9584; }
 .back-sw { border-radius: 6px; }
 .felt-sw { width: 64px; height: 40px; border-radius: 999px; border: 4px solid; box-shadow: 0 4px 10px rgba(0,0,0,0.35), inset 0 4px 10px rgba(0,0,0,0.3); }
 
-.chart-dot { position: absolute; width: 10px; height: 10px; margin: -5px 0 0 -5px; border-radius: 50%; box-shadow: 0 0 0 2px #14223D; pointer-events: none; }
+.chart-dot { position: absolute; width: 10px; height: 10px; margin: -5px 0 0 -5px; border-radius: 50%; box-shadow: 0 0 0 2px #134A39; pointer-events: none; }
 .best-row { display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 12px; background: rgba(244,247,252,0.04); }
 .best-n { width: 22px; height: 22px; border-radius: 50%; background: rgba(245,184,61,0.16); color: #F5B83D; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 
@@ -4216,7 +4217,7 @@ input[type=range] { accent-color: #F5B83D; }
 .coach-head { display: flex; align-items: center; gap: 8px; margin-bottom: 3px; }
 .coach-badge { display: inline-flex; align-items: center; gap: 4px; font-size: 10.5px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: #9CC2FF; }
 .coach-act { font-size: 14px; font-weight: 800; }
-.coach-why { font-size: 12px; line-height: 1.4; color: #C8D3E6; }
+.coach-why { font-size: 12px; line-height: 1.4; color: #E3EEE8; }
 .coach.act-raise .coach-act, .coach.act-bet .coach-act { color: #F5B83D; }
 .coach.act-call .coach-act, .coach.act-check .coach-act { color: #34D399; }
 .coach.act-fold .coach-act { color: #FF8A8A; }
@@ -4235,7 +4236,7 @@ input[type=range] { accent-color: #F5B83D; }
 
 .odds-badge { font-size: 11px; font-weight: 800; background: rgba(11,20,38,0.85); border: 1px solid rgba(244,247,252,0.15); border-radius: 10px; padding: 1px 7px; animation: fadeSlide .25s ease; }
 .think-dots { position: absolute; top: -6px; right: -10px; display: flex; gap: 2px; background: #F4F7FC; border-radius: 10px; padding: 4px 5px; box-shadow: 0 2px 6px rgba(0,0,0,0.35); }
-.think-dots i { width: 4px; height: 4px; border-radius: 50%; background: #0B1426; animation: thinkDot 1s ease-in-out infinite; }
+.think-dots i { width: 4px; height: 4px; border-radius: 50%; background: #0B2A20; animation: thinkDot 1s ease-in-out infinite; }
 .think-dots i:nth-child(2) { animation-delay: .15s; }
 .think-dots i:nth-child(3) { animation-delay: .3s; }
 @keyframes thinkDot { 0%, 100% { opacity: .3; transform: translateY(0); } 40% { opacity: 1; transform: translateY(-2px); } }
@@ -4280,22 +4281,123 @@ input[type=range] { accent-color: #F5B83D; }
 .crowded .felt-logo { font-size: 52px; }
 .crowded .chip-badge { padding: 1px 7px; }
 /* ---- rank ladder ---- */
-.ranked-info { display: inline-flex; align-items: center; gap: 5px; background: none; border: none; padding: 0; cursor: pointer; color: #7587A6; font-size: 12px; }
+.ranked-info { display: inline-flex; align-items: center; gap: 5px; background: none; border: none; padding: 0; cursor: pointer; color: #93B5A6; font-size: 12px; }
 .ranked-badge-btn { background: none; border: none; padding: 0; cursor: pointer; display: block; }
 .ladder-me { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 16px; border: 1px solid; margin-bottom: 12px; }
 .ladder-list { max-height: 44vh; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; margin: 0 -4px; padding: 0 4px; }
 .ladder-tier { border: 1px solid; border-radius: 14px; padding: 10px 12px; background: rgba(22,38,68,0.7); }
 .ladder-tier-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
 .ladder-divs { display: flex; flex-direction: column; gap: 4px; }
-.ladder-div { display: flex; justify-content: space-between; align-items: center; font-size: 12.5px; padding: 6px 10px; border-radius: 9px; border: 1px solid transparent; background: rgba(244,247,252,0.03); color: #C8D3E6; }
-.ladder-div.passed { color: #7587A6; }
+.ladder-div { display: flex; justify-content: space-between; align-items: center; font-size: 12.5px; padding: 6px 10px; border-radius: 9px; border: 1px solid transparent; background: rgba(244,247,252,0.03); color: #E3EEE8; }
+.ladder-div.passed { color: #93B5A6; }
 .ladder-section { margin-top: 14px; padding-top: 12px; border-top: 1px solid rgba(244,247,252,0.08); }
 .ladder-h { font-size: 13.5px; font-weight: 700; margin-bottom: 6px; }
-.ladder-p { font-size: 12px; line-height: 1.45; color: #8FA1BE; margin-bottom: 6px; }
+.ladder-p { font-size: 12px; line-height: 1.45; color: #A9C7BA; margin-bottom: 6px; }
 .prestige-box { border: 1px solid rgba(227,107,255,0.3); border-radius: 14px; padding: 12px; background: linear-gradient(135deg, rgba(227,107,255,0.08), rgba(124,58,237,0.08)); }
 /* ---- rank emblems ---- */
 .tb-champ .tb-sparkle { animation: tbTwinkle 2.4s ease-in-out infinite; transform-origin: 32px 32px; }
 @keyframes tbTwinkle { 0%, 100% { opacity: 1; } 50% { opacity: 0.25; } }
+
+/* =====================================================================
+   FELT SKIN: card room materials, kept clean.
+   Deep felt green everywhere, card-stock white for the things you tap,
+   card red as the one accent, chip gold only for money. One typeface,
+   Archivo, wide for headlines and normal width for everything else.
+   ===================================================================== */
+:root { --felt-bg: #0C3528; --felt-up: #124636; --felt-up2: #175641; --felt-line: rgba(232,245,238,0.09); --card: #F6F7F4; --card-edge: #DADDD6; --ink: #121417; --red: #D8343B; --red-dark: #B02028; --gold: #E9B949; --muted: #93B5A6; }
+body { background: var(--felt-bg); }
+.app, .app-table, .table-wrap, .sheet, .loading, button, input, textarea { font-family: 'Archivo Variable', 'Archivo', -apple-system, sans-serif; }
+.app, .app-table, .loading { background-color: var(--felt-bg); background-image: radial-gradient(120% 70% at 50% 0%, rgba(255,255,255,0.07), transparent 60%), repeating-radial-gradient(circle at 20% 30%, rgba(255,255,255,0.018) 0 1px, transparent 1px 3px); }
+.app::before, .table-wrap::before { display: none; }
+.screen { padding-top: 6px; }
+
+/* wide headlines */
+.wordmark, .sheet-title, .results-head, .loading-word, .wordmark-sm, .mode-title, .bigwin-label, .pass-lvl, .bigwin-amt { font-family: 'Archivo Variable', 'Archivo', -apple-system, sans-serif !important; }
+.wordmark, .sheet-title, .results-head, .loading-word, .wordmark-sm, .mode-title, .bigwin-label, .pass-lvl, [style*="Archivo"] { font-stretch: 125%; font-weight: 800 !important; letter-spacing: -0.015em; }
+.wordmark { font-size: 32px; letter-spacing: -0.03em; }
+.wordmark::after, .wordmark-sm::after { content: "♦"; color: var(--red); font-size: 0.42em; margin-left: 3px; vertical-align: 0.9em; }
+.sheet-title { font-size: 20px; }
+.row-title { font-weight: 700; }
+
+/* surfaces: raised felt, no gradient wash */
+.panel, .row, .stat, .avatar-tile, .cos-tile, .title-row, .chal, .best-row, .ladder-tier, .lb-row, .hero-seat, .turbo-row, .var-tile, .ach-row, .spin-card, .pass-card, .streak-banner {
+  background: var(--felt-up) !important; border: 1px solid var(--felt-line) !important; box-shadow: 0 1px 0 rgba(255,255,255,0.05) inset, 0 6px 18px rgba(0,0,0,0.18); color: #F2F7F4; }
+.row, .chal, .best-row, .title-row, .ach-row, .lb-row, .turbo-row { background: var(--felt-up2) !important; box-shadow: none; }
+.panel { border-radius: 18px; }
+.sheet { background: #0F3F30 !important; border: 1px solid var(--felt-line) !important; border-radius: 20px; }
+.scrim { background: rgba(4,20,14,0.72); }
+button.row:active:not(:disabled) { background: #1B6049 !important; }
+.chal-panel, .streak-panel { border-color: var(--felt-line) !important; }
+.bar { background: rgba(0,0,0,0.28); height: 6px; }
+
+/* buttons: red for the main action, card white for the safe one, quiet outline for the rest */
+.btn { border: 1.5px solid rgba(232,245,238,0.22); background: transparent; color: #F2F7F4; border-radius: 12px; font-weight: 700; box-shadow: none; }
+.btn:hover:not(:disabled) { border-color: rgba(232,245,238,0.4); }
+.btn-raise, .btn-raise:hover:not(:disabled) { background: var(--red); color: #FFFFFF; border-color: var(--red); box-shadow: 0 2px 0 var(--red-dark), 0 8px 18px rgba(216,52,59,0.25); }
+.btn-raise:active:not(:disabled) { box-shadow: 0 0 0 var(--red-dark); transform: translateY(2px); }
+.btn-go, .btn-go:hover:not(:disabled) { background: var(--card); color: var(--ink); border-color: var(--card); box-shadow: 0 2px 0 var(--card-edge); }
+.btn-fold, .btn-fold:hover:not(:disabled) { background: transparent; color: #FF9A9E; border-color: rgba(255,120,125,0.45); }
+.shine::after { display: none; }
+.iconbtn { background: rgba(232,245,238,0.07); border: 1px solid var(--felt-line); color: #E3EEE8; }
+.preset-btn { background: var(--felt-up2); }
+.segbtn.on { background: var(--card); color: var(--ink); }
+.seg { background: rgba(0,0,0,0.22); }
+.chip-pill { background: rgba(0,0,0,0.22); border: 1px solid var(--felt-line); }
+.chip-dot { background: var(--gold); box-shadow: inset 0 0 0 2.5px var(--felt-bg), inset 0 0 0 4px var(--gold); }
+.input { background: rgba(0,0,0,0.22); border: 1px solid var(--felt-line); color: #fff; }
+.toast { background: var(--card); border: none; box-shadow: 0 12px 30px rgba(0,0,0,0.4); }
+.toast div:first-child { color: var(--red) !important; }
+.toast div:last-child { color: var(--ink) !important; }
+
+/* the one bold move: game modes are playing cards */
+.mode-grid { gap: 10px; padding: 4px 2px 6px; }
+.mode-tile { position: relative; background: var(--card) !important; color: var(--ink); border: none !important; border-radius: 14px; aspect-ratio: auto; min-height: 150px; padding: 12px 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; box-shadow: 0 1px 0 #fff inset, 0 3px 0 var(--card-edge), 0 12px 22px rgba(0,0,0,0.3); transition: transform .18s cubic-bezier(.3,1.4,.5,1); overflow: visible; }
+.mode-tile::after { display: none; }
+.mode-tile:nth-child(1) { transform: rotate(-3deg) translateY(4px); }
+.mode-tile:nth-child(3) { transform: rotate(3deg) translateY(4px); }
+.mode-tile:active { transform: translateY(-6px) rotate(0deg) scale(1.02); }
+.mode-tile .mode-title { font-size: 17px; color: var(--ink); margin-top: 6px; }
+.mode-tile .mode-sub { font-size: 11px; color: #5B6359; opacity: 1; font-weight: 600; margin-top: 2px; }
+.pc-index { position: absolute; top: 8px; left: 9px; display: flex; flex-direction: column; align-items: center; line-height: 0.95; }
+.pc-index b { font-weight: 800; font-stretch: 100%; font-size: 17px; }
+.pc-index i { font-style: normal; font-size: 14px; }
+.pc-index.flip { top: auto; left: auto; bottom: 8px; right: 9px; transform: rotate(180deg); }
+.pc-pip { font-size: 34px; line-height: 1; }
+.suit-h .pc-index, .suit-h .pc-pip, .suit-d .pc-index, .suit-d .pc-pip { color: var(--red); }
+.suit-s .pc-index, .suit-s .pc-pip, .suit-c .pc-index, .suit-c .pc-pip { color: var(--ink); }
+
+/* only the main action is red: daily claims use card white */
+.streak-banner .btn-raise, .spin-card .btn-raise, .chal .btn-go, .streak-panel .btn-raise { background: var(--card); color: var(--ink); border-color: var(--card); box-shadow: 0 2px 0 var(--card-edge); }
+
+/* home cards lose their candy gradients */
+.streak-banner { animation: none; }
+.streak-flame, .spin-ic, .sec-ic, .turbo-ic, .mode-ic { background: rgba(232,245,238,0.08) !important; color: var(--gold) !important; border: none; }
+.streak-banner > div:nth-child(2) > div:last-child, .spin-card > div:nth-child(2) > div:last-child { color: var(--muted) !important; }
+.spin-card.ready { box-shadow: 0 0 0 1px rgba(233,185,73,0.35) inset, 0 6px 18px rgba(0,0,0,0.18); }
+.spin-card.ready .spin-ic { animation: none; }
+.pass-card { color: #F2F7F4; }
+.pass-card .pass-lvl { background: var(--card); color: var(--ink); }
+.pass-card .pass-lvl div { color: #5B6359; }
+.pass-card [style*="#D6C7FF"], .pass-card [style*="#C9B8F5"] { color: var(--muted) !important; }
+.pass-card .bar > div { background: var(--gold) !important; }
+.mode-tile:focus-visible { outline: 2px solid var(--gold); }
+
+/* nav: the Play button is a dealer button */
+.bottom-nav { background: #0A2E22; border-top: 1px solid var(--felt-line); }
+.navbtn[aria-current="page"] { color: #FFFFFF !important; }
+.navbtn[aria-current="page"]::after { content: ""; width: 5px; height: 5px; border-radius: 50%; background: var(--red); margin-top: 4px; }
+.navbtn { color: #6F9584 !important; }
+.play-fab-disc { position: relative; width: 52px; height: 52px; background: var(--card); color: var(--ink); border: none; box-shadow: 0 3px 0 var(--card-edge), 0 8px 18px rgba(0,0,0,0.35) !important; animation: none; }
+.puck-ring { position: absolute; top: 5px; left: 5px; right: 5px; bottom: 5px; border-radius: 50%; border: 1.5px solid var(--ink); opacity: 0.85; }
+.puck-text { font-weight: 800; font-stretch: 125%; font-size: 10.5px; letter-spacing: 0.08em; }
+.play-fab:not(.on) .play-fab-disc { filter: none; opacity: 0.85; }
+
+/* table pieces */
+.felt-oval { box-shadow: inset 0 0 0 2px rgba(0,0,0,0.25), inset 0 10px 30px rgba(0,0,0,0.35), 0 14px 34px rgba(0,0,0,0.4); }
+.hand-strip { background: rgba(0,0,0,0.2) !important; }
+.coach { border-color: rgba(233,185,73,0.35) !important; background: rgba(0,0,0,0.22) !important; }
+.coach-badge { color: var(--gold) !important; }
+.lb-dock { background: linear-gradient(180deg, rgba(12,53,40,0) 0%, var(--felt-bg) 35%) !important; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; transition-duration: 0.01ms !important; }
 }
