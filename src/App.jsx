@@ -3486,8 +3486,8 @@ function BottomNav({ tab, setTab }) {
       {side({ key: "shop", icon: "bag", label: "Shop" })}
       {side({ key: "leaderboard", icon: "ranks", label: "Ranks" })}
       <button onClick={() => setTab("home")} className={`play-fab${playActive ? " on" : ""}`} aria-current={playActive ? "page" : undefined} aria-label="Play">
-        <span className="play-fab-disc"><span style={{ fontSize: 22, lineHeight: 1 }}>{"♠"}</span></span>
-        <span style={{ fontSize: 10.5, fontWeight: 700, marginTop: 4 }}>Play</span>
+        <span className="play-fab-disc"><span style={{ fontSize: 20, lineHeight: 1 }}>{"♠"}</span></span>
+        <span style={{ fontSize: 10.5, fontWeight: 700, marginTop: 3 }}>Play</span>
       </button>
       {side({ key: "coach", icon: "coach", label: "Coach" })}
       {side({ key: "profile", icon: "user", label: "Profile" })}
@@ -3516,8 +3516,8 @@ button { font-family: inherit; color: inherit; }
 @keyframes spin { to { transform: rotate(360deg); } }
 @keyframes badgePop { 0% { opacity: 0; transform: scale(.4) rotate(-20deg); } 60% { opacity: 1; transform: scale(1.12) rotate(4deg); } 100% { transform: scale(1) rotate(0); } }
 
-.app { font-family: 'Inter', -apple-system, sans-serif; background: radial-gradient(130% 70% at 50% -15%, #1E427E 0%, #0B1426 62%); height: 100vh; color: #F4F7FC; display: flex; flex-direction: column; align-items: center; overflow: hidden; }
-.app-table { height: 100vh; background: radial-gradient(130% 70% at 50% -15%, #1E427E 0%, #0B1426 62%); }
+.app { font-family: 'Inter', -apple-system, sans-serif; background: radial-gradient(130% 70% at 50% -15%, #1E427E 0%, #0B1426 62%); height: 100vh; height: 100dvh; color: #F4F7FC; display: flex; flex-direction: column; align-items: center; overflow: hidden; }
+.app-table { height: 100vh; height: 100dvh; background: radial-gradient(130% 70% at 50% -15%, #1E427E 0%, #0B1426 62%); }
 .app-main { flex: 1; width: 100%; display: flex; justify-content: center; overflow: hidden; padding-top: 16px; }
 .screen { width: 100%; max-width: 460px; height: 100%; overflow-y: auto; padding: 0 16px 40px; }
 .screen-fade { animation: screenIn 0.2s ease; }
@@ -3573,10 +3573,10 @@ button.row:active:not(:disabled) { background: #1A2B4B; }
 .sheet-title { font-family: 'Fraunces', Georgia, serif; font-size: 19px; font-weight: 700; }
 .sheet-body { font-size: 13px; line-height: 1.5; color: #8FA1BE; margin: 12px 2px 16px; }
 .toast { position: fixed; top: 18px; left: 50%; transform: translateX(-50%); z-index: 40; background: #14223D; border: 1px solid rgba(245,184,61,0.45); border-radius: 14px; padding: 10px 16px; animation: sheetIn .25s ease; box-shadow: 0 10px 30px rgba(0,0,0,0.45); min-width: 200px; text-align: center; }
-.bottom-nav { width: 100%; max-width: 460px; display: flex; justify-content: space-around; align-items: flex-end; padding: 6px 6px calc(10px + env(safe-area-inset-bottom)); border-top: 1px solid rgba(244,247,252,0.08); flex-shrink: 0; background: rgba(11,20,38,0.88); }
+.bottom-nav { width: 100%; max-width: 460px; display: flex; justify-content: space-around; align-items: center; padding: 6px 6px calc(8px + env(safe-area-inset-bottom)); border-top: 1px solid rgba(244,247,252,0.08); flex-shrink: 0; background: rgba(11,20,38,0.88); }
 .navbtn { background: none; border: none; display: flex; flex-direction: column; align-items: center; cursor: pointer; padding: 6px 8px; transition: color .15s ease; flex: 1; }
-.play-fab { background: none; border: none; display: flex; flex-direction: column; align-items: center; cursor: pointer; padding: 0 4px 4px; flex: 1; color: #F4F7FC; }
-.play-fab-disc { width: 58px; height: 58px; margin-top: -26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #0B1426; background: radial-gradient(circle at 35% 30%, #FFE08A, #F5B83D 70%); box-shadow: 0 0 0 5px #0B1426, 0 8px 22px rgba(245,184,61,0.45); transition: transform .18s ease; }
+.play-fab { background: none; border: none; display: flex; flex-direction: column; align-items: center; cursor: pointer; padding: 2px 4px 0; flex: 1; color: #F4F7FC; }
+.play-fab-disc { width: 46px; height: 46px; margin-top: 0; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #0B1426; background: radial-gradient(circle at 35% 30%, #FFE08A, #F5B83D 70%); box-shadow: 0 0 12px rgba(245,184,61,0.35); transition: transform .18s ease; }
 .play-fab:active .play-fab-disc { transform: scale(0.93); }
 .play-fab:not(.on) .play-fab-disc { filter: saturate(0.85) brightness(0.92); }
 
@@ -3779,7 +3779,7 @@ input[type=range] { accent-color: #F5B83D; }
 .best-n { width: 22px; height: 22px; border-radius: 50%; background: rgba(245,184,61,0.16); color: #F5B83D; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 
 .play-fab-disc { animation: fabGlow 2.6s ease-in-out infinite; }
-@keyframes fabGlow { 0%, 100% { box-shadow: 0 0 0 5px #0B1426, 0 8px 22px rgba(245,184,61,0.4); } 50% { box-shadow: 0 0 0 5px #0B1426, 0 8px 32px rgba(245,184,61,0.75); } }
+@keyframes fabGlow { 0%, 100% { box-shadow: 0 0 10px rgba(245,184,61,0.3); } 50% { box-shadow: 0 0 18px rgba(245,184,61,0.6); } }
 .toast { background: linear-gradient(135deg, #1D3563, #2A1F5E); border-color: rgba(245,184,61,0.6); }
 .table-wrap::before { content: ""; position: absolute; top: 0; left: 0; right: 0; bottom: 0; pointer-events: none; z-index: -1; background: radial-gradient(60% 40% at 50% 42%, var(--felt1, #22A866), transparent 70%); opacity: 0.16; animation: tableBreath 6s ease-in-out infinite; }
 .table-wrap { isolation: isolate; }
