@@ -550,6 +550,10 @@ const VIP_BACK = { key: "vipback", label: "VIP", a: "#14161B", b: "#0B0C0F", rin
 // Prestige: hit Champion, reset to Bronze, keep a badge that counts how many times you've done it.
 const PRESTIGE_REWARD = 10000;
 const canPrestige = (r) => isPlaced(r) && r.rating >= 1500;
+// Who you get matched against. After a prestige your badge says Bronze but this stays at your real level.
+const matchRating = (r) => Math.max(r.rating || 0, r.mmr != null ? r.mmr : 0);
+// Climbing back after a prestige: wins count extra and losses sting less until your badge catches up.
+function prestigeBoost(r) { if (!r.prestige) return 1; const gap = matchRating(r) - (r.rating || 0); return gap >= 900 ? 3 : gap >= 300 ? 2 : 1; }
 function PrestigeBadge({ n, size = 18 }) {
   if (!n) return null;
   return (
@@ -588,10 +592,19 @@ function rankedOutcome({ buyIn, finalStack, cleared, hands, knockouts, ranked, m
   const priorStreak = Math.max(0, ranked.streak || 0);
   if (won && priorStreak >= 1) lines.push({ label: `${priorStreak + 1} wins in a row`, value: Math.min(3, priorStreak) * 4 });
   const before = Math.round(ranked.rating);
+  const earned = lines.reduce((s, l) => s + l.value, 0);
+  const boost = prestigeBoost(ranked);
+  if (boost > 1 && earned !== 0) {
+    const extra = earned > 0 ? earned * (boost - 1) : -Math.round(earned / 2);
+    lines.push({ label: earned > 0 ? `Prestige climb boost x${boost}` : "Prestige climb boost, half loss", value: extra });
+  }
   const raw = lines.reduce((s, l) => s + l.value, 0);
   const after = Math.max(0, before + raw);
+  // your hidden rating moves by what the match was really worth, no boost
+  const mmrBefore = matchRating(ranked);
+  const mmrAfter = Math.max(0, Math.min(1800, mmrBefore + earned));
   if (before + raw < 0) lines.push({ label: "Rating can't go below 0", value: -(before + raw) });
-  return { ...base, placement: false, before, after, delta: after - before, lines, newFrames: framesEarned(Math.max(ranked.peakRating || 0, after), ranked.frames) };
+  return { ...base, placement: false, before, after, delta: after - before, mmrAfter, lines, newFrames: framesEarned(Math.max(ranked.peakRating || 0, after), ranked.frames) };
 }
 function framesEarned(peak, owned) { return RANK_TIERS.filter((t) => t.min > 0 && peak >= t.min && !owned.includes(t.key)).map((t) => t.key); }
 function daysLeftInSeason() { const d = new Date(); const end = new Date(d.getFullYear(), d.getMonth() + 1, 1); return Math.max(1, Math.ceil((end - d) / 86400000)); }
@@ -601,7 +614,8 @@ function rolloverSeason(ranked) {
   if (!ranked || ranked.seasonId === season) return ranked;
   if (!isPlaced(ranked)) return { ...ranked, seasonId: season };
   const softReset = Math.round(RANK_RESET_TARGET + (ranked.rating - RANK_RESET_TARGET) * 0.5);
-  return { ...ranked, rating: softReset, seasonId: season, history: [...(ranked.history || []), { seasonId: ranked.seasonId, rating: ranked.rating, tier: tierForRating(ranked.rating).key }].slice(-6) };
+  const mmrReset = ranked.mmr != null ? Math.round(RANK_RESET_TARGET + (ranked.mmr - RANK_RESET_TARGET) * 0.5) : undefined;
+  return { ...ranked, rating: softReset, ...(mmrReset != null ? { mmr: Math.max(mmrReset, softReset) } : {}), seasonId: season, history: [...(ranked.history || []), { seasonId: ranked.seasonId, rating: ranked.rating, tier: tierForRating(ranked.rating).key }].slice(-6) };
 }
 function defaultRanked() { return { schema: 2, placed: false, placementGames: [], rating: 0, peakRating: 0, wins: 0, losses: 0, streak: 0, seasonId: currentSeasonId(), history: [], frames: [], frame: null, recent: [], report: null }; }
 // Older saves used a different ladder. Keep cosmetics and history, send everyone through placements once.
@@ -2337,6 +2351,7 @@ function RankLadderModal({ ranked, onClose, onPrestige }) {
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 6, fontFamily: DISPLAY_FONT, fontSize: 20, fontWeight: 600, color: myTier.color }}>{placed ? rankName(ranked.rating) : "Unranked"}<PrestigeBadge n={ranked.prestige} size={18} /></div>
           <div className="num" style={{ fontSize: 12, color: "#A9B8D0", marginTop: 2 }}>{placed ? `${rating.toLocaleString()} RP${prog.nextLabel ? `, ${prog.toNext} to ${prog.nextLabel}` : ""}` : `${(ranked.placementGames || []).length} of ${PLACEMENT_MATCHES} placement matches played`}</div>
+          {placed && prestigeBoost(ranked) > 1 && <div style={{ fontSize: 11.5, color: "#E9B8FF", marginTop: 3 }}>Matched at {rankName(matchRating(ranked))}, wins count x{prestigeBoost(ranked)}</div>}
           {placed && <div className="bar" style={{ marginTop: 8, height: 6 }}><div style={{ width: `${prog.pct * 100}%`, background: myTier.color }} /></div>}
         </div>
       </div>
@@ -2386,7 +2401,7 @@ function RankLadderModal({ ranked, onClose, onPrestige }) {
             <div style={{ fontSize: 11.5, color: "#C9B8F5" }}>{ranked.prestige ? `You're Prestige ${ranked.prestige}` : "Not prestiged yet"}</div>
           </div>
         </div>
-        <div className="ladder-p" style={{ marginTop: 8 }}>Hit Champion, then reset to Bronze to climb again. You get {PRESTIGE_REWARD.toLocaleString()} chips and a badge next to your name that counts every prestige. You keep your frames, titles and stats.</div>
+        <div className="ladder-p" style={{ marginTop: 8 }}>Hit Champion, then reset to Bronze to climb again. You get {PRESTIGE_REWARD.toLocaleString()} chips and a badge next to your name that counts every prestige. You keep your frames, titles and stats, and you still get matched against players at your real level, not Bronze. Wins count up to 3x until your badge catches up.</div>
         <button className="btn prestige-btn" style={{ width: "100%", marginTop: 6 }} disabled={!ready} onClick={() => onPrestige && onPrestige()}>
           {ready ? `Prestige to ${(ranked.prestige || 0) + 1}` : placed ? `${toChamp.toLocaleString()} RP to Champion` : "Finish placements first"}
         </button>
@@ -2723,11 +2738,13 @@ function HomeMenu({ onPlayAI, data, chips, ranked, onClaimDaily, onClaimChalleng
       {modal === "prestige" && (
         <Modal title="Prestige" onClose={close}>
           <div style={{ display: "flex", justifyContent: "center", margin: "4px 0 12px" }}><PrestigeBadge n={(ranked.prestige || 0) + 1} size={56} /></div>
-          <p className="sheet-body" style={{ marginTop: 0 }}>You made Champion. Prestige resets your rank to Bronze so you can climb again, and you keep a badge that shows how many times you've done it.</p>
+          <p className="sheet-body" style={{ marginTop: 0 }}>You made Champion. Prestige resets your badge to Bronze so you can climb again, and you keep a badge that shows how many times you've done it. You still play against Champion-level players, and wins count up to 3x until you're back on top.</p>
           <div className="kv-list">
             <div className="kv"><span>New rank</span><b>Bronze I</b></div>
             <div className="kv"><span>Badge</span><b>Prestige {(ranked.prestige || 0) + 1}</b></div>
             <div className="kv"><span>Bonus</span><b className="num">{PRESTIGE_REWARD.toLocaleString()} chips</b></div>
+            <div className="kv"><span>Matched against</span><b>{rankName(matchRating(ranked))} players</b></div>
+            <div className="kv"><span>Climb back</span><b>Up to 3x RP per win</b></div>
             <div className="kv"><span>You keep</span><b>Frames, titles, stats, peak rank</b></div>
           </div>
           <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
@@ -2766,7 +2783,7 @@ function HomeMenu({ onPlayAI, data, chips, ranked, onClaimDaily, onClaimChalleng
             <div className="kv"><span>Blinds</span><b className="num">{RANKED_STAKES.sb}/{RANKED_STAKES.bb}</b></div>
             <div className="kv"><span>Rebuys</span><b>None</b></div>
             <div className="kv"><span>Match length</span><b className="num">{RANKED_MATCH_HANDS} hands</b></div>
-            <div className="kv"><span>Opponents</span><b>{placed ? `Near ${rankName(ranked.rating)}` : "Mixed, to test you"}</b></div>
+            <div className="kv"><span>Opponents</span><b>{placed ? `Near ${rankName(matchRating(ranked))}` : "Mixed, to test you"}</b></div>
           </div>
           <p className="sheet-body">{placed
             ? `Play ${RANKED_MATCH_HANDS} hands. Finish in the top half in chips to climb, and the higher you finish the more you gain. Knock everyone out for the biggest jump. Leave early and it counts as a loss.`
@@ -3643,7 +3660,7 @@ export default function App() {
     if (!canPrestige(r)) return;
     sound.rankUp(); vibrate([30, 40, 30, 40, 60]);
     const n = (r.prestige || 0) + 1;
-    persist({ ...data, chips: data.chips + PRESTIGE_REWARD, ranked: { ...r, rating: 0, prestige: n, streak: 0, recent: [] } });
+    persist({ ...data, chips: data.chips + PRESTIGE_REWARD, ranked: { ...r, rating: 0, mmr: matchRating(r), prestige: n, streak: 0, recent: [] } });
     showToast({ title: `Prestige ${n}`, label: `Back to Bronze. +${PRESTIGE_REWARD.toLocaleString()} chips` }, 3200);
   };
   const handleBuyTitle = (t) => {
@@ -3723,7 +3740,7 @@ export default function App() {
           }
         } else {
           const frames = [...r.frames, ...o.newFrames.filter((f) => !r.frames.includes(f))];
-          ranked = { ...ranked, rating: o.after, peakRating: Math.max(r.peakRating || 0, o.after), frames, frame: o.newFrames.length > 0 ? o.newFrames[o.newFrames.length - 1] : r.frame, recent: [{ won: o.won, delta: o.delta }, ...(r.recent || [])].slice(0, 10) };
+          ranked = { ...ranked, rating: o.after, mmr: o.mmrAfter != null ? o.mmrAfter : o.after, peakRating: Math.max(r.peakRating || 0, o.after), frames, frame: o.newFrames.length > 0 ? o.newFrames[o.newFrames.length - 1] : r.frame, recent: [{ won: o.won, delta: o.delta }, ...(r.recent || [])].slice(0, 10) };
         }
         const stats = { ...d.stats, netChips: d.stats.netChips + o.net };
         const achievements = checkAchievements(stats, d);
@@ -3811,8 +3828,8 @@ export default function App() {
     const frameColor = data.ranked.frame ? RANK_TIERS.find((t) => t.key === data.ranked.frame)?.color : null;
     const placed = isPlaced(data.ranked);
     const isVip = !!session?.vip;
-    const botSkill = isRanked ? tierOf(data.ranked).botSkill : isPractice ? 0.2 : isVip ? 0.72 : 0.4;
-    const opponentRating = isRanked ? (placed ? data.ranked.rating : 650) : null;
+    const botSkill = isRanked ? (placed ? tierForRating(matchRating(data.ranked)).botSkill : tierOf(data.ranked).botSkill) : isPractice ? 0.2 : isVip ? 0.72 : 0.4;
+    const opponentRating = isRanked ? (placed ? matchRating(data.ranked) : 650) : null;
     return (
       <div className="app-table">
         <style>{GLOBAL_STYLE}</style>
