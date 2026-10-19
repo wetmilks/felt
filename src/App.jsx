@@ -324,7 +324,7 @@ const PASS_LEVELS = 30, PASS_XP = 400;
 const PASS_SPECIAL = { 5: { type: "felt", key: "purple" }, 10: { type: "back", key: "neon" }, 15: { type: "felt", key: "ocean" }, 20: { type: "back", key: "carbon" }, 25: { type: "avatar", key: "🦄" }, 30: { type: "back", key: "foil" } };
 const passReward = (lvl) => PASS_SPECIAL[lvl] || { type: "chips", amount: 150 + lvl * 25 };
 const passLevel = (xp) => Math.min(PASS_LEVELS, Math.floor(xp / PASS_XP));
-const passRewardLabel = (r) => r.type === "chips" ? `${r.amount.toLocaleString()} chips` : r.type === "felt" ? `${findFelt(r.key).label} felt` : r.type === "back" ? `${findBack(r.key).label} card back` : `${r.key} avatar`;
+const passRewardLabel = (r) => r.type === "chips" ? `${r.amount.toLocaleString()} chips` : r.type === "felt" ? `${findFelt(r.key).label} felt` : r.type === "back" ? `${findBack(r.key).label} card back` : `${avatarName(r.key)} avatar`;
 function ensurePass(p) { const season = currentSeasonId(); return p && p.season === season ? p : { season, xp: 0 }; }
 // Adds XP and hands out every reward crossed. Returns the new data and what was earned.
 function grantXp(d, xp) {
@@ -577,6 +577,163 @@ function PrestigeBadge({ n, size = 18 }) {
     </svg>
   );
 }
+
+/* =========================================================================
+   FELT ART: our own suits, card faces and a cast of players.
+   One style everywhere: flat shapes, soft shading, a little wit.
+   ========================================================================= */
+// Suits drawn for felt: a spade with a curled stem, a full heart,
+// a diamond with pinched sides, a three-ball club on a flared foot.
+const SUIT_PATHS = {
+  s: "M12 1.6C9.4 5.6 3 8.9 3 13.6c0 3 2.3 5.1 5 5.1 1.6 0 2.9-.7 3.5-1.6-.3 2.4-1.4 4.2-3 5.3h7c-1.6-1.1-2.7-2.9-3-5.3.6.9 1.9 1.6 3.5 1.6 2.7 0 5-2.1 5-5.1 0-4.7-6.4-8-9-12z",
+  h: "M12 21.4C10.6 20 2.6 14.6 2.6 8.6 2.6 5.4 5 3 8 3c1.8 0 3.3.9 4 2.3C12.7 3.9 14.2 3 16 3c3 0 5.4 2.4 5.4 5.6 0 6-8 11.4-9.4 12.8z",
+  d: "M12 1.5c1.6 3.9 4.6 7.5 8.2 10.5-3.6 3-6.6 6.6-8.2 10.5-1.6-3.9-4.6-7.5-8.2-10.5C7.4 9 10.4 5.4 12 1.5z",
+  c: "M12 2.2a4.6 4.6 0 0 1 4.4 6 4.6 4.6 0 1 1-1.8 8.6c.3 2.2 1.3 3.9 2.9 5H6.5c1.6-1.1 2.6-2.8 2.9-5a4.6 4.6 0 1 1-1.8-8.6 4.6 4.6 0 0 1 4.4-6z",
+};
+function Suit({ s, size = "1em", color = "currentColor", style }) {
+  return <svg viewBox="0 0 24 24" width={size} height={size} style={{ display: "block", flexShrink: 0, ...style }} aria-hidden="true"><path d={SUIT_PATHS[s]} fill={color} /></svg>;
+}
+// Court cards get a mark instead of a pip: a crown for the king, a tiara for the queen,
+// a feathered cap for the jack, and the ace gets its suit inside a fine ring.
+function CourtMark({ r, s, color }) {
+  if (r === 13) return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 18.5 4.6 8.2l4.6 4.4L12 5l2.8 7.6 4.6-4.4L21 18.5z" fill={color} /><rect x="3" y="19.6" width="18" height="2.4" rx="1" fill={color} /><circle cx="4.6" cy="7" r="1.5" fill={color} /><circle cx="12" cy="3.6" r="1.5" fill={color} /><circle cx="19.4" cy="7" r="1.5" fill={color} /></svg>;
+  if (r === 12) return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 18.6C3.4 13.4 6.6 12.2 8.4 14.6 9.2 9.8 14.8 9.8 15.6 14.6 17.4 12.2 20.6 13.4 20.5 18.6z" fill={color} /><path d="M12 3.4l2.4 3.8L12 11 9.6 7.2z" fill={color} /><circle cx="5.2" cy="11.6" r="1.4" fill={color} /><circle cx="18.8" cy="11.6" r="1.4" fill={color} /><rect x="3.5" y="19.6" width="17" height="2.4" rx="1" fill={color} /></svg>;
+  if (r === 11) return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1.6l1.7 3V15h-3.4V4.6z" fill={color} /><rect x="6.4" y="15" width="11.2" height="2.2" rx="1" fill={color} /><rect x="10.9" y="17.2" width="2.2" height="3.4" fill={color} /><circle cx="12" cy="21.6" r="1.7" fill={color} /></svg>;
+  return <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10.6" fill="none" stroke={color} strokeWidth="1" /><g transform="translate(5.4 5.4) scale(0.55)"><path d={SUIT_PATHS[s]} fill={color} /></g></svg>;
+}
+function CardFace({ c, suitColor }) {
+  const color = suitColor[c.s];
+  return (
+    <>
+      <span className="cf-idx" style={{ color }}><b>{rankLabel(c.r)}</b><Suit s={c.s} size="0.66em" /></span>
+      <span className="cf-pip">{c.r >= 11 ? <CourtMark r={c.r} s={c.s} color={color} /> : <Suit s={c.s} color={color} size="100%" />}</span>
+    </>
+  );
+}
+
+/* ---- the cast ---- */
+const SKIN = ["#F7D7BC", "#EDBF98", "#D49A6A", "#A86E45", "#74482B"];
+const HAIR = { black: "#22202A", brown: "#5B3A26", blond: "#E6B95C", red: "#B5482B", grey: "#B9BDC6", white: "#EFEFEF", pink: "#F07AB4", blue: "#4A7BEA" };
+// Every avatar your save can hold has an illustrated player. Old emoji keys still work.
+const CAST = {
+  "🫵": { name: "Rookie", bg: "#2F6FDE", skin: 1, hair: ["short", "brown"], shirt: "#F4F7FC", acc: ["cap"], cap: "#E0475B", mouth: "smile" },
+  "🙂": { name: "Regular", bg: "#12A36B", skin: 0, hair: ["fringe", "blond"], shirt: "#1F4FA8", mouth: "smile" },
+  "😎": { name: "Cool Hand", bg: "#E0861E", skin: 2, hair: ["slick", "black"], shirt: "#14161C", acc: ["shades"], mouth: "smirk" },
+  "🐱": { name: "Cat Burglar", bg: "#8B5CF6", skin: 1, hood: "#2A2D38", ears: "cat", shirt: "#2A2D38", mouth: "smirk", hair: ["fringe", "black"] },
+  "🦊": { name: "Sly Fox", bg: "#0EA5B7", skin: 0, hood: "#E57B2A", ears: "fox", shirt: "#E57B2A", mouth: "smirk", hair: ["fringe", "red"] },
+  "🐸": { name: "Pond Shark", bg: "#E0861E", skin: 3, hood: "#5DBB4A", ears: "frog", shirt: "#5DBB4A", mouth: "smile" },
+  "🐼": { name: "Panda", bg: "#D9468F", skin: 1, hood: "#F2F2F2", ears: "panda", shirt: "#F2F2F2", mouth: "smile", blush: true },
+  "🤖": { name: "The Machine", bg: "#1F4FA8", robot: true, shirt: "#8D97A8" },
+  "👽": { name: "Visitor", bg: "#7C3AED", alien: true, shirt: "#2A2D38" },
+  "🦁": { name: "Lion", bg: "#12A36B", skin: 2, hair: ["mane", "blond"], shirt: "#B5482B", mouth: "smirk" },
+  "🐉": { name: "Dragon", bg: "#B5282E", skin: 1, hood: "#2E8B57", ears: "dragon", shirt: "#2E8B57", mouth: "smirk", hair: ["fringe", "black"] },
+  "🥷": { name: "Ninja", bg: "#2A2D38", skin: 2, hood: "#14161C", ears: null, shirt: "#14161C", mask: true },
+  "👑": { name: "The King", bg: "#7C3AED", skin: 3, hair: ["short", "black"], shirt: "#B5282E", acc: ["crown", "bowtie"], mouth: "smirk", beard: "#22202A" },
+  "🃏": { name: "Joker", bg: "#E0475B", skin: 0, hair: ["curly", "pink"], shirt: "#7C3AED", acc: ["jester"], mouth: "grin" },
+  "🦄": { name: "Unicorn", bg: "#F07AB4", skin: 0, hood: "#FFFFFF", ears: "unicorn", shirt: "#FFFFFF", mouth: "smile", hair: ["fringe", "pink"], blush: true },
+  "🧑‍💻": { name: "Grinder", bg: "#1F4FA8", skin: 2, hair: ["buzz", "black"], shirt: "#2A2D38", acc: ["headphones"] },
+  // the bots
+  "bot:Marlo": { bg: "#2F6FDE", skin: 2, hair: ["slick", "black"], shirt: "#14161C", acc: ["visor"], mouth: "flat", beard: "#22202A" },
+  "bot:Yuki": { bg: "#12A36B", skin: 0, hair: ["bob", "black"], shirt: "#F4F7FC", mouth: "smirk", acc: ["earring"] },
+  "bot:Renn": { bg: "#E0861E", skin: 1, hair: ["curly", "red"], shirt: "#2E8B57", mouth: "grin", freckles: true },
+  "bot:Devon": { bg: "#8B5CF6", skin: 4, hair: ["buzz", "black"], shirt: "#E0861E", acc: ["shades"], mouth: "flat" },
+  "bot:Kira": { bg: "#E0475B", skin: 1, hair: ["long", "blond"], shirt: "#14161C", mouth: "smirk", acc: ["earring"] },
+  "bot:Teo": { bg: "#0EA5B7", skin: 3, hair: ["short", "black"], shirt: "#F4F7FC", acc: ["cap"], cap: "#14161C", mouth: "smile" },
+  "bot:Sasha": { bg: "#D9468F", skin: 0, hair: ["bun", "brown"], shirt: "#1F4FA8", mouth: "smile", acc: ["monocle"] },
+  "bot:Bram": { bg: "#7C8A1E", skin: 2, hair: ["bald", "grey"], shirt: "#5B3A26", mouth: "flat", beard: "#B9BDC6", acc: ["bowtie"] },
+};
+let AV_SEQ = 0;
+function Avatar({ id, size = 40, round = true, style }) {
+  const sp = CAST[id];
+  const [uid] = useState(() => `av${++AV_SEQ}`);
+  if (!sp) return <span style={{ fontSize: size * 0.6, lineHeight: 1, ...style }}>{id}</span>;
+  const skin = SKIN[sp.skin || 0];
+  const shade = "rgba(0,0,0,0.13)";
+  const ink = "#1B1A22";
+  const hairC = sp.hair ? HAIR[sp.hair[1]] : ink;
+  const style2 = sp.hair ? sp.hair[0] : null;
+  const acc = sp.acc || [];
+  const parts = [];
+  // behind the head
+  if (sp.hood) parts.push(<ellipse key="hb" cx="32" cy="31" rx="18.5" ry="19.5" fill={sp.hood} />);
+  if (style2 === "long") parts.push(<path key="lh" d="M17.5 31C17.5 18 24 13 32 13s14.5 5 14.5 18L48 50H16z" fill={hairC} />);
+  if (style2 === "mane") parts.push(<g key="mn">{Array.from({ length: 14 }).map((_, i) => { const a = (i / 14) * Math.PI * 2; return <circle key={i} cx={32 + Math.cos(a) * 15} cy={31 + Math.sin(a) * 15} r="6.5" fill={i % 2 ? hairC : "#D9A040"} />; })}</g>);
+  if (style2 === "bun") parts.push(<circle key="bn" cx="32" cy="13.5" r="5.5" fill={hairC} />);
+  // ears on the hood
+  if (sp.ears === "cat") parts.push(<g key="ec" fill={sp.hood}><path d="M15 22 16.5 8 26 15z" /><path d="M49 22 47.5 8 38 15z" /></g>);
+  if (sp.ears === "fox") parts.push(<g key="ef"><path d="M14 23 15 6.5 26.5 14.5z" fill={sp.hood} /><path d="M50 23 49 6.5 37.5 14.5z" fill={sp.hood} /><path d="M17 19 17.5 11 23 15z" fill="#FFF3E6" /><path d="M47 19 46.5 11 41 15z" fill="#FFF3E6" /></g>);
+  if (sp.ears === "panda") parts.push(<g key="ep" fill="#22202A"><circle cx="17.5" cy="15.5" r="6" /><circle cx="46.5" cy="15.5" r="6" /></g>);
+  if (sp.ears === "frog") parts.push(<g key="eg"><circle cx="22" cy="12.5" r="6.5" fill={sp.hood} /><circle cx="42" cy="12.5" r="6.5" fill={sp.hood} /><circle cx="22" cy="12" r="3.4" fill="#FFF" /><circle cx="42" cy="12" r="3.4" fill="#FFF" /><circle cx="22.6" cy="12.4" r="1.7" fill={ink} /><circle cx="42.6" cy="12.4" r="1.7" fill={ink} /></g>);
+  if (sp.ears === "dragon") parts.push(<g key="ed" fill="#F2C94C"><path d="M19 17 13 4.5 24.5 13z" /><path d="M45 17 51 4.5 39.5 13z" /></g>);
+  if (sp.ears === "unicorn") parts.push(<g key="eu"><path d="M32 3 35.2 15.5H28.8z" fill="#F5C451" /><path d="M29.5 11.8 34.6 10M29 14 35.2 12.6" stroke="#E0A92E" strokeWidth="0.9" /><path d="M16 21 17 9 25 15z" fill={sp.hood} /><path d="M48 21 47 9 39 15z" fill={sp.hood} /></g>);
+  // shoulders
+  parts.push(<path key="sh" d="M7 66C8.5 52 18 46.5 32 46.5S55.5 52 57 66z" fill={sp.shirt} />);
+  parts.push(<path key="sh2" d="M7 66C8.5 52 18 46.5 32 46.5c-6 2-10 9-10 19.5z" fill={shade} />);
+  if (!sp.robot && !sp.alien) parts.push(<path key="nk" d="M27.5 40h9v8.5c-1.4 1.6-3 2.4-4.5 2.4s-3.1-.8-4.5-2.4z" fill={skin} />, <path key="nks" d="M27.5 43.5c3 1.8 6 1.8 9 0V40h-9z" fill={shade} />);
+  if (sp.hood) parts.push(<path key="hf" d="M14.5 34C15 49 22 53 32 53s17-4 17.5-19C47.5 44 41 47.5 32 47.5S16.5 44 14.5 34z" fill={sp.hood} />);
+  // the head
+  if (sp.robot) {
+    parts.push(<line key="ant" x1="32" y1="9" x2="32" y2="16" stroke="#8D97A8" strokeWidth="2" />, <circle key="antb" cx="32" cy="8" r="2.6" fill="#FF5C7A" />);
+    parts.push(<rect key="rh" x="18.5" y="16" width="27" height="27" rx="7" fill="#C8D0DC" />, <rect key="rhs" x="18.5" y="34" width="27" height="9" rx="4" fill={shade} />);
+    parts.push(<rect key="rv" x="21.5" y="23" width="21" height="9" rx="4.5" fill="#14161C" />, <rect key="re1" x="24.5" y="25.6" width="5" height="3.8" rx="1.6" fill="#5CE1FF" />, <rect key="re2" x="34.5" y="25.6" width="5" height="3.8" rx="1.6" fill="#5CE1FF" />);
+    parts.push(<path key="rm" d="M27 37.5h10" stroke="#5D6676" strokeWidth="1.6" strokeLinecap="round" />);
+  } else if (sp.alien) {
+    parts.push(<path key="aa" d="M24 18 19 8M40 18 45 8" stroke="#6FCF5E" strokeWidth="1.8" strokeLinecap="round" />, <circle key="ab1" cx="19" cy="8" r="2.4" fill="#B6F2A2" />, <circle key="ab2" cx="45" cy="8" r="2.4" fill="#B6F2A2" />);
+    parts.push(<path key="ah" d="M32 15c9 0 14.5 6 14.5 13.5C46.5 37 39 45 32 45s-14.5-8-14.5-16.5C17.5 21 23 15 32 15z" fill="#7EDB6A" />);
+    parts.push(<path key="ae1" d="M22 28.5c1.5-3 6-3.5 8-1-.2 3.4-3.6 5.6-6.6 4.6-1.6-.6-2.2-2-1.4-3.6z" fill={ink} />, <path key="ae2" d="M42 28.5c-1.5-3-6-3.5-8-1 .2 3.4 3.6 5.6 6.6 4.6 1.6-.6 2.2-2 1.4-3.6z" fill={ink} />);
+    parts.push(<circle key="ag1" cx="25" cy="28.4" r="1" fill="#FFF" opacity="0.8" />, <circle key="ag2" cx="39" cy="28.4" r="1" fill="#FFF" opacity="0.8" />, <path key="am" d="M30 39.5q2 1 4 0" stroke={ink} strokeWidth="1.2" fill="none" strokeLinecap="round" />);
+  } else {
+    if (!sp.hood) parts.push(<ellipse key="ear1" cx="19.6" cy="32" rx="2.6" ry="3.4" fill={skin} />, <ellipse key="ear2" cx="44.4" cy="32" rx="2.6" ry="3.4" fill={skin} />);
+    parts.push(<ellipse key="hd" cx="32" cy="31" rx="12.5" ry="13.8" fill={skin} />);
+    parts.push(<path key="hds" d="M32 44.8c-6.9 0-12.5-6.2-12.5-13.8 0-1.2.1-2.3.4-3.4C21.4 35 26 40.5 32 40.5s10.6-5.5 12.1-12.9c.3 1.1.4 2.2.4 3.4 0 7.6-5.6 13.8-12.5 13.8z" fill={shade} />);
+    if (sp.beard) parts.push(<path key="bd" d="M20.5 34c1 7 5.4 10.8 11.5 10.8S42.5 41 43.5 34c-2.6 2.6-6.6 3.4-11.5 3.4S23.1 36.6 20.5 34z" fill={sp.beard} />);
+    // hair on top
+    const top = {
+      short: "M19.4 30.5C18.8 19.5 24.5 15 32 15s13.2 4.5 12.6 15.5c-1.8-5-5.2-8-12.6-8s-10.8 3-12.6 8z",
+      fringe: "M19.4 31C18.8 19.5 24.5 15 32 15s13.2 4.5 12.6 16c-1.2-3.4-2.6-5.4-4.4-6.6-2.2 2.4-6 3.4-10.4 2.8-2.6-.3-4.6-1.2-6-2.6-2 1.4-3.4 3.6-4.4 6.4z",
+      slick: "M19.6 29C19.6 19 25 14.6 32.4 14.6c7.6 0 12.6 4.8 12 14.4-2.6-4.6-6.6-7.2-12.4-7.2-5 0-9.6 2.6-12.4 7.2z",
+      buzz: "M20 28.5C20.4 20 25.6 16.4 32 16.4s11.6 3.6 12 12.1c-2.8-4-7-6-12-6s-9.2 2-12 6z",
+      long: "M19 33C18.4 20 24.5 15 32 15s13.6 5 13 18c-1.4-6-4.8-10-13-10.4-4 2-8.6 4.2-13 10.4z",
+      bun: "M19.4 30.5C18.8 19.5 24.5 15.4 32 15.4s13.2 4.1 12.6 15.1c-1.8-5-5.2-7.6-12.6-7.6s-10.8 2.6-12.6 7.6z",
+      bob: "M18.6 38C17 22 23.6 15 32 15s15 7 13.4 23l-3.2.6c.6-6.4-.6-12-4.2-14.6-3.6 2-8.6 2.4-14 1-3 2.8-4.2 7.4-3.6 13.6z",
+      mane: "M19.4 29C19.6 19.5 25 15.6 32 15.6s12.4 3.9 12.6 13.4c-2.4-4-6.4-6.6-12.6-6.6s-10.2 2.6-12.6 6.6z",
+    }[style2];
+    if (style2 === "curly") parts.push(<g key="cu" fill={hairC}>{[[22, 22], [27, 17.5], [32.5, 16], [38, 17.5], [42.5, 22], [20, 27], [44, 27]].map(([x, y], i) => <circle key={i} cx={x} cy={y} r="5" />)}</g>);
+    else if (top && !sp.hood) parts.push(<path key="hr" d={top} fill={hairC} />);
+    else if (top && sp.hood) parts.push(<path key="hr" d="M20 30C20.4 23.5 24 20.5 32 20.5s11.6 3 12 9.5c-2.4-3-6.6-4.6-12-4.6s-9.6 1.6-12 4.6z" fill={hairC} />);
+    // face
+    if (sp.mask) parts.push(<path key="mk" d="M19.4 26.5h25.2v8H19.4z" fill="#14161C" />, <path key="mk2" d="M19.6 36.5C21 42.5 26 45 32 45s11-2.5 12.4-8.5z" fill="#14161C" />);
+    if (!acc.includes("shades")) {
+      parts.push(<ellipse key="e1" cx="27" cy="31.5" rx="1.7" ry="2.1" fill={sp.mask ? "#FFF" : ink} />, <ellipse key="e2" cx="37" cy="31.5" rx="1.7" ry="2.1" fill={sp.mask ? "#FFF" : ink} />);
+      if (!sp.mask) parts.push(<path key="b1" d="M24.4 27.4q2.6-1.4 5.2 0M34.4 27.4q2.6-1.4 5.2 0" stroke={sp.hair && !sp.hood ? hairC : "rgba(0,0,0,0.45)"} strokeWidth="1.3" fill="none" strokeLinecap="round" />);
+    }
+    if (sp.blush) parts.push(<circle key="bl1" cx="24.6" cy="36.4" r="2.2" fill="#FF7A9A" opacity="0.35" />, <circle key="bl2" cx="39.4" cy="36.4" r="2.2" fill="#FF7A9A" opacity="0.35" />);
+    if (sp.freckles) parts.push(<g key="fr" fill="#B5482B" opacity="0.5">{[[24.5, 35], [26.5, 36.4], [23.4, 36.8], [39.5, 35], [37.5, 36.4], [40.6, 36.8]].map(([x, y], i) => <circle key={i} cx={x} cy={y} r="0.6" />)}</g>);
+    const mouth = { smile: "M28.4 38.2q3.6 3 7.2 0", smirk: "M28.6 39q3.8 1.6 7-1", grin: "M28 37.6q4 4.6 8 0z", flat: "M29 39h6" }[sp.mouth || "smile"];
+    if (!sp.mask) parts.push(<path key="mo" d={mouth} stroke={sp.mouth === "grin" ? "none" : ink} fill={sp.mouth === "grin" ? "#FFFFFF" : "none"} strokeWidth="1.4" strokeLinecap="round" />);
+  }
+  // accessories
+  if (acc.includes("shades")) parts.push(<g key="sd"><rect x="21.6" y="28.4" width="9" height="6" rx="2.6" fill="#101118" /><rect x="33.4" y="28.4" width="9" height="6" rx="2.6" fill="#101118" /><path d="M30.6 30.2h2.8" stroke="#101118" strokeWidth="1.4" /><path d="M23.4 29.8l2.6-.2" stroke="#FFF" strokeWidth="1" opacity="0.5" strokeLinecap="round" /></g>);
+  if (acc.includes("cap")) parts.push(<g key="cp"><path d="M19.2 27C19.2 18 25 14 32 14s12.8 4 12.8 13z" fill={sp.cap || "#E0475B"} /><path d="M17 27.4q15 -3.6 30 0l1.4 3q-16 -3.8 -32.8 0z" fill={sp.cap || "#E0475B"} /><path d="M17 27.4q15 -3.6 30 0l1.4 3q-16 -3.8 -32.8 0z" fill="rgba(0,0,0,0.2)" /><circle cx="32" cy="14.6" r="1.4" fill="rgba(0,0,0,0.25)" /></g>);
+  if (acc.includes("visor")) parts.push(<g key="vs"><path d="M19.5 24.6q12.5-3.4 25 0v2.6q-12.5-3-25 0z" fill="#1E7A4C" /><path d="M16.5 26.6q15.5-4.6 31 0l-2.4 3.6q-13.1-4-26.2 0z" fill="#2EB36D" opacity="0.88" /></g>);
+  if (acc.includes("crown")) parts.push(<g key="cr"><path d="M20 19.5 21 8.5l5.4 5L32 5.5l5.6 8 5.4-5 1 11z" fill="#F5C451" stroke="#C48A1E" strokeWidth="0.8" /><circle cx="32" cy="14.6" r="1.6" fill="#E0475B" /></g>);
+  if (acc.includes("jester")) parts.push(<g key="js"><path d="M19 25C19 17 24 13.4 32 13.4S45 17 45 25z" fill="#7C3AED" /><path d="M20 22 9 9.5l14.5 4.5z" fill="#E0475B" /><path d="M44 22 55 9.5 40.5 14z" fill="#12A36B" /><circle cx="9" cy="9.5" r="2.4" fill="#F5C451" /><circle cx="55" cy="9.5" r="2.4" fill="#F5C451" /></g>);
+  if (acc.includes("headphones")) parts.push(<g key="hp"><path d="M18.5 31C18.5 19.5 24.6 14 32 14s13.5 5.5 13.5 17" stroke="#14161C" strokeWidth="2.6" fill="none" /><rect x="15" y="27.5" width="6.4" height="10" rx="3" fill="#E0475B" /><rect x="42.6" y="27.5" width="6.4" height="10" rx="3" fill="#E0475B" /></g>);
+  if (acc.includes("earring")) parts.push(<circle key="er" cx="44.6" cy="37" r="1.4" fill="#F5C451" />);
+  if (acc.includes("monocle")) parts.push(<g key="mc"><circle cx="37" cy="31.5" r="4" fill="rgba(255,255,255,0.18)" stroke="#E0A92E" strokeWidth="1.2" /><path d="M41 32.5q2 6-.4 12" stroke="#E0A92E" strokeWidth="0.8" fill="none" /></g>);
+  if (acc.includes("bowtie")) parts.push(<g key="bt" fill="#E0475B"><path d="M32 50.2 26 47v6.4z" /><path d="M32 50.2 38 47v6.4z" /><circle cx="32" cy="50.2" r="1.6" /></g>);
+  return (
+    <svg viewBox="0 0 64 64" width={size} height={size} style={{ display: "block", flexShrink: 0, borderRadius: round ? "50%" : 12, ...style }} role="img" aria-label={sp.name || id}>
+      <defs><clipPath id={uid}><rect width="64" height="64" rx={round ? 32 : 12} /></clipPath></defs>
+      <g clipPath={`url(#${uid})`}>
+        <rect width="64" height="64" fill={sp.bg} />
+        <circle cx="50" cy="12" r="22" fill="#FFFFFF" opacity="0.08" />
+        {parts}
+      </g>
+    </svg>
+  );
+}
+const avatarName = (id) => (CAST[id] && CAST[id].name) || "Player";
 
 // One place decides what a ranked match is worth, so the results screen and the saved profile always agree.
 // Points for where you finish in chips: first is the big win, last the big loss, the middle sits in between.
@@ -1084,7 +1241,7 @@ function MiniCard({ code, suitColor, dim }) {
   return (
     <div className="mcard" style={{ opacity: dim ? 0.3 : 1 }}>
       <span style={{ color: suitColor[s] }}>{r}</span>
-      <span style={{ color: suitColor[s] }}>{SUIT_GLYPH[s]}</span>
+      <Suit s={s} size={9} color={suitColor[s]} />
     </div>
   );
 }
@@ -1735,7 +1892,7 @@ function PokerTable({ startStack, name, avatar, soundOn, setSoundOn, onExit, onH
                 {isActive && (<svg width={ringSize} height={ringSize} style={{ position: "absolute", top: 0, left: 0, transform: "rotate(-90deg)" }}>
                   <circle cx={ringSize / 2} cy={ringSize / 2} r={ringSize / 2 - 2} fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="2.5" />
                   <circle cx={ringSize / 2} cy={ringSize / 2} r={ringSize / 2 - 2} fill="none" stroke={timeLeft < 8 ? "#FF6B6B" : "#34D399"} strokeWidth="2.5" strokeDasharray={2 * Math.PI * (ringSize / 2 - 2)} strokeDashoffset={2 * Math.PI * (ringSize / 2 - 2) * (1 - timeLeft / turnSeconds)} style={{ transition: "stroke-dashoffset .25s linear" }} strokeLinecap="round" /></svg>)}
-                <div className="bot-av" style={{ width: avSize, height: avSize, background: AVATAR_COLORS[i], fontSize: compact ? 13 : 14 }}>{p.name[0]}</div>
+                <div className="bot-av" style={{ width: avSize, height: avSize, background: "none" }}><Avatar id={`bot:${p.name}`} size={avSize} /></div>
                 {thinking === p.id && <div className="think-dots" aria-label={`${p.name} is thinking`}><i /><i /><i /></div>}
                 {dealerIdx === realIdx && !p.eliminated && <div className="dealer-chip">D</div>}
               </div>
@@ -1746,7 +1903,7 @@ function PokerTable({ startStack, name, avatar, soundOn, setSoundOn, onExit, onH
               <div className="num" style={{ fontSize: 10.5, color: "#7587A6" }}>{p.eliminated ? "Out" : fmt(p.stack)}</div>
               {tendencyTag && !p.eliminated && !tiny && <div style={{ fontSize: 9.5, fontWeight: 600, color: tendencyTag === "Aggressive" ? "#FF6B6B" : "#34D399" }}>{tendencyTag}</div>}
               <div style={{ height: tiny ? 30 : 34, display: "flex", alignItems: "center", justifyContent: "center", gap: 3 }}>
-                {revealed && p.hole.map((c, i2) => (<div key={c.id} className={`card mini${hc > 2 ? " m4" : ""}${dim(c.id) ? " dim" : ""}${winningIds && winningIds.has(c.id) ? " win" : ""}`} style={{ marginLeft: hc > 2 && i2 ? -7 : 0, animation: `flipIn .4s cubic-bezier(.2,.8,.2,1) ${i2 * 0.08}s backwards` }}><div style={{ color: suitColor[c.s], fontSize: 9, fontWeight: 700 }}>{rankLabel(c.r)}{SUIT_GLYPH[c.s]}</div></div>))}
+                {revealed && p.hole.map((c, i2) => (<div key={c.id} className={`card mini${hc > 2 ? " m4" : ""}${dim(c.id) ? " dim" : ""}${winningIds && winningIds.has(c.id) ? " win" : ""}`} style={{ marginLeft: hc > 2 && i2 ? -7 : 0, animation: `flipIn .4s cubic-bezier(.2,.8,.2,1) ${i2 * 0.08}s backwards` }}><div style={{ color: suitColor[c.s], fontSize: 9, fontWeight: 700, display: "flex", alignItems: "center", gap: 1 }}>{rankLabel(c.r)}<Suit s={c.s} size={8} /></div></div>))}
                 {!revealed && inHand && (
                   <div key={`b${handsCount}`} className={`backs${p.folded ? " folded" : ""}`}>
                     {Array.from({ length: hc }).map((_, j) => <div key={j} className="card mini back" style={{ "--r": `${hc > 2 ? (j - 1.5) * 8 : j === 0 ? -7 : 7}deg`, marginLeft: j ? (hc > 2 ? -14 : -11) : 0, animation: `dealToSeat .42s cubic-bezier(.2,.8,.2,1) ${dealDelay(p.id, j)}s backwards` }} />)}
@@ -1768,13 +1925,13 @@ function PokerTable({ startStack, name, avatar, soundOn, setSoundOn, onExit, onH
         <div className={`felt-oval${drama ? " drama" : ""}`}>
           <div className="felt-logo" aria-hidden="true" style={variant === "short" ? { fontSize: 44 } : undefined}>{vip ? "VIP" : variant === "holdem" ? "felt" : variant === "short" ? "short deck" : "omaha"}</div>
           <div style={{ display: "flex", gap: "clamp(4px,1.4vw,6px)", position: "relative" }}>
-            {community.map((c, i) => <div key={c.id} className={`card${dim(c.id) ? " dim" : ""}${winningIds && winningIds.has(c.id) ? " win" : ""}`} style={{ animation: `flipIn .45s cubic-bezier(.2,.8,.2,1) ${Math.max(0, i - boardBaseRef.current) * 0.12 * speedMult}s backwards` }}><div style={{ color: suitColor[c.s] }}>{rankLabel(c.r)}</div><div style={{ color: suitColor[c.s], fontSize: "0.9em" }}>{SUIT_GLYPH[c.s]}</div></div>)}
+            {community.map((c, i) => <div key={c.id} className={`card cf${dim(c.id) ? " dim" : ""}${winningIds && winningIds.has(c.id) ? " win" : ""}`} style={{ animation: `flipIn .45s cubic-bezier(.2,.8,.2,1) ${Math.max(0, i - boardBaseRef.current) * 0.12 * speedMult}s backwards` }}><CardFace c={c} suitColor={suitColor} /></div>)}
             {Array.from({ length: 5 - community.length }).map((_, i) => (<div key={i} className={`card-slot${drama && i === 0 ? " next" : ""}`} />))}
           </div>
           {community2 && (
             <div className="run2" aria-label="Second run">
               <span>Run 2</span>
-              {community2.map((c, i) => <div key={c.id + "r2"} className="card r2" style={{ animation: `flipIn .45s cubic-bezier(.2,.8,.2,1) ${(0.6 + Math.max(0, i - boardBaseRef.current) * 0.12) * speedMult}s backwards`, opacity: i < boardBaseRef.current ? 0.55 : 1 }}><div style={{ color: suitColor[c.s] }}>{rankLabel(c.r)}</div><div style={{ color: suitColor[c.s], fontSize: "0.9em" }}>{SUIT_GLYPH[c.s]}</div></div>)}
+              {community2.map((c, i) => <div key={c.id + "r2"} className="card cf r2" style={{ animation: `flipIn .45s cubic-bezier(.2,.8,.2,1) ${(0.6 + Math.max(0, i - boardBaseRef.current) * 0.12) * speedMult}s backwards`, opacity: i < boardBaseRef.current ? 0.55 : 1 }}><CardFace c={c} suitColor={suitColor} /></div>)}
             </div>
           )}
           <div className="pot-row" style={{ visibility: pot > 0 ? "visible" : "hidden" }}>
@@ -1843,7 +2000,7 @@ function PokerTable({ startStack, name, avatar, soundOn, setSoundOn, onExit, onH
             {humanTurn && (<svg width="44" height="44" style={{ position: "absolute", top: 0, left: 0, transform: "rotate(-90deg)" }}>
               <circle cx="22" cy="22" r="20" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="2.5" />
               <circle cx="22" cy="22" r="20" fill="none" stroke={timeLeft < 8 ? "#FF6B6B" : "#34D399"} strokeWidth="2.5" strokeDasharray={2 * Math.PI * 20} strokeDashoffset={2 * Math.PI * 20 * (1 - timeLeft / turnSeconds)} style={{ transition: "stroke-dashoffset .25s linear" }} strokeLinecap="round" /></svg>)}
-            <div style={{ position: "absolute", top: 3, left: 3, width: 38, height: 38, borderRadius: "50%", background: "#25395F", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, opacity: human?.folded ? 0.4 : 1, boxShadow: frameColor ? `0 0 0 2px ${frameColor}` : "none" }}>{human?.avatar}</div>
+            <div style={{ position: "absolute", top: 3, left: 3, width: 38, height: 38, borderRadius: "50%", background: "#25395F", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, opacity: human?.folded ? 0.4 : 1, boxShadow: frameColor ? `0 0 0 2px ${frameColor}` : "none" }}><Avatar id={human?.avatar} size={38} /></div>
             {dealerIdx === 0 && <div className="dealer-chip" style={{ bottom: -1, right: -1 }}>D</div>}
           </div>
           <div style={{ minWidth: 0 }}>
@@ -1857,7 +2014,7 @@ function PokerTable({ startStack, name, avatar, soundOn, setSoundOn, onExit, onH
           {human && human.hole.length > 0 ? (
             squeeze && !holeRevealed && !human.folded && stage !== "showdown" ? (
               <SqueezeCards key={`sq${handsCount}`} cards={human.hole} suitColor={suitColor} omaha={human.hole.length > 2} delayFor={(i) => dealDelay(0, i)} onReveal={revealHole} />
-            ) : human.hole.map((c, i) => (<div key={c.id} className={`card big${human.hole.length > 2 ? " o4" : ""}${dim(c.id) ? " dim" : ""}${winningIds && winningIds.has(c.id) ? " win" : ""}${human.folded ? " mucked" : ""}`} style={{ animation: holeRevealed && squeeze ? "none" : `dealToHero .5s cubic-bezier(.2,.85,.25,1) ${dealDelay(0, i)}s backwards`, ...(cardScale !== 1 && human.hole.length <= 2 ? { width: 64 * cardScale, height: 90 * cardScale, fontSize: 22 * cardScale } : {}) }}><div style={{ color: suitColor[c.s] }}>{rankLabel(c.r)}</div><div style={{ color: suitColor[c.s], fontSize: "0.85em" }}>{SUIT_GLYPH[c.s]}</div></div>))
+            ) : human.hole.map((c, i) => (<div key={c.id} className={`card cf big${human.hole.length > 2 ? " o4" : ""}${dim(c.id) ? " dim" : ""}${winningIds && winningIds.has(c.id) ? " win" : ""}${human.folded ? " mucked" : ""}`} style={{ animation: holeRevealed && squeeze ? "none" : `dealToHero .5s cubic-bezier(.2,.85,.25,1) ${dealDelay(0, i)}s backwards`, ...(cardScale !== 1 && human.hole.length <= 2 ? { width: 64 * cardScale, height: 90 * cardScale, fontSize: 22 * cardScale } : {}) }}><CardFace c={c} suitColor={suitColor} /></div>))
           ) : (<><div className="card big back" style={{ animation: "none" }} /><div className="card big back" style={{ animation: "none" }} /></>)}
         </div>
       </div>
@@ -2032,8 +2189,8 @@ function SqueezeCards({ cards, suitColor, omaha, delayFor, onReveal }) {
       {cards.map((c, i) => {
         const clip = `inset(0 0 ${Math.round(peel * 100)}% 0)`;
         return (
-          <div key={c.id} className={`card big sq${omaha ? " o4" : ""}`} style={{ animation: `dealToHero .5s cubic-bezier(.2,.85,.25,1) ${delayFor(i)}s backwards` }}>
-            <div style={{ color: suitColor[c.s] }}>{rankLabel(c.r)}</div><div style={{ color: suitColor[c.s], fontSize: "0.85em" }}>{SUIT_GLYPH[c.s]}</div>
+          <div key={c.id} className={`card cf big sq${omaha ? " o4" : ""}`} style={{ animation: `dealToHero .5s cubic-bezier(.2,.85,.25,1) ${delayFor(i)}s backwards` }}>
+            <CardFace c={c} suitColor={suitColor} />
             <div className="sq-cover" style={{ clipPath: clip, WebkitClipPath: clip, transition: dragging ? "none" : "clip-path .2s ease, -webkit-clip-path .2s ease" }} />
           </div>
         );
@@ -2560,7 +2717,7 @@ function ChallengesCard({ challenges, onClaim }) {
 function PassRewardIcon({ r, size = 34 }) {
   if (r.type === "felt") { const f = findFelt(r.key); return <div className="pr-ic" style={{ width: size, height: size, background: `radial-gradient(circle at 50% 40%, ${f.c1}, ${f.c3})`, border: `3px solid ${f.rail}` }} />; }
   if (r.type === "back") { const b = findBack(r.key); return <div className="pr-ic" style={{ width: size * 0.74, height: size, borderRadius: 5, background: `repeating-linear-gradient(45deg, ${b.a} 0 4px, ${b.b} 4px 8px)`, boxShadow: `inset 0 0 0 2px ${b.ring}` }} />; }
-  if (r.type === "avatar") return <div className="pr-ic" style={{ width: size, height: size, fontSize: size * 0.6, background: "rgba(244,247,252,0.08)" }}>{r.key}</div>;
+  if (r.type === "avatar") return <Avatar id={r.key} size={size} />;
   return <div className="pr-ic" style={{ width: size, height: size, background: "rgba(245,184,61,0.16)", color: "#F5B83D" }}><Icon name="chips" size={size * 0.5} stroke={2} /></div>;
 }
 
@@ -3050,7 +3207,8 @@ function ShopScreen({ data, onClaimChips, onBuyAvatar, onClaimDaily, onBuyCosmet
           const canAfford = data.chips >= a.cost;
           return (
             <button key={a.emoji} disabled={owned || !canAfford} onClick={() => onBuyAvatar(a)} className="avatar-tile" style={{ opacity: owned || canAfford ? 1 : 0.4 }}>
-              <div style={{ fontSize: 26 }}>{a.emoji}</div>
+              <Avatar id={a.emoji} size={52} />
+              <div style={{ fontSize: 10.5, fontWeight: 700, marginTop: 6, color: "#EAF0F8", whiteSpace: "nowrap" }}>{avatarName(a.emoji)}</div>
               <div className="num" style={{ fontSize: 10.5, color: owned ? "#34D399" : "#A9B8D0", marginTop: 4, fontWeight: 600 }}>{owned ? "Owned" : a.cost === 0 ? "Free" : a.cost.toLocaleString()}</div>
             </button>
           );
@@ -3265,7 +3423,7 @@ function ProfileScreen({ data, onUpdateName, onSelectAvatar, onSelectFrame, onAd
         <button className="iconbtn" onClick={() => setShowSettings(true)} aria-label="Settings"><Icon name="settings" size={14} /></button>
       </div>
       <div style={{ textAlign: "center", margin: "0 0 24px" }}>
-        <button onClick={() => setPickingAvatar(true)} className="profile-av" style={{ boxShadow: frameColor ? `0 0 0 3px #0B1426, 0 0 0 6px ${frameColor}` : "none" }} aria-label="Change avatar">{data.avatar}</button>
+        <button onClick={() => setPickingAvatar(true)} className="profile-av" style={{ boxShadow: frameColor ? `0 0 0 3px #0B1426, 0 0 0 6px ${frameColor}` : "none" }} aria-label="Change avatar"><Avatar id={data.avatar} size={76} /></button>
         {editingName ? (
           <form onSubmit={(e) => { e.preventDefault(); saveName(); }} style={{ display: "flex", gap: 6, justifyContent: "center", alignItems: "center" }}>
             <input autoFocus value={nameInput} maxLength={16} onChange={(e) => setNameInput(e.target.value)} className="input" style={{ width: 160, textAlign: "center", fontWeight: 600 }} aria-label="Display name" />
@@ -3432,7 +3590,8 @@ function ProfileScreen({ data, onUpdateName, onSelectAvatar, onSelectFrame, onAd
           <div className="avatar-grid">
             {data.unlocked.map((emoji) => (
               <button key={emoji} onClick={() => { onSelectAvatar(emoji); setPickingAvatar(false); }} className="avatar-tile" style={{ borderColor: emoji === data.avatar ? "#34D399" : undefined }} aria-pressed={emoji === data.avatar}>
-                <div style={{ fontSize: 26 }}>{emoji}</div>
+                <Avatar id={emoji} size={52} />
+                <div style={{ fontSize: 10.5, fontWeight: 700, marginTop: 6, whiteSpace: "nowrap" }}>{avatarName(emoji)}</div>
               </button>
             ))}
           </div>
@@ -3971,12 +4130,12 @@ button.row:active:not(:disabled) { background: #1A2B4B; }
 .empty { font-size: 12.5px; color: #5E7196; padding: 8px 2px; }
 .input { background: #14223D; border: 1px solid rgba(244,247,252,0.1); border-radius: 12px; padding: 10px 12px; color: #F4F7FC; font-size: 14px; font-family: inherit; }
 .input:focus { outline: none; border-color: rgba(52,211,153,0.6); }
-.profile-av { background: #25395F; border: none; width: 76px; height: 76px; border-radius: 50%; font-size: 34px; display: flex; align-items: center; justify-content: center; margin: 0 auto 12px; cursor: pointer; }
+.profile-av { background: #25395F; border: none; padding: 0; width: 76px; height: 76px; border-radius: 50%; font-size: 34px; display: flex; align-items: center; justify-content: center; margin: 0 auto 12px; cursor: pointer; }
 .name-btn { background: none; border: none; font-size: 19px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; padding: 2px 4px; }
 .frame-swatch { display: inline-flex; align-items: center; gap: 6px; border: 1.5px solid; border-radius: 20px; padding: 5px 11px 5px 9px; font-size: 12px; font-weight: 600; cursor: pointer; background: transparent; }
 .frame-swatch:disabled { cursor: default; }
 .avatar-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
-.avatar-tile { display: flex; flex-direction: column; align-items: center; justify-content: center; background: #14223D; border: 1px solid rgba(244,247,252,0.07); border-radius: 14px; padding: 12px 4px 10px; cursor: pointer; }
+.avatar-tile { display: flex; flex-direction: column; align-items: center; justify-content: center; min-width: 0; overflow: hidden; background: #14223D; border: 1px solid rgba(244,247,252,0.07); border-radius: 14px; padding: 12px 4px 10px; cursor: pointer; }
 .avatar-tile:disabled { cursor: default; }
 .seg { display: flex; gap: 3px; background: rgba(244,247,252,0.06); border-radius: 12px; padding: 3px; }
 .segbtn { flex: 1; border: none; border-radius: 9px; padding: 8px 6px; font-size: 12px; font-weight: 600; cursor: pointer; background: transparent; color: #A9B8D0; transition: background .15s ease, color .15s ease; white-space: nowrap; }
@@ -4296,6 +4455,19 @@ input[type=range] { accent-color: #F5B83D; }
 /* ---- rank emblems ---- */
 .tb-champ .tb-sparkle { animation: tbTwinkle 2.4s ease-in-out infinite; transform-origin: 32px 32px; }
 @keyframes tbTwinkle { 0%, 100% { opacity: 1; } 50% { opacity: 0.25; } }
+/* ---- felt card faces ---- */
+.card.cf { display: block; background: #FBFAF6; box-shadow: inset 0 0 0 1.5px #FFFFFF, inset 0 0 0 2.4px rgba(20,24,40,0.07), 0 2px 3px rgba(0,0,0,0.2), 0 8px 14px rgba(0,0,0,0.28); }
+.card.cf.win { box-shadow: inset 0 0 0 1.5px #FFFFFF, 0 0 0 2px #F5B83D, 0 0 16px rgba(245,184,61,0.6); }
+.cf-idx { position: absolute; top: 6%; left: 9%; display: flex; flex-direction: column; align-items: center; gap: 0.06em; line-height: 0.86; }
+.cf-idx b { font-family: 'Fraunces', Georgia, serif; font-weight: 700; font-size: 1.02em; letter-spacing: -0.06em; }
+.cf-pip { position: absolute; right: 9%; bottom: 8%; width: 50%; height: 50%; display: flex; align-items: flex-end; justify-content: flex-end; }
+.cf-pip svg { width: 100%; height: 100%; }
+.card.big .cf-idx { top: 7%; left: 10%; }
+.card.big .cf-pip { width: 52%; height: 52%; }
+.card.r2 .cf-pip { width: 46%; height: 46%; }
+.card.back { background-color: var(--back-a, #2F6FDE); background-image: repeating-linear-gradient(45deg, rgba(255,255,255,0.13) 0 1px, transparent 1px 5px), repeating-linear-gradient(-45deg, rgba(255,255,255,0.13) 0 1px, transparent 1px 5px); }
+.card.big.back::after, .card.big.sq .sq-cover::after { content: "f"; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -54%); width: 1.5em; height: 1.5em; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: 'Fraunces', Georgia, serif; font-style: italic; font-weight: 700; font-size: 0.82em; color: var(--back-ring, #FFFFFF); background: var(--back-a, #2F6FDE); box-shadow: 0 0 0 1.5px var(--back-ring, #FFFFFF); }
+.av-wrap { border-radius: 50%; overflow: hidden; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; transition-duration: 0.01ms !important; }
 }
