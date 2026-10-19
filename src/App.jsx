@@ -2092,19 +2092,34 @@ function PokerTable({ startStack, name, avatar, soundOn, setSoundOn, onExit, onH
 }
 
 // Your hole cards start face down: drag up to peel them back from the bottom, or tap to flip.
-// Hold to look. Let go and they flip back. Every look shows on your seat.
+// Lift the corner to look, like a real squeeze. Let go and they drop back face down.
+// Every lift past halfway counts as a look and shows on your seat.
 function PeekCards({ cards, suitColor, omaha, delayFor, open, setOpen, scale = 1 }) {
-  const end = () => setOpen(false);
+  const [peel, setPeel] = useState(0);
+  const [dragging, setDragging] = useState(false);
+  const startY = useRef(null); const shown = useRef(false);
+  const down = (e) => { startY.current = e.clientY; shown.current = false; setDragging(true); try { e.currentTarget.setPointerCapture(e.pointerId); } catch (err) { /* older browsers */ } };
+  const move = (e) => {
+    if (startY.current == null) return;
+    const v = Math.max(0, Math.min(1, (startY.current - e.clientY) / 80));
+    setPeel(v);
+    if (v > 0.5 && !shown.current) { shown.current = true; setOpen(true); }
+  };
+  const up = () => { if (startY.current == null) return; startY.current = null; setDragging(false); setPeel(0); if (shown.current) setOpen(false); };
   const sz = scale !== 1 && !omaha ? { width: 64 * scale, height: 90 * scale, fontSize: 22 * scale } : {};
   return (
-    <div className="peek" onPointerDown={(e) => { e.preventDefault(); setOpen(true); }} onPointerUp={end} onPointerLeave={end} onPointerCancel={end} onContextMenu={(e) => e.preventDefault()}
-      role="button" tabIndex={0} aria-label="Hold to look at your cards" onKeyDown={(e) => { if (e.key === " " || e.key === "Enter") setOpen(true); }} onKeyUp={end}>
-      {cards.map((c, i) => (
-        <div key={c.id} className={`card big${omaha ? " o4" : ""}${open ? " peek-open" : " back"}`} style={{ animation: `dealToHero .5s cubic-bezier(.2,.85,.25,1) ${delayFor(i)}s backwards`, ...sz }}>
-          {open && <><div style={{ color: suitColor[c.s] }}>{rankLabel(c.r)}</div><div style={{ color: suitColor[c.s], fontSize: "0.85em" }}>{SUIT_GLYPH[c.s]}</div></>}
-        </div>
-      ))}
-      {!open && <div className="sq-hint">Hold to look</div>}
+    <div className="squeeze" onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={up} onContextMenu={(e) => e.preventDefault()} role="button" tabIndex={0} aria-label="Drag up to look at your cards"
+      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { setPeel(1); setOpen(true); setTimeout(() => { setPeel(0); setOpen(false); }, 1200); } }}>
+      {cards.map((c, i) => {
+        const clip = `inset(0 0 ${Math.round(peel * 100)}% 0)`;
+        return (
+          <div key={c.id} className={`card big sq${omaha ? " o4" : ""}`} style={{ animation: `dealToHero .5s cubic-bezier(.2,.85,.25,1) ${delayFor(i)}s backwards`, ...sz }}>
+            <div style={{ color: suitColor[c.s] }}>{rankLabel(c.r)}</div><div style={{ color: suitColor[c.s], fontSize: "0.85em" }}>{SUIT_GLYPH[c.s]}</div>
+            <div className="sq-cover" style={{ clipPath: clip, WebkitClipPath: clip, transition: dragging ? "none" : "clip-path .28s cubic-bezier(.3,1.3,.5,1), -webkit-clip-path .28s cubic-bezier(.3,1.3,.5,1)" }} />
+          </div>
+        );
+      })}
+      {!dragging && <div className="sq-hint">Drag up to look</div>}
     </div>
   );
 }
