@@ -551,16 +551,30 @@ const VIP_BACK = { key: "vipback", label: "VIP", a: "#14161B", b: "#0B0C0F", rin
 const PRESTIGE_REWARD = 10000;
 const canPrestige = (r) => isPlaced(r) && r.rating >= 1500;
 // Who you get matched against. After a prestige your badge says Bronze but this stays at your real level.
-const matchRating = (r) => Math.max(r.rating || 0, r.mmr != null ? r.mmr : 0);
+const matchRating = (r) => Math.max(r.rating || 0, r.mmr != null ? r.mmr : r.prestige ? Math.max(1500, r.peakRating || 0) : 0);
 // Climbing back after a prestige: wins count extra and losses sting less until your badge catches up.
 function prestigeBoost(r) { if (!r.prestige) return 1; const gap = matchRating(r) - (r.rating || 0); return gap >= 900 ? 3 : gap >= 300 ? 2 : 1; }
+// A gold starburst around a gem medallion. The gem changes color as your prestige count climbs.
+const PRESTIGE_COLORS = [[1, "#F3B4FF", "#B04BFF", "#5B1599"], [3, "#FFB3C4", "#F0436B", "#8A0F2E"], [5, "#B8F4FF", "#22B8E0", "#0B5470"], [10, "#3A3A44", "#17171D", "#000000"]];
+const BURST = (() => { const pts = []; for (let i = 0; i < 24; i++) { const r = i % 2 ? 17.5 : 23.5; const a = (i * 15 - 90) * Math.PI / 180; pts.push(`${(24 + r * Math.cos(a)).toFixed(2)},${(24 + r * Math.sin(a)).toFixed(2)}`); } return pts.join(" "); })();
 function PrestigeBadge({ n, size = 18 }) {
   if (!n) return null;
+  let pal = PRESTIGE_COLORS[0]; for (const c of PRESTIGE_COLORS) if (n >= c[0]) pal = c;
+  const [, hi, mid, lo] = pal;
+  const id = `pb${pal[0]}`;
   return (
-    <span className="prestige-badge" style={{ width: size, height: size, fontSize: size * 0.52 }} title={`Prestige ${n}`} aria-label={`Prestige ${n}`}>
-      <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1.5l2.6 5.6 6.1.7-4.5 4.2 1.2 6.1L12 15.1l-5.4 3 1.2-6.1-4.5-4.2 6.1-.7z" fill="url(#pgrad)" stroke="#FFE7A3" strokeWidth="1" /><defs><linearGradient id="pgrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#E36BFF" /><stop offset="1" stopColor="#7C3AED" /></linearGradient></defs></svg>
-      <b>{n}</b>
-    </span>
+    <svg className="prestige-badge" width={size} height={size} viewBox="0 0 48 48" role="img" aria-label={`Prestige ${n}`}>
+      <title>{`Prestige ${n}`}</title>
+      <defs>
+        <linearGradient id={`${id}-gold`} x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#FFF3C4" /><stop offset="0.5" stopColor="#F5C451" /><stop offset="1" stopColor="#A86A0C" /></linearGradient>
+        <radialGradient id={`${id}-gem`} cx="38%" cy="30%" r="75%"><stop offset="0" stopColor={hi} /><stop offset="0.55" stopColor={mid} /><stop offset="1" stopColor={lo} /></radialGradient>
+      </defs>
+      <polygon points={BURST} fill={`url(#${id}-gold)`} stroke="#7A4A06" strokeWidth="0.8" strokeLinejoin="round" />
+      <circle cx="24" cy="24" r="14" fill={`url(#${id}-gem)`} stroke="#FFE7A3" strokeWidth="2" />
+      <circle cx="24" cy="24" r="10.5" fill="none" stroke="#FFFFFF" strokeOpacity="0.28" strokeWidth="1" />
+      <path d="M13.5 19.5 C16 13 32 13 34.5 19.5 C29 16.5 19 16.5 13.5 19.5 Z" fill="#FFFFFF" opacity="0.28" />
+      <text x="24" y="24" dy="0.36em" textAnchor="middle" fontSize={n >= 10 ? 13 : 16} fontWeight="900" fill="#FFFFFF" stroke={lo} strokeWidth="0.6" paintOrder="stroke" fontFamily="Inter, -apple-system, sans-serif">{n}</text>
+    </svg>
   );
 }
 
@@ -1042,7 +1056,7 @@ function TierBadge({ tier, size = 28, div = null }) {
       {/* division pips */}
       {div && (
         <g>
-          {[0, 1, 2].map((i) => <path key={i} d={`M${23 + i * 9} 59 l3.5 -3.5 l3.5 3.5 l-3.5 3.5 Z`} fill={i < div ? hi : "rgba(255,255,255,0.12)"} stroke={i < div ? lo : "rgba(0,0,0,0.25)"} strokeWidth="0.8" />)}
+          {[0, 1, 2].map((i) => <path key={i} d={`M${19.5 + i * 9} 59.5 l3.5 -3.5 l3.5 3.5 l-3.5 3.5 Z`} fill={i < div ? hi : "rgba(255,255,255,0.12)"} stroke={i < div ? lo : "rgba(0,0,0,0.25)"} strokeWidth="0.8" />)}
         </g>
       )}
       {/* champion sparkles */}
@@ -2428,6 +2442,7 @@ function RankedCard({ ranked, chips, onPlay, onPrestige, onInfo }) {
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontFamily: DISPLAY_FONT, fontSize: 25, fontWeight: 600, color: tier.color, lineHeight: 1.05, display: "flex", alignItems: "center", gap: 8 }}>{placed ? rankName(ranked.rating) : "Unranked"}<PrestigeBadge n={ranked.prestige} size={20} /></div>
           <div className="num" style={{ fontSize: 13, color: "#A9B8D0", marginTop: 4 }}>{placed ? `${Math.round(ranked.rating).toLocaleString()} RP` : `${games.length} of ${PLACEMENT_MATCHES} placement matches`}</div>
+          {placed && prestigeBoost(ranked) > 1 && <div style={{ fontSize: 11.5, color: "#E9B8FF", marginTop: 2 }}>Matched at {rankName(matchRating(ranked))}, wins x{prestigeBoost(ranked)}</div>}
         </div>
         {placed && ranked.wins + ranked.losses > 0 && (
           <div style={{ textAlign: "right" }}>
@@ -4254,9 +4269,7 @@ input[type=range] { accent-color: #F5B83D; }
 .table-wrap.vip .felt-logo { color: rgba(245,210,122,0.09); letter-spacing: 0.08em; }
 .table-wrap.vip .wordmark-sm { color: #F5D27A; }
 
-.prestige-badge { position: relative; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; vertical-align: middle; margin-left: 2px; }
-.prestige-badge svg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
-.prestige-badge b { position: relative; color: #FFFFFF; font-family: 'Inter', sans-serif; font-weight: 800; line-height: 1; margin-top: 1px; text-shadow: 0 1px 1px rgba(0,0,0,0.4); }
+.prestige-badge { display: inline-block; flex-shrink: 0; vertical-align: middle; margin-left: 2px; overflow: visible; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.35)); }
 .prestige-btn { border-color: rgba(227,107,255,0.55); color: #F0C2FF; background: linear-gradient(135deg, rgba(227,107,255,0.16), rgba(124,58,237,0.16)); font-size: 13px; }
 /* ---- 9 handed: two rows of four, tighter table ---- */
 .seats.grid4 { display: grid; grid-template-columns: repeat(4, 1fr); justify-items: center; row-gap: 2px; margin-top: 0; }
