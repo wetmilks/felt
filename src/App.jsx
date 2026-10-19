@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { cloud, cloudEnabled, cleanUsername } from "./cloud.js";
 
 /* =========================================================================
    SHARED HELPERS
@@ -3388,8 +3389,10 @@ function ShopScreen({ data, onClaimChips, onBuyAvatar, onClaimDaily, onBuyCosmet
 /* =========================================================================
    LEADERBOARD TAB
    ========================================================================= */
-function LeaderboardScreen({ data }) {
+function LeaderboardScreen({ data, account, onOpenAuth }) {
   const [tab, setTab] = useState("ranked");
+  const [fl, setFl] = useState(null); const [openF, setOpenF] = useState(null);
+  useEffect(() => { if (tab !== "friends" || !account) return; cloud.friends(account).then((r) => setFl(r.friends)).catch(() => setFl([])); }, [tab, account]);
   const placed = isPlaced(data.ranked);
   const month = new Date().toLocaleString("en-US", { month: "long" });
   const myIndex = tournamentIndex((data.skill || {}).tourneys);
@@ -3429,12 +3432,46 @@ function LeaderboardScreen({ data }) {
       </div>
     );
   };
+  if (tab === "friends") {
+    const me = { id: "me", ...publicProfile(data), username: account ? account.username : null, isYou: true };
+    const rows = [...(fl || []), me].sort((a, b) => (b.placed ? b.rating : -1) - (a.placed ? a.rating : -1));
+    return (
+      <div className="screen screen-fade">
+        <header className="home-head" style={{ marginBottom: 12 }}><div className="wordmark">Leaderboard</div></header>
+        <div className="seg" style={{ marginBottom: 10 }}>
+          <button onClick={() => setTab("ranked")} className="segbtn">Ranked</button>
+          <button onClick={() => setTab("index")} className="segbtn">Tournament index</button>
+          <button onClick={() => setTab("friends")} className="segbtn on">Friends</button>
+        </div>
+        {!account ? (
+          <div className="panel acct-cta"><div style={{ fontSize: 14.5, fontWeight: 700 }}>See how you stack up</div><div style={{ fontSize: 12.5, color: "var(--t-mid)", marginTop: 3 }}>Make an account and add friends to rank against them.</div><button className="btn btn-sm btn-raise" style={{ marginTop: 12, width: "100%" }} onClick={() => onOpenAuth("signup")}>Create account</button></div>
+        ) : fl === null ? <div className="empty">Loading…</div> : (
+          <div className="list" style={{ gap: 6 }}>
+            {rows.map((p, i) => (
+              <div key={p.id} className={`friend-row${p.isYou ? "" : " tap"}`} style={p.isYou ? { borderColor: "rgba(52,211,153,0.4)", background: "rgba(52,211,153,0.08)" } : undefined} onClick={p.isYou ? undefined : () => setOpenF(p.id)}>
+                <div className="num" style={{ width: 22, fontSize: 13.5, fontWeight: 700, color: i < 3 ? ["var(--t-accent)", "#C9D4E2", "#D9894E"][i] : "var(--t-faint)" }}>{i + 1}</div>
+                <PlayerAvatar p={p} size={34} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 13.5, fontWeight: 650, color: p.isYou ? "var(--t-good)" : "var(--t-text)", display: "flex", alignItems: "center", gap: 5 }}>{p.display_name}{p.isYou ? " (you)" : ""}<PrestigeBadge n={p.prestige} size={14} /></div>
+                  <div style={{ fontSize: 11, color: p.placed ? tierForRating(p.rating).color : "var(--t-mut)" }}>{p.placed ? rankName(p.rating) : "Unranked"}</div>
+                </div>
+                <div className="num" style={{ fontSize: 13, fontWeight: 600, color: "var(--t-text2)" }}>{p.placed ? `${p.rating.toLocaleString()} RP` : "-"}</div>
+              </div>
+            ))}
+            {fl.length === 0 && <div className="empty">Add friends from your Profile tab and they'll show up here.</div>}
+          </div>
+        )}
+        {openF && <FriendProfileModal friendId={openF} onClose={() => setOpenF(null)} />}
+      </div>
+    );
+  }
   return (
     <div ref={scrollRef} className="screen screen-fade" style={{ paddingBottom: 0, display: "flex", flexDirection: "column" }}>
       <header className="home-head" style={{ marginBottom: 12 }}><div className="wordmark">Leaderboard</div></header>
       <div className="seg" style={{ marginBottom: 10 }}>
         <button onClick={() => setTab("ranked")} className={`segbtn${isRanked ? " on" : ""}`}>Ranked</button>
         <button onClick={() => setTab("index")} className={`segbtn${!isRanked ? " on" : ""}`}>Tournament index</button>
+        {cloudEnabled() && <button onClick={() => setTab("friends")} className="segbtn">Friends</button>}
       </div>
       <div style={{ fontSize: 12, color: "var(--t-mut)", margin: "0 2px 12px" }}>
         {isRanked ? `${month} season, ends in ${daysLeftInSeason()} days. Ranked by RP.` : "Best 8 tournament cashes. Results fade over 90 days."}
@@ -3454,6 +3491,157 @@ function LeaderboardScreen({ data }) {
       </div>
     </div>
   );
+}
+
+/* =========================================================================
+   ACCOUNTS AND FRIENDS
+   ========================================================================= */
+function PlayerAvatar({ p, size = 40 }) {
+  const style = { width: size, height: size, borderRadius: "50%", flexShrink: 0, overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--t-panel2)", fontSize: size * 0.48 };
+  return <div style={style}>{p && p.photo ? <img src={p.photo} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} /> : (p && p.avatar) || "🙂"}</div>;
+}
+function AuthModal({ mode, setMode, onClose, onAuthed, account, data }) {
+  const [username, setUsername] = useState(""); const [email, setEmail] = useState(""); const [password, setPassword] = useState("");
+  const [busy, setBusy] = useState(false); const [err, setErr] = useState("");
+  const signup = mode === "signup", pick = mode === "username";
+  const submit = async (e) => {
+    e.preventDefault(); setErr(""); setBusy(true);
+    try {
+      let me;
+      if (pick) me = await cloud.claimUsername(account, username, publicProfile(data));
+      else if (signup) { const prof = publicProfile(data); if (!data.name || data.name === "You") prof.display_name = cleanUsername(username); me = await cloud.signUp({ username, email, password, profile: prof }); }
+      else me = await cloud.signIn({ email, password });
+      onAuthed(me, pick ? "signup" : mode);
+    } catch (e2) { setErr(e2.message || "Something went wrong."); }
+    setBusy(false);
+  };
+  return (
+    <Modal title={pick ? "Pick a username" : signup ? "Create your account" : "Sign in"} onClose={onClose}>
+      <form onSubmit={submit} className="auth-form">
+        {!pick && !signup ? null : (
+          <label className="auth-field"><span>Username</span>
+            <div className="auth-at"><b>@</b><input className="input" value={username} onChange={(e) => setUsername(cleanUsername(e.target.value).replace(/[^a-z0-9_]/g, ""))} maxLength={16} autoCapitalize="none" autoCorrect="off" spellCheck={false} placeholder="yourname" autoFocus aria-label="Username" /></div>
+            <small>Friends add you with this. Letters, numbers and _ only.</small>
+          </label>
+        )}
+        {!pick && (<>
+          <label className="auth-field"><span>Email</span><input className="input" type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoCapitalize="none" autoComplete="email" placeholder="you@email.com" autoFocus={!signup} aria-label="Email" /></label>
+          <label className="auth-field"><span>Password</span><input className="input" type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete={signup ? "new-password" : "current-password"} placeholder={signup ? "6 or more characters" : ""} aria-label="Password" /></label>
+        </>)}
+        {err && <div className="auth-err" role="alert">{err}</div>}
+        <button type="submit" className="btn btn-raise" disabled={busy || (pick ? username.length < 3 : (!email || password.length < (signup ? 6 : 1) || (signup && username.length < 3)))}>{busy ? "One sec…" : pick ? "Save username" : signup ? "Create account" : "Sign in"}</button>
+        {!pick && <div className="auth-switch">{signup ? "Already have an account?" : "New to felt?"} <button type="button" onClick={() => { setErr(""); setMode(signup ? "signin" : "signup"); }}>{signup ? "Sign in" : "Create one"}</button></div>}
+        {signup && <div className="auth-note">Everything you have now moves into the account.</div>}
+      </form>
+    </Modal>
+  );
+}
+function FriendProfileModal({ friendId, onClose, onRemove }) {
+  const [p, setP] = useState(null); const [confirm, setConfirm] = useState(false);
+  useEffect(() => { let on = true; cloud.getProfile(friendId).then((x) => on && setP(x || false)).catch(() => on && setP(false)); return () => { on = false; }; }, [friendId]);
+  if (p === null) return <Modal title="Profile" onClose={onClose}><div className="empty">Loading…</div></Modal>;
+  if (!p) return <Modal title="Player" onClose={onClose}><div className="empty">Couldn't load this player.</div></Modal>;
+  const st = p.stats || {}; const tier = p.placed ? tierForRating(p.rating) : UNRANKED;
+  const winRate = st.handsPlayed ? Math.round((st.handsWon / st.handsPlayed) * 100) : 0;
+  const seen = p.updated_at ? timeAgo(new Date(p.updated_at).getTime()) : null;
+  return (
+    <Modal title="Profile" onClose={onClose} width={380}>
+      <div className="fp-head">
+        <PlayerAvatar p={p} size={84} />
+        <div className="fp-name">{p.display_name}<PrestigeBadge n={p.prestige} size={20} /></div>
+        <div className="fp-user">@{p.username}{seen ? ` · active ${seen}` : ""}</div>
+        {p.title && p.title !== "rookie" && <TitleTag k={p.title} size={12.5} style={{ marginTop: 4 }} />}
+      </div>
+      <div className="fp-rank">
+        <TierBadge tier={tier} size={44} />
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 16, fontWeight: 700, color: tier.color }}>{p.placed ? rankName(p.rating) : "Unranked"}</div>
+          <div className="num" style={{ fontSize: 12, color: "var(--t-mut)" }}>{p.placed ? `${p.rating.toLocaleString()} RP · peak ${rankName(p.peak || p.rating)}` : "Still in placements"}</div>
+        </div>
+        <div className="num" style={{ textAlign: "right", fontSize: 13, fontWeight: 700 }}>{st.rankedWins || 0}W {st.rankedLosses || 0}L</div>
+      </div>
+      <div className="fp-stats">
+        <div><b className="num">{shortNum(p.chips || 0)}</b><span>Chips</span></div>
+        <div><b className="num">{(st.handsPlayed || 0).toLocaleString()}</b><span>Hands</span></div>
+        <div><b className="num">{winRate}%</b><span>Win rate</span></div>
+        <div><b className="num">{shortNum(st.biggestPot || 0)}</b><span>Biggest pot</span></div>
+        <div><b className="num">{st.bestWinStreak || 0}</b><span>Best streak</span></div>
+        <div><b className="num">{st.achievements || 0}</b><span>Achievements</span></div>
+      </div>
+      {onRemove && <button className="btn" style={{ width: "100%", marginTop: 14, color: confirm ? "var(--t-bad)" : "var(--t-mut)" }} onClick={() => { if (confirm) { onRemove(p.id); onClose(); } else setConfirm(true); }}>{confirm ? "Tap again to remove" : "Remove friend"}</button>}
+    </Modal>
+  );
+}
+function timeAgo(t) {
+  const m = Math.round((Date.now() - t) / 60000);
+  if (m < 2) return "just now"; if (m < 60) return `${m}m ago`; const h = Math.round(m / 60); if (h < 24) return `${h}h ago`; const d = Math.round(h / 24); return d < 30 ? `${d}d ago` : "a while ago";
+}
+function FriendsSection({ account, onOpenAuth, sound }) {
+  const [lists, setLists] = useState(null); const [input, setInput] = useState(""); const [msg, setMsg] = useState(null); const [busy, setBusy] = useState(false); const [open, setOpen] = useState(null);
+  const refresh = useCallback(() => { if (!account) return; cloud.friends(account).then(setLists).catch(() => setLists((l) => l || { friends: [], incoming: [], outgoing: [], offline: true })); }, [account]);
+  useEffect(() => { refresh(); if (!account) return; const t = setInterval(refresh, 20000); return () => clearInterval(t); }, [refresh, account]);
+  if (!cloudEnabled()) return null;
+  if (!account) {
+    return (<>
+      <SectionLabel>Friends</SectionLabel>
+      <div className="panel acct-cta">
+        <div style={{ fontSize: 14.5, fontWeight: 700 }}>Play with your friends</div>
+        <div style={{ fontSize: 12.5, color: "var(--t-mid)", marginTop: 3, lineHeight: 1.45 }}>Make an account to add friends, see their rank and stats, and keep your progress safe on any phone.</div>
+        <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+          <button className="btn btn-sm" style={{ flex: 1 }} onClick={() => onOpenAuth("signin")}>Sign in</button>
+          <button className="btn btn-sm btn-raise" style={{ flex: 1 }} onClick={() => onOpenAuth("signup")}>Create account</button>
+        </div>
+      </div>
+    </>);
+  }
+  const add = async (e) => {
+    e.preventDefault(); if (!input.trim() || busy) return; setBusy(true); setMsg(null);
+    try {
+      const r = await cloud.addFriend(account, input);
+      const at = `@${r.profile.username}`;
+      setMsg({ ok: true, text: r.status === "sent" ? `Request sent to ${at}.` : r.status === "accepted" ? `You and ${at} are friends now.` : r.status === "already" ? `${at} is already your friend.` : `Still waiting on ${at}.` });
+      setInput(""); if (sound) sound.tap(); refresh();
+    } catch (e2) { setMsg({ ok: false, text: e2.message }); }
+    setBusy(false);
+  };
+  const act = async (fn) => { try { await fn(); if (sound) sound.tap(); } catch (e) { setMsg({ ok: false, text: e.message }); } refresh(); };
+  const L = lists || { friends: [], incoming: [], outgoing: [] };
+  const row = (p, right, onTap) => (
+    <div key={p.id} className={`friend-row${onTap ? " tap" : ""}`} onClick={onTap || undefined} role={onTap ? "button" : undefined} tabIndex={onTap ? 0 : undefined}>
+      <PlayerAvatar p={p} size={36} />
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: 13.5, fontWeight: 650, display: "flex", alignItems: "center", gap: 5, whiteSpace: "nowrap", overflow: "hidden" }}>{p.display_name}<PrestigeBadge n={p.prestige} size={14} /></div>
+        <div style={{ fontSize: 11, color: "var(--t-mut)" }}>@{p.username}{p.placed ? <span style={{ color: tierForRating(p.rating).color }}> · {rankName(p.rating)}</span> : " · Unranked"}</div>
+      </div>
+      {right}
+    </div>
+  );
+  return (<>
+    <SectionLabel right={`@${account.username || "you"}`}>Friends</SectionLabel>
+    <form onSubmit={add} style={{ display: "flex", gap: 8, marginBottom: 8 }}>
+      <div className="auth-at" style={{ flex: 1 }}><b>@</b><input value={input} onChange={(e) => setInput(e.target.value)} placeholder="Add by username" className="input" autoCapitalize="none" autoCorrect="off" spellCheck={false} aria-label="Friend's username" /></div>
+      <button type="submit" className="btn btn-sm" disabled={busy || !input.trim()}>{busy ? "…" : "Add"}</button>
+    </form>
+    {msg && <div className={`friend-msg${msg.ok ? " ok" : ""}`}>{msg.text}</div>}
+    {L.incoming.length > 0 && (<>
+      <div className="friend-sub">Requests</div>
+      <div className="list" style={{ gap: 6, marginBottom: 10 }}>
+        {L.incoming.map((p) => row(p, <div style={{ display: "flex", gap: 6 }}><button className="btn btn-sm" onClick={() => act(() => cloud.remove(account, p.id))}>Decline</button><button className="btn btn-sm btn-raise" onClick={() => act(() => cloud.accept(account, p.id))}>Accept</button></div>))}
+      </div>
+    </>)}
+    <div className="list" style={{ gap: 6 }}>
+      {lists === null && <div className="empty">Loading friends…</div>}
+      {lists && L.friends.length === 0 && <div className="empty">No friends yet. Tell yours your username: @{account.username}</div>}
+      {L.friends.map((p) => row(p, <Icon name="chevron" size={14} style={{ color: "var(--t-faint)" }} />, () => setOpen(p.id)))}
+    </div>
+    {L.outgoing.length > 0 && (<>
+      <div className="friend-sub" style={{ marginTop: 10 }}>Waiting on them</div>
+      <div className="list" style={{ gap: 6 }}>
+        {L.outgoing.map((p) => row(p, <button className="btn btn-sm" onClick={() => act(() => cloud.remove(account, p.id))}>Cancel</button>))}
+      </div>
+    </>)}
+    {open && <FriendProfileModal friendId={open} onClose={() => setOpen(null)} onRemove={(id) => act(() => cloud.remove(account, id))} />}
+  </>);
 }
 
 /* =========================================================================
@@ -3542,7 +3730,7 @@ function BestHands({ list, suitColor }) {
   );
 }
 
-function ProfileScreen({ data, onUpdateName, onSelectAvatar, onSetPhoto, onUsePhoto, onSelectFrame, onAddFriend, onUpdateSettings, onExportData, onImportData, onResetProfile, onEquipTitle, onPrestige }) {
+function ProfileScreen({ data, account, onOpenAuth, onSignOut, sound, onUpdateName, onSelectAvatar, onSetPhoto, onUsePhoto, onSelectFrame, onAddFriend, onUpdateSettings, onExportData, onImportData, onResetProfile, onEquipTitle, onPrestige }) {
   const importRef = useRef(null);
   const [ladder, setLadder] = useState(false);
   const [transfer, setTransfer] = useState(false);
@@ -3693,20 +3881,7 @@ function ProfileScreen({ data, onUpdateName, onSelectAvatar, onSetPhoto, onUsePh
         })}
       </div>
 
-      <SectionLabel>Friends</SectionLabel>
-      <form onSubmit={(e) => { e.preventDefault(); if (friendInput.trim()) { onAddFriend(friendInput.trim()); setFriendInput(""); } }} style={{ display: "flex", gap: 8, marginBottom: 10 }}>
-        <input value={friendInput} onChange={(e) => setFriendInput(e.target.value)} placeholder="Add a friend by name" className="input" style={{ flex: 1 }} aria-label="Friend name" />
-        <button type="submit" className="btn btn-sm">Add</button>
-      </form>
-      <div className="list" style={{ gap: 6 }}>
-        {data.friends.length === 0 && <div className="empty">No friends added yet.</div>}
-        {data.friends.map((f, i) => (
-          <div key={i} className="lb-row" style={{ background: "var(--t-panel)", borderColor: "rgba(244,247,252,0.06)" }}>
-            <div className="bot-av" style={{ position: "static", width: 28, height: 28, background: AVATAR_COLORS[i % AVATAR_COLORS.length], fontSize: 12 }}>{f[0].toUpperCase()}</div>
-            <div style={{ fontSize: 13.5, fontWeight: 600 }}>{f}</div>
-          </div>
-        ))}
-      </div>
+      <FriendsSection account={account} onOpenAuth={onOpenAuth} sound={sound} />
 
       {ladder && <RankLadderModal ranked={rk} onClose={() => setLadder(false)} onPrestige={() => { onPrestige(); setLadder(false); }} />}
       {transfer && (
@@ -3762,6 +3937,11 @@ function ProfileScreen({ data, onUpdateName, onSelectAvatar, onSetPhoto, onUsePh
 
       {showSettings && (
         <Modal title="Settings" onClose={() => { setShowSettings(false); setConfirmReset(false); }}>
+          {cloudEnabled() && (
+            <SettingRow label={account ? `@${account.username || "player"}` : "Account"} sub={account ? `Saving online · ${account.email || ""}` : "Not signed in. Progress only saves on this phone."}>
+              {account ? <button className="btn btn-sm" onClick={() => { onSignOut(); setShowSettings(false); }}>Sign out</button> : <button className="btn btn-sm btn-raise" onClick={() => { onOpenAuth("signup"); setShowSettings(false); }}>Sign up</button>}
+            </SettingRow>
+          )}
           <SettingRow label="Colorblind suits" sub="Blue and black instead of red and black">
             <Toggle on={data.settings.colorblind} onClick={() => onUpdateSettings({ colorblind: !data.settings.colorblind })} label="Colorblind suits" />
           </SettingRow>
@@ -3853,6 +4033,33 @@ function LoadingScreen({ fadingOut }) {
   );
 }
 
+// everything a save needs filled in, whether it came from this phone or from your account
+function hydrate(d) {
+  const merged = { ...defaultData(), ...d, stats: { ...defaultData().stats, ...(d.stats || {}) }, settings: { ...defaultData().settings, ...(d.settings || {}) }, skill: d.skill && d.skill.v === 2 ? { ...defaultSkill(), ...d.skill } : { ...defaultSkill(), ...(d.skill || {}), v: 2, idealSum: ((d.skill && d.skill.hands) || 0) * 0.34, report: undefined, reportSource: undefined } };
+  merged.ranked = rolloverSeason(migrateRanked(d.ranked));
+  merged.stats = { ...merged.stats, pos: { late: [0, 0], early: [0, 0], blinds: [0, 0], ...(merged.stats.pos || {}) } };
+  merged.cosmetics = { ...defaultCosmetics(), ...(d.cosmetics || {}) };
+  merged.streak = d.streak || { count: 0, last: null };
+  merged.challenges = ensureChallenges(d.challenges);
+  merged.pass = ensurePass(d.pass);
+  merged.history = { bankroll: [], best: [], ...(d.history || {}) };
+  merged.titles = { ...defaultTitles(), ...(d.titles || {}) };
+  merged.themes = { ...defaultThemes(), ...(d.themes || {}) };
+  { const earned = newlyEarnedTitles(merged); if (earned.length) merged.titles = { ...merged.titles, owned: [...merged.titles.owned, ...earned.map((t) => t.key)] }; }
+  if (merged.history.bankroll.length === 0) merged.history = { ...merged.history, bankroll: [{ t: Date.now(), v: merged.chips }] };
+  return merged;
+}
+// what other players can see about you
+function publicProfile(d) {
+  const rk = d.ranked || {}; const st = d.stats || {};
+  return {
+    display_name: (d.name || "Player").slice(0, 24), avatar: d.avatar || "🫵", photo: d.usePhoto && d.photo ? d.photo : null,
+    title: (d.titles || {}).equipped || null, rating: Math.round(rk.rating || 0), peak: Math.round(rk.peakRating || rk.rating || 0),
+    prestige: rk.prestige || 0, placed: isPlaced(rk), chips: Math.round(d.chips || 0),
+    stats: { handsPlayed: st.handsPlayed || 0, handsWon: st.handsWon || 0, biggestPot: st.biggestPot || 0, bestWinStreak: st.bestWinStreak || 0, rankedWins: rk.wins || 0, rankedLosses: rk.losses || 0, achievements: (d.achievements || []).length },
+  };
+}
+
 export default function App() {
   useGoogleFonts();
   const [loaded, setLoaded] = useState(false);
@@ -3865,6 +4072,8 @@ export default function App() {
   const [soundOn, setSoundOn] = useState(true);
   const [toast, setToast] = useState(null);
   const [previewTheme, setPreviewTheme] = useState(null);
+  const [account, setAccount] = useState(null); // { id, email, username } when signed in
+  const [authOpen, setAuthOpen] = useState(null); // "signup" | "signin" | "username"
   const toastTimer = useRef(null);
   const sound = useSound(soundOn);
 
@@ -3873,26 +4082,58 @@ export default function App() {
     (async () => {
       const [d] = await Promise.all([loadData(), minTimer]);
       if (d) {
-        const merged = { ...defaultData(), ...d, stats: { ...defaultData().stats, ...(d.stats || {}) }, settings: { ...defaultData().settings, ...(d.settings || {}) }, skill: d.skill && d.skill.v === 2 ? { ...defaultSkill(), ...d.skill } : { ...defaultSkill(), ...(d.skill || {}), v: 2, idealSum: ((d.skill && d.skill.hands) || 0) * 0.34, report: undefined, reportSource: undefined } };
-        merged.ranked = rolloverSeason(migrateRanked(d.ranked));
-        merged.stats = { ...merged.stats, pos: { late: [0, 0], early: [0, 0], blinds: [0, 0], ...(merged.stats.pos || {}) } };
-        merged.cosmetics = { ...defaultCosmetics(), ...(d.cosmetics || {}) };
-        merged.streak = d.streak || { count: 0, last: null };
-        merged.challenges = ensureChallenges(d.challenges);
-        merged.pass = ensurePass(d.pass);
-        merged.history = { bankroll: [], best: [], ...(d.history || {}) };
-        merged.titles = { ...defaultTitles(), ...(d.titles || {}) };
-        merged.themes = { ...defaultThemes(), ...(d.themes || {}) };
-        { const earned = newlyEarnedTitles(merged); if (earned.length) merged.titles = { ...merged.titles, owned: [...merged.titles.owned, ...earned.map((t) => t.key)] }; }
-        if (merged.history.bankroll.length === 0) merged.history = { ...merged.history, bankroll: [{ t: Date.now(), v: merged.chips }] };
+        const merged = hydrate(d);
         setData(merged);
         saveData(merged);
+      }
+      // signed in from before: pull the account's save if it's newer than this phone's
+      if (cloudEnabled()) {
+        try {
+          const me = await cloud.current();
+          if (me) {
+            setAccount(me);
+            const remote = await cloud.loadSave(me);
+            if (remote && (remote.savedAt || 0) > ((d && d.savedAt) || 0)) { const m = hydrate(remote); setData(m); saveData(m); }
+          }
+        } catch (e) { /* offline: keep playing on the local save */ }
       }
       setLoaded(true);
       setTimeout(() => setBootDone(true), 600);
     })();
   }, []);
-  const persist = (next) => { setData(next); saveData(next); };
+  const persist = (next) => { const n = { ...next, savedAt: Date.now() }; setData(n); saveData(n); };
+  // signed in: every change goes up to your account a couple of seconds later
+  const pushRef = useRef(null);
+  useEffect(() => {
+    if (!account || !loaded) return;
+    clearTimeout(pushRef.current);
+    pushRef.current = setTimeout(() => { cloud.pushSave(account, data, publicProfile(data)).catch(() => {}); }, 2500);
+    return () => clearTimeout(pushRef.current);
+  }, [data, account, loaded]);
+  const handleAuthed = async (me, mode) => {
+    setAccount(me); setAuthOpen(me.username ? null : "username");
+    if (mode === "signin") {
+      try {
+        const remote = await cloud.loadSave(me);
+        if (remote) {
+          try { localStorage.setItem("felt-guest-backup", JSON.stringify(data)); } catch (e) { /* full */ }
+          const m = { ...hydrate(remote), savedAt: Date.now() }; setData(m); saveData(m);
+          showToast({ title: "Signed in", label: `Welcome back, @${me.username || "player"}` }, 2600); return;
+        }
+      } catch (e) { /* fall through and upload this phone's progress */ }
+    }
+    let cur = data;
+    if (mode === "signup" && me.username && (!data.name || data.name === "You")) { cur = { ...data, name: me.username }; persist(cur); }
+    cloud.pushSave(me, cur, publicProfile(cur)).catch(() => {});
+    showToast({ title: mode === "signup" ? "Account made" : "Signed in", label: "Your progress now saves online" }, 2600);
+  };
+  // signing out hands the phone back to a fresh guest; your progress lives in the account
+  const handleSignOut = async () => {
+    try { await cloud.pushSave(account, data, publicProfile(data)); } catch (e) { showToast({ title: "Can't sign out yet", label: "Couldn't save to your account. Check your connection." }, 2800); return; }
+    await cloud.signOut().catch(() => {}); setAccount(null);
+    const fresh = hydrate({ ...defaultData(), name: "You" }); setData(fresh); saveData(fresh);
+    showToast({ title: "Signed out", label: "Sign back in anytime to pick up where you left off" }, 2600);
+  };
   const showToast = (t, ms = 2600) => { clearTimeout(toastTimer.current); setToast(t); toastTimer.current = setTimeout(() => setToast(null), ms); };
 
   const checkAchievements = (statsObj, base) => {
@@ -4220,9 +4461,9 @@ export default function App() {
         <div key={tab} style={{ width: "100%", maxWidth: 460, height: "100%" }}>
           {tab === "shop" && <ShopScreen data={data} onClaimChips={handleClaimChips} onBuyAvatar={handleBuyAvatar} onClaimDaily={handleClaimDaily} onBuyCosmetic={handleBuyCosmetic} onEquipCosmetic={handleEquipCosmetic} onBuyTitle={handleBuyTitle} onBuyTheme={handleBuyTheme} onEquipTheme={handleEquipTheme} onPreviewTheme={handlePreviewTheme} previewTheme={previewTheme} />}
           {tab === "home" && <HomeMenu onPlayAI={handlePlayAI} data={data} chips={data.chips} ranked={data.ranked} onClaimDaily={handleClaimDaily} onClaimChallenge={handleClaimChallenge} onSpin={handleSpin} onPrestige={handlePrestige} sound={sound} goShop={() => setTab("shop")} />}
-          {tab === "leaderboard" && <LeaderboardScreen data={data} />}
+          {tab === "leaderboard" && <LeaderboardScreen data={data} account={account} onOpenAuth={setAuthOpen} />}
           {tab === "coach" && <CoachScreen data={data} />}
-          {tab === "profile" && <ProfileScreen data={data} onUpdateName={handleUpdateName} onSelectAvatar={handleSelectAvatar} onSetPhoto={handleSetPhoto} onUsePhoto={handleUsePhoto} onSelectFrame={handleSelectFrame} onAddFriend={handleAddFriend} onUpdateSettings={handleUpdateSettings} onExportData={handleExportData} onImportData={handleImportData} onResetProfile={handleResetProfile} onEquipTitle={handleEquipTitle} onPrestige={handlePrestige} />}
+          {tab === "profile" && <ProfileScreen data={data} account={account} onOpenAuth={setAuthOpen} onSignOut={handleSignOut} sound={sound} onUpdateName={handleUpdateName} onSelectAvatar={handleSelectAvatar} onSetPhoto={handleSetPhoto} onUsePhoto={handleUsePhoto} onSelectFrame={handleSelectFrame} onAddFriend={handleAddFriend} onUpdateSettings={handleUpdateSettings} onExportData={handleExportData} onImportData={handleImportData} onResetProfile={handleResetProfile} onEquipTitle={handleEquipTitle} onPrestige={handlePrestige} />}
         </div>
       </main>
       <BottomNav tab={tab} setTab={(t) => { sound.tap(); setTab(t); if (t !== "shop") setPreviewTheme(null); }} />
@@ -4236,6 +4477,7 @@ export default function App() {
           </div>
         );
       })()}
+      {authOpen && <AuthModal mode={authOpen} setMode={setAuthOpen} onClose={() => setAuthOpen(null)} onAuthed={handleAuthed} account={account} data={data} />}
       {toast && (
         <div className="toast" role="status">
           <div style={{ fontSize: 12, fontWeight: 700, color: "var(--t-accent)" }}>{toast.title}</div>
@@ -4970,6 +5212,34 @@ body.theme-montecarlo .pc-index { top: 11px; left: 11px; } body.theme-montecarlo
 .photo-tile { width: 48px; height: 48px; padding: 0 !important; flex-shrink: 0; overflow: hidden; border-radius: 50% !important; }
 .photo-tile img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .photo-tile.on { box-shadow: 0 0 0 2px var(--t-good) !important; }
+/* accounts and friends */
+.auth-form { display: flex; flex-direction: column; gap: 12px; }
+.auth-field { display: flex; flex-direction: column; gap: 5px; }
+.auth-field > span { font-size: 12px; font-weight: 600; color: var(--t-sub); }
+.auth-field small { font-size: 11px; color: var(--t-faint); }
+.auth-field .input, .auth-at .input { width: 100%; box-sizing: border-box; }
+.auth-at { position: relative; display: flex; align-items: center; }
+.auth-at b { position: absolute; left: 12px; color: var(--t-mut); font-weight: 600; pointer-events: none; font-size: 14px; }
+.auth-at .input { padding-left: 28px !important; }
+.auth-err { font-size: 12.5px; color: var(--t-bad); background: rgba(255,107,107,0.08); border: 1px solid rgba(255,107,107,0.3); border-radius: 10px; padding: 8px 10px; }
+.auth-switch { text-align: center; font-size: 12.5px; color: var(--t-mut); }
+.auth-switch button { background: none; border: none; color: var(--t-accent); font-weight: 700; cursor: pointer; font-size: 12.5px; padding: 0 2px; }
+.auth-note { text-align: center; font-size: 11.5px; color: var(--t-faint); margin-top: -4px; }
+.acct-cta { padding: 16px !important; margin-bottom: 8px; }
+.friend-row { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 14px; background: var(--t-panel); border: 1px solid rgba(244,247,252,0.06); }
+.friend-row.tap { cursor: pointer; transition: transform .12s ease, border-color .15s ease; }
+.friend-row.tap:active { transform: scale(0.985); }
+.friend-sub { font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--t-mut); margin: 4px 2px 6px; }
+.friend-msg { font-size: 12px; color: var(--t-bad); margin: 0 2px 10px; }
+.friend-msg.ok { color: var(--t-good); }
+.fp-head { display: flex; flex-direction: column; align-items: center; text-align: center; margin-top: -6px; }
+.fp-name { font-family: var(--t-display); font-size: 22px; font-weight: 700; margin-top: 10px; display: flex; align-items: center; gap: 6px; }
+.fp-user { font-size: 12px; color: var(--t-mut); margin-top: 2px; }
+.fp-rank { display: flex; align-items: center; gap: 12px; margin-top: 16px; padding: 12px 14px; border-radius: 14px; background: rgba(244,247,252,0.04); border: 1px solid rgba(244,247,252,0.07); }
+.fp-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 8px; }
+.fp-stats > div { display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 10px 4px; border-radius: 12px; background: rgba(244,247,252,0.04); border: 1px solid rgba(244,247,252,0.06); }
+.fp-stats b { font-size: 15px; font-weight: 750; }
+.fp-stats span { font-size: 10.5px; color: var(--t-mut); }
 /* ---------- High Roller Room: black lacquer, emerald baize, champagne gold ---------- */
 .vip-card { width: 100%; display: flex; flex-direction: column; gap: 0; padding: 16px 18px 15px; border-radius: 18px; cursor: pointer; text-align: left; color: #F3EDE0; background-color: #0C0B09; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4' height='4'%3E%3Cpath d='M0 4L4 0' stroke='%23FFFFFF' stroke-opacity='0.025'/%3E%3C/svg%3E"), radial-gradient(120% 90% at 85% 0%, rgba(217,180,106,0.16), transparent 55%), linear-gradient(160deg, #1A1713 0%, #0B0A08 60%, #121009 100%); border: 1px solid rgba(217,180,106,0.32); position: relative; overflow: hidden; transition: transform .14s ease, box-shadow .3s ease; box-shadow: inset 0 1px 0 rgba(255,240,210,0.08), 0 10px 26px rgba(0,0,0,0.35); }
 .vip-card::before { content: ""; position: absolute; top: 5px; right: 5px; bottom: 5px; left: 5px; border-radius: 14px; border: 1px solid rgba(217,180,106,0.14); pointer-events: none; }
