@@ -957,6 +957,7 @@ const ICON_PATHS = {
   history: ["M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8", "M3 3v5h5", "M12 7v5l4 2"],
   soundOn: ["M11 5 6 9H2v6h4l5 4z", "M15.5 8.5a5 5 0 0 1 0 7", "M19 5a10 10 0 0 1 0 14"],
   soundOff: ["M11 5 6 9H2v6h4l5 4z", "m22 9-6 6", "m16 9 6 6"],
+  eye: ["M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z", "M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"],
   help: ["M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20z", "M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3", "M12 17h.01"],
   settings: ["M20 7h-9", "M14 17H5", "M17 20a3 3 0 1 0 0-6 3 3 0 0 0 0 6z", "M7 10a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"],
   home: ["M3 10.5 12 3l9 7.5", "M5 9.5V21h14V9.5", "M10 21v-6h4v6"],
@@ -1198,6 +1199,30 @@ function PokerTable({ startStack, name, avatar, soundOn, setSoundOn, onExit, onH
   const [drama, setDrama] = useState(false); // waiting on the last card of an all in
   const [thinking, setThinking] = useState(null); // a bot taking its time on a big decision
   const [coachNote, setCoachNote] = useState(null);
+  // serious tables: your cards stay face down, you hold to look, and everyone sees you look
+  const blindPeek = !!(ranked || tournament || vip);
+  const [peekOpen, setPeekOpen] = useState(false);
+  const [peekers, setPeekers] = useState({}); // seat id -> time they looked
+  const peekRef = useRef({ hand: 0, looks: 0, streets: {} });
+  const heroPeekStatsRef = useRef({ peeks: 0, onDraws: 0 });
+  function flashPeek(id) {
+    const t = Date.now();
+    setPeekers((m) => ({ ...m, [id]: t }));
+    setTimeout(() => mountedRef.current && setPeekers((m) => (m[id] === t ? (({ [id]: _, ...rest }) => rest)(m) : m)), 1500);
+  }
+  function onHeroPeek() {
+    const pr = peekRef.current;
+    if (pr.hand !== handsCount) { pr.hand = handsCount; pr.looks = 0; pr.streets = {}; }
+    pr.looks += 1;
+    flashPeek(0);
+    // a look after the flop is the tell bots pay attention to
+    if (community.length >= 3 && !pr.streets[stage]) {
+      pr.streets[stage] = true;
+      const st = heroPeekStatsRef.current; st.peeks += 1;
+      if (human && findDraws(human.hole, community)) st.onDraws += 1;
+      if (pr.looks > 1) setStatusText("You look at your cards again");
+    }
+  }
   const coachRef = useRef(null); const coachTimerRef = useRef(null);
 
   const botTimeoutRef = useRef(null); const flowTimeoutRef = useRef(null);
@@ -1253,7 +1278,7 @@ function PokerTable({ startStack, name, avatar, soundOn, setSoundOn, onExit, onH
     ps[sbIdx].contributed = ps[sbIdx].streetContributed = Math.min(SB, ps[sbIdx].stack); ps[sbIdx].stack -= ps[sbIdx].contributed;
     ps[bbIdx].contributed = ps[bbIdx].streetContributed = Math.min(BB, ps[bbIdx].stack); ps[bbIdx].stack -= ps[bbIdx].contributed;
     ps.forEach((p) => { if (!p.eliminated && p.stack === 0) p.allIn = true; });
-    setDeck(d); setPlayers(ps); setCommunity([]); setCommunity2(null); setDealerIdx(nDealer); setPreAction(null); setHoleRevealed(!squeeze); setAllInShow(false); setAllInOdds(null); setDrama(false); setThinking(null); setCoachNote(null);
+    setDeck(d); setPlayers(ps); setCommunity([]); setCommunity2(null); setDealerIdx(nDealer); setPreAction(null); setHoleRevealed(!squeeze); setAllInShow(false); setAllInOdds(null); setDrama(false); setThinking(null); setCoachNote(null); setPeekOpen(false); setPeekers({});
     setCurrentBet(BB); setMinRaise(BB); setStage("preflop"); setWinningIds(null); setWinnerBanner(null); setShowRaise(false); setCustomRaise(false); setConfirmFold(false);
     setStatusText(`Hand ${handsCount + 1}. Blinds ${SB}/${BB}.`);
     const firstToAct = nextAliveFrom(bbIdx, ps);
@@ -1293,6 +1318,15 @@ function PokerTable({ startStack, name, avatar, soundOn, setSoundOn, onExit, onH
     else if (curStage === "river") { nextStage = "showdown"; }
     const newCardCount = newCommunity.length - curCommunity.length;
     boardBaseRef.current = curCommunity.length;
+    // bots re-check their cards too: weak ones when they pick up a draw, sharp ones at random to fake it
+    if (blindPeek && nextStage !== "showdown") {
+      resetPs.forEach((bp) => {
+        if (bp.isHuman || bp.folded || bp.eliminated || !bp.hole.length) return;
+        const drawing = !!findDraws(bp.hole, newCommunity);
+        const chance = botSkill >= 0.6 ? 0.22 : drawing ? 0.65 : 0.08;
+        if (Math.random() < chance) setTimeout(() => mountedRef.current && flashPeek(bp.id), (500 + Math.random() * 1400) * speedMult);
+      });
+    }
     // the showdown stage only starts once the pot is paid, so Next hand can't skip the payout
     setStage(nextStage === "showdown" ? curStage : nextStage); setCommunity(newCommunity); setDeck(newDeck);
     if (nextStage !== "showdown") sound.flip(newCardCount, 0.12 * speedMult);
@@ -1512,6 +1546,11 @@ function PokerTable({ startStack, name, avatar, soundOn, setSoundOn, onExit, onH
     const opps = players.filter((q) => q.id !== p.id && !q.folded && !q.eliminated).length;
     const eq = skill >= 0.3 ? calcEquity(p.hole, community, Math.max(1, opps), 40 + Math.round(skill * 60)) / 100 : estimateStrength(p.hole, community);
     let strength = (eq + (Math.random() * 2 - 1) * 0.3 * (1 - skill)) * (1 + (pers.tight - 1) * 0.4);
+    if (blindPeek && skill >= 0.45 && peekRef.current.hand === handsCount && peekRef.current.streets[stage] && !players[0].folded) {
+      const hs = heroPeekStatsRef.current;
+      const readsDraw = hs.peeks >= 3 ? hs.onDraws / hs.peeks : 0.5;
+      strength += 0.1 * skill * readsDraw;
+    }
     const bluffing = Math.random() < pers.bluff * (0.6 + skill * 0.6);
     const toCall = currentBet - p.streetContributed; const potNow = pot;
     const potOdds = toCall > 0 ? toCall / (potNow + toCall) : 0;
@@ -1651,7 +1690,8 @@ function PokerTable({ startStack, name, avatar, soundOn, setSoundOn, onExit, onH
 
   const coachAdv = tutorial && humanTurn && holeRevealed ? coachAdvice({ hole: human.hole, board: community, eq: equity, toCall: Math.max(0, humanToCall), pot, stack: human.stack, streetIn: human.streetContributed, currentBet, bb: BB, opps: Math.max(1, oppCount), position: handMetaRef.current ? handMetaRef.current.position : "early" }) : null;
   coachRef.current = coachAdv ? { adv: coachAdv, eq: equity, toCall: Math.max(0, humanToCall), pot } : null;
-  const handLabel = human && human.hole.length > 0 && stage !== "idle" && stage !== "showdown" && holeRevealed ? describeCurrentHand(human.hole, community) : null;
+  const hiddenHand = blindPeek && !peekOpen && !allInShow;
+  const handLabel = human && human.hole.length > 0 && stage !== "idle" && stage !== "showdown" && (holeRevealed || blindPeek) && !hiddenHand ? describeCurrentHand(human.hole, community) : null;
   const dim = (id) => (stage === "showdown" && winningIds ? !winningIds.has(id) : false);
   const bots = players.slice(1);
   const busted = human && human.stack <= 0 && (stage === "idle" || stage === "showdown");
@@ -1765,6 +1805,7 @@ function PokerTable({ startStack, name, avatar, soundOn, setSoundOn, onExit, onH
                   <circle cx={ringSize / 2} cy={ringSize / 2} r={ringSize / 2 - 2} fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="2.5" />
                   <circle cx={ringSize / 2} cy={ringSize / 2} r={ringSize / 2 - 2} fill="none" stroke={timeLeft < 8 ? "#FF6B6B" : "#34D399"} strokeWidth="2.5" strokeDasharray={2 * Math.PI * (ringSize / 2 - 2)} strokeDashoffset={2 * Math.PI * (ringSize / 2 - 2) * (1 - timeLeft / turnSeconds)} style={{ transition: "stroke-dashoffset .25s linear" }} strokeLinecap="round" /></svg>)}
                 <div className="bot-av" style={{ width: avSize, height: avSize, background: AVATAR_COLORS[i], fontSize: compact ? 13 : 14 }}>{p.name[0]}</div>
+                {peekers[p.id] && <div className="peek-badge" aria-label={`${p.name} looks at their cards`}><Icon name="eye" size={11} stroke={2.4} /></div>}
                 {thinking === p.id && <div className="think-dots" aria-label={`${p.name} is thinking`}><i /><i /><i /></div>}
                 {dealerIdx === realIdx && !p.eliminated && <div className="dealer-chip">D</div>}
               </div>
@@ -1777,7 +1818,7 @@ function PokerTable({ startStack, name, avatar, soundOn, setSoundOn, onExit, onH
               <div style={{ height: tiny ? 30 : 34, display: "flex", alignItems: "center", justifyContent: "center", gap: 3 }}>
                 {revealed && p.hole.map((c, i2) => (<div key={c.id} className={`card mini${hc > 2 ? " m4" : ""}${dim(c.id) ? " dim" : ""}${winningIds && winningIds.has(c.id) ? " win" : ""}`} style={{ marginLeft: hc > 2 && i2 ? -7 : 0, animation: `flipIn .4s cubic-bezier(.2,.8,.2,1) ${i2 * 0.08}s backwards` }}><div style={{ color: suitColor[c.s], fontSize: 9, fontWeight: 700 }}>{rankLabel(c.r)}{SUIT_GLYPH[c.s]}</div></div>))}
                 {!revealed && inHand && (
-                  <div key={`b${handsCount}`} className={`backs${p.folded ? " folded" : ""}`}>
+                  <div key={`b${handsCount}`} className={`backs${p.folded ? " folded" : ""}${peekers[p.id] ? " peeking" : ""}`}>
                     {Array.from({ length: hc }).map((_, j) => <div key={j} className="card mini back" style={{ "--r": `${hc > 2 ? (j - 1.5) * 8 : j === 0 ? -7 : 7}deg`, marginLeft: j ? (hc > 2 ? -14 : -11) : 0, animation: `dealToSeat .42s cubic-bezier(.2,.8,.2,1) ${dealDelay(p.id, j)}s backwards` }} />)}
                   </div>
                 )}
@@ -1869,6 +1910,7 @@ function PokerTable({ startStack, name, avatar, soundOn, setSoundOn, onExit, onH
       <div className="hero-seat" style={{ borderColor: turnPulse ? "rgba(52,211,153,0.6)" : "rgba(244,247,252,0.08)", boxShadow: turnPulse ? "0 0 22px rgba(52,211,153,0.25)" : "none" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
           <div ref={(el) => { seatRefs.current[0] = el; }} style={{ position: "relative", width: 44, height: 44, flexShrink: 0 }}>
+            {peekers[0] && <div className="peek-badge hero" aria-label="You looked at your cards"><Icon name="eye" size={11} stroke={2.4} /></div>}
             {humanTurn && (<svg width="44" height="44" style={{ position: "absolute", top: 0, left: 0, transform: "rotate(-90deg)" }}>
               <circle cx="22" cy="22" r="20" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="2.5" />
               <circle cx="22" cy="22" r="20" fill="none" stroke={timeLeft < 8 ? "#FF6B6B" : "#34D399"} strokeWidth="2.5" strokeDasharray={2 * Math.PI * 20} strokeDashoffset={2 * Math.PI * 20 * (1 - timeLeft / turnSeconds)} style={{ transition: "stroke-dashoffset .25s linear" }} strokeLinecap="round" /></svg>)}
@@ -1884,7 +1926,9 @@ function PokerTable({ startStack, name, avatar, soundOn, setSoundOn, onExit, onH
         </div>
         <div style={{ display: "flex", gap: 6 }}>
           {human && human.hole.length > 0 ? (
-            squeeze && !holeRevealed && !human.folded && stage !== "showdown" ? (
+            blindPeek && !human.folded && stage !== "showdown" && !allInShow ? (
+              <PeekCards key={`pk${handsCount}`} cards={human.hole} suitColor={suitColor} omaha={human.hole.length > 2} delayFor={(i) => dealDelay(0, i)} open={peekOpen} setOpen={(v) => { setPeekOpen(v); if (v) { onHeroPeek(); sound.flip(1); } }} scale={cardScale} />
+            ) : squeeze && !holeRevealed && !human.folded && stage !== "showdown" ? (
               <SqueezeCards key={`sq${handsCount}`} cards={human.hole} suitColor={suitColor} omaha={human.hole.length > 2} delayFor={(i) => dealDelay(0, i)} onReveal={revealHole} />
             ) : human.hole.map((c, i) => (<div key={c.id} className={`card big${human.hole.length > 2 ? " o4" : ""}${dim(c.id) ? " dim" : ""}${winningIds && winningIds.has(c.id) ? " win" : ""}${human.folded ? " mucked" : ""}`} style={{ animation: holeRevealed && squeeze ? "none" : `dealToHero .5s cubic-bezier(.2,.85,.25,1) ${dealDelay(0, i)}s backwards`, ...(cardScale !== 1 && human.hole.length <= 2 ? { width: 64 * cardScale, height: 90 * cardScale, fontSize: 22 * cardScale } : {}) }}><div style={{ color: suitColor[c.s] }}>{rankLabel(c.r)}</div><div style={{ color: suitColor[c.s], fontSize: "0.85em" }}>{SUIT_GLYPH[c.s]}</div></div>))
           ) : (<><div className="card big back" style={{ animation: "none" }} /><div className="card big back" style={{ animation: "none" }} /></>)}
@@ -2048,6 +2092,22 @@ function PokerTable({ startStack, name, avatar, soundOn, setSoundOn, onExit, onH
 }
 
 // Your hole cards start face down: drag up to peel them back from the bottom, or tap to flip.
+// Hold to look. Let go and they flip back. Every look shows on your seat.
+function PeekCards({ cards, suitColor, omaha, delayFor, open, setOpen, scale = 1 }) {
+  const end = () => setOpen(false);
+  const sz = scale !== 1 && !omaha ? { width: 64 * scale, height: 90 * scale, fontSize: 22 * scale } : {};
+  return (
+    <div className="peek" onPointerDown={(e) => { e.preventDefault(); setOpen(true); }} onPointerUp={end} onPointerLeave={end} onPointerCancel={end} onContextMenu={(e) => e.preventDefault()}
+      role="button" tabIndex={0} aria-label="Hold to look at your cards" onKeyDown={(e) => { if (e.key === " " || e.key === "Enter") setOpen(true); }} onKeyUp={end}>
+      {cards.map((c, i) => (
+        <div key={c.id} className={`card big${omaha ? " o4" : ""}${open ? " peek-open" : " back"}`} style={{ animation: `dealToHero .5s cubic-bezier(.2,.85,.25,1) ${delayFor(i)}s backwards`, ...sz }}>
+          {open && <><div style={{ color: suitColor[c.s] }}>{rankLabel(c.r)}</div><div style={{ color: suitColor[c.s], fontSize: "0.85em" }}>{SUIT_GLYPH[c.s]}</div></>}
+        </div>
+      ))}
+      {!open && <div className="sq-hint">Hold to look</div>}
+    </div>
+  );
+}
 function SqueezeCards({ cards, suitColor, omaha, delayFor, onReveal }) {
   const [peel, setPeel] = useState(0);
   const [dragging, setDragging] = useState(false);
@@ -4657,6 +4717,15 @@ body.theme-cardroom .mode-tile .mode-title { font-size: 15px; }
 body.theme-montecarlo .mode-tile .mode-title { font-size: 14px; letter-spacing: 0.02em; }
 body.theme-montecarlo .play-fab-disc { width: 36px; height: 36px; margin-top: 4px; margin-bottom: 6px; }
 body.theme-montecarlo .play-fab span:last-child { margin-top: 2px !important; }
+/* ---- hold to peek ---- */
+.peek { display: flex; gap: 6px; position: relative; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; cursor: pointer; }
+.peek .card.peek-open { transform: translateY(-6px) rotate(-1deg); transition: transform .12s ease; }
+.peek .card.peek-open + .card.peek-open { transform: translateY(-6px) rotate(1.5deg); }
+.peek-badge { position: absolute; top: -6px; left: -8px; z-index: 3; width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: var(--t-accent); color: #0B1426; box-shadow: 0 2px 6px rgba(0,0,0,0.4); animation: peekPop 1.5s ease forwards; }
+.peek-badge.hero { top: -4px; left: -4px; }
+@keyframes peekPop { 0% { opacity: 0; transform: scale(.4); } 12% { opacity: 1; transform: scale(1.15); } 22% { transform: scale(1); } 80% { opacity: 1; } 100% { opacity: 0; } }
+.backs.peeking .card.mini { animation: peekLift .9s ease; }
+@keyframes peekLift { 0%, 100% { transform: rotate(var(--r, 0deg)); } 30%, 70% { transform: rotate(var(--r, 0deg)) translateY(-5px) scaleY(0.82); } }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; transition-duration: 0.01ms !important; }
 }
