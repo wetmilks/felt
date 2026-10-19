@@ -130,6 +130,13 @@ const real = {
       leave() { try { c.removeChannel(ch); } catch (e) { /* already gone */ } },
     };
   },
+  // Legend number: one plus everyone at Champion with more RP than you
+  async legendRank(me, rating) {
+    const c = await sb();
+    const { count, error } = await c.from("profiles").select("id", { count: "exact", head: true }).eq("placed", true).gte("rating", 1500).gt("rating", rating).neq("id", me.id);
+    if (error) throw new Error(friendly(error));
+    return (count || 0) + 1;
+  },
   async token() { const c = await sb(); const { data } = await c.auth.getSession(); return data && data.session ? data.session.access_token : null; },
   // live table updates, with a slow poll underneath in case the live connection drops
   async watchTable(id, onRow) {
@@ -207,6 +214,7 @@ const mock = {
       leave() { clearInterval(t); const m = read(); delete m[me.id]; write(m); },
     };
   },
+  async legendRank(me, rating) { await wait(); return Object.values(mload().profiles).filter((p) => p.id !== me.id && p.placed && p.rating >= 1500 && p.rating > rating).length + 1; },
   async token() { const id = localStorage.getItem(MSES); return id ? `tok-${id}` : null; },
   async watchTable(id, onRow) {
     let on = true;
@@ -248,6 +256,7 @@ export const cloud = {
   pushSave: (me, save, profile) => be().pushSave(me, save, profile),
   getProfile: (id) => be().getProfile(id),
   top: (kind) => be().top(kind),
+  legendRank: (me, rating) => be().legendRank(me, rating),
   watchTable: (id, cb) => be().watchTable(id, cb),
   holes: (id, me) => be().holes(id, me),
   claimPayouts: (me) => be().claimPayouts(me),

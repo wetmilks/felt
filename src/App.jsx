@@ -269,6 +269,10 @@ const PAT = (() => {
     carbon: svgBg(6, 6, `<rect width='3' height='3' fill='${W}' fill-opacity='0.07'/><rect x='3' y='3' width='3' height='3' fill='${W}' fill-opacity='0.07'/><path d='M0 0.4H3M3 3.4H6' stroke='${W}' stroke-opacity='0.12' stroke-width='0.5'/>`),
     quilt: svgBg(10, 10, `<path d='M5 0L10 5L5 10L0 5Z' fill='none' stroke='#FFF6D6' stroke-opacity='0.55' stroke-width='0.6'/><path d='M5 0.9L9.1 5' stroke='#7A4E0E' stroke-opacity='0.35' stroke-width='0.6'/>`),
     foilMark: svgBg(40, 56, `<circle cx='20' cy='28' r='9.5' fill='#8A5A12' fill-opacity='0.55'/><circle cx='20' cy='28' r='9.5' fill='none' stroke='#FFF3C4' stroke-opacity='0.8' stroke-width='0.7'/>${spade(16, 23.5, 0.8, "#FFF3C4", 0.95)}`),
+    // prestige: a twelve point gold star over violet quilting, only for players who've finished a season at Champion
+    prestigeMark: svgBg(40, 56, `<circle cx='20' cy='28' r='11' fill='#1A0A33' fill-opacity='0.75'/><polygon points='${Array.from({ length: 24 }, (_, k) => { const r = k % 2 ? 4.6 : 9.6; const a = (k * 15 - 90) * Math.PI / 180; return `${(20 + r * Math.cos(a)).toFixed(2)},${(28 + r * Math.sin(a)).toFixed(2)}`; }).join(" ")}' fill='#F2C14E'/><circle cx='20' cy='28' r='3.3' fill='#B04BFF'/><circle cx='20' cy='28' r='11' fill='none' stroke='#F2C14E' stroke-opacity='0.7' stroke-width='0.6'/>`),
+    prestigeQuilt: svgBg(8, 8, `<path d='M4 0L8 4L4 8L0 4Z' fill='none' stroke='#E9B8FF' stroke-opacity='0.22' stroke-width='0.6'/><circle cx='4' cy='4' r='0.6' fill='#F2C14E' fill-opacity='0.5'/>`),
+    prestigeFelt: svgBg(30, 30, `<path d='M15 0L30 15L15 30L0 15Z' fill='none' stroke='#F2C14E' stroke-opacity='0.07'/><path d='M15 11L16.2 13.8L19 15L16.2 16.2L15 19L13.8 16.2L11 15L13.8 13.8Z' fill='#F2C14E' fill-opacity='0.08'/>`),
     // felts
     herring: svgBg(16, 8, `<path d='M0 8L8 0M8 8L16 0' stroke='${W}' stroke-opacity='0.05' stroke-width='2.4'/><path d='M8 8L0 0M16 8L8 0' stroke='#000' stroke-opacity='0.05' stroke-width='2.4'/>`),
     lattice: svgBg(22, 22, `<path d='M11 0L22 11L11 22L0 11Z' fill='none' stroke='${W}' stroke-opacity='0.05'/>`),
@@ -283,6 +287,7 @@ const CARD_BACKS = [
   { key: "midnight", label: "Sunburst", cost: 2500, a: "#141C33", b: "#0A0F1F", ring: "#F2C14E", img: PAT.sunburst, size: "100% 100%" },
   { key: "neon", label: "Synthwave", pass: 10, a: "#5B2AA8", b: "#C02679", ring: "#FFD1F0", img: `${PAT.synthSun}, ${PAT.synthGrid}, linear-gradient(180deg, #3A1670, #C02679)`, size: "100% 100%, 7px 7px, 100% 100%" },
   { key: "carbon", label: "Carbon", pass: 20, a: "#22262E", b: "#121418", ring: "#9AA4B2", img: PAT.carbon, size: "5px 5px" },
+  { key: "prestige", label: "Prestige Gold", prestige: 1, a: "#2A0E4A", b: "#14062A", ring: "#F2C14E", img: `${PAT.prestigeMark}, ${PAT.prestigeQuilt}`, size: "100% 100%, 7px 7px" },
   { key: "foil", label: "Gold Foil", pass: 30, a: "#D9A53A", b: "#9C6A16", ring: "#FFF3C4", img: `${PAT.foilMark}, ${PAT.quilt}, linear-gradient(135deg, #F6D77A, #C88F27 50%, #F2CB6A)`, size: "100% 100%, 8px 8px, 100% 100%" },
 ];
 const FELTS = [
@@ -291,9 +296,12 @@ const FELTS = [
   { key: "crimson", label: "Bordeaux", cost: 1500, c1: "#9E2F3E", c2: "#701C2A", c3: "#4A0F1A", rail: "#24170F", tex: PAT.lattice, texSize: "22px 22px", line: "rgba(233,190,110,0.55)" },
   { key: "purple", label: "Velvet", pass: 5, c1: "#8A4FD6", c2: "#5E2DA3", c3: "#3B1A6E", rail: "#221A33", tex: "radial-gradient(40% 30% at 30% 30%, rgba(255,255,255,0.10), transparent 70%), radial-gradient(35% 28% at 72% 68%, rgba(255,255,255,0.07), transparent 70%), radial-gradient(30% 40% at 60% 20%, rgba(0,0,0,0.12), transparent 70%)", texSize: "100% 100%" },
   { key: "ocean", label: "Lagoon", pass: 15, c1: "#1FB5AE", c2: "#0F7E78", c3: "#09524E", rail: "#E8DCC0", tex: PAT.ripple, texSize: "60px 60px" },
+  { key: "prestige", label: "Prestige", prestige: 2, c1: "#5B2A9E", c2: "#3B1670", c3: "#210A44", rail: "#C9A24D", tex: PAT.prestigeFelt, texSize: "30px 30px", line: "rgba(242,193,78,0.55)" },
   { key: "blackout", label: "Onyx", cost: 4000, c1: "#2C323C", c2: "#191D24", c3: "#0D0F13", rail: "#C9A24D", tex: PAT.hex, texSize: "14px 24px", line: "rgba(201,162,77,0.5)" },
 ];
 const findBack = (k) => CARD_BACKS.find((b) => b.key === k) || CARD_BACKS[0];
+// prestige gear isn't bought, it unlocks when your prestige count gets there
+const ownsCosmetic = (cos, field, item, prestige) => cos[field].includes(item.key) || (!!item.prestige && (prestige || 0) >= item.prestige);
 const findFelt = (k) => FELTS.find((f) => f.key === k) || FELTS[0];
 function defaultCosmetics() { return { backs: ["blue"], felts: ["green"], cardBack: "blue", felt: "green" }; }
 
@@ -580,14 +588,27 @@ const VIP_BACK = { key: "vipback", label: "VIP", a: "#14161B", b: "#0B0C0F", rin
 
 // Prestige: hit Champion, reset to Bronze, keep a badge that counts how many times you've done it.
 const PRESTIGE_REWARD = 10000;
-const canPrestige = (r) => isPlaced(r) && r.rating >= 1500;
+// Prestige comes from seasons now: finish a month at Champion and it's yours. Nobody gets sent back to Bronze.
+const canPrestige = () => false;
+const PRESTIGE_PERKS = [
+  { n: 1, label: "Prestige Gold card back" },
+  { n: 2, label: "Prestige felt" },
+  { n: 3, label: "Gold shimmer on your name" },
+  { n: 5, label: "Crown on your seat" },
+  { n: 10, label: "Black diamond badge" },
+];
+const pnameCls = (n) => ((n || 0) >= 3 ? "pname" : "");
 // Who you get matched against. After a prestige your badge says Bronze but this stays at your real level.
-const matchRating = (r) => Math.max(r.rating || 0, r.mmr != null ? r.mmr : r.prestige ? Math.max(1500, r.peakRating || 0) : 0);
+const matchRating = (r) => r.rating || 0;
 // Climbing back after a prestige: wins count extra and losses sting less until your badge catches up.
-function prestigeBoost(r) { if (!r.prestige) return 1; const gap = matchRating(r) - (r.rating || 0); return gap >= 900 ? 3 : gap >= 300 ? 2 : 1; }
+function prestigeBoost() { return 1; }
 // A gold starburst around a gem medallion. The gem changes color as your prestige count climbs.
 const PRESTIGE_COLORS = [[1, "#F3B4FF", "#B04BFF", "#5B1599"], [3, "#FFB3C4", "#F0436B", "#8A0F2E"], [5, "#B8F4FF", "#22B8E0", "#0B5470"], [10, "#3A3A44", "#17171D", "#000000"]];
 const BURST = (() => { const pts = []; for (let i = 0; i < 24; i++) { const r = i % 2 ? 17.5 : 23.5; const a = (i * 15 - 90) * Math.PI / 180; pts.push(`${(24 + r * Math.cos(a)).toFixed(2)},${(24 + r * Math.sin(a)).toFixed(2)}`); } return pts.join(" "); })();
+// Prestige 5 and up: a small gold crown sits on top of your avatar
+function CrownMark({ size = 14, top = -9 }) {
+  return <span className="crown-mark" style={{ top, width: size + 6, height: size + 2 }} aria-label="Prestige crown"><Icon name="crown" size={size} stroke={2} /></span>;
+}
 function PrestigeBadge({ n, size = 18 }) {
   if (!n) return null;
   let pal = PRESTIGE_COLORS[0]; for (const c of PRESTIGE_COLORS) if (n >= c[0]) pal = c;
@@ -688,14 +709,23 @@ function rolloverSeason(ranked) {
   if (!ranked || ranked.seasonId === season) return ranked;
   if (!isPlaced(ranked)) return { ...ranked, seasonId: season };
   const softReset = Math.round(RANK_RESET_TARGET + (ranked.rating - RANK_RESET_TARGET) * 0.5);
-  const mmrReset = ranked.mmr != null ? Math.round(RANK_RESET_TARGET + (ranked.mmr - RANK_RESET_TARGET) * 0.5) : undefined;
-  return { ...ranked, rating: softReset, ...(mmrReset != null ? { mmr: Math.max(mmrReset, softReset) } : {}), seasonId: season, history: [...(ranked.history || []), { seasonId: ranked.seasonId, rating: ranked.rating, tier: tierForRating(ranked.rating).key }].slice(-6) };
+  // finishing the month at Champion is what earns a prestige
+  const champ = ranked.rating >= 1500;
+  const prestige = (ranked.prestige || 0) + (champ ? 1 : 0);
+  const seasonEnd = { seasonId: ranked.seasonId, from: Math.round(ranked.rating), to: softReset, champ, prestige, rewarded: false, seen: false };
+  return { ...ranked, rating: softReset, mmr: undefined, prestige, seasonWins: champ ? [...(ranked.seasonWins || []), ranked.seasonId] : ranked.seasonWins || [], seasonEnd, seasonId: season, history: [...(ranked.history || []), { seasonId: ranked.seasonId, rating: ranked.rating, tier: tierForRating(ranked.rating).key }].slice(-6) };
 }
 function defaultRanked() { return { schema: 2, placed: false, placementGames: [], rating: 0, peakRating: 0, wins: 0, losses: 0, streak: 0, seasonId: currentSeasonId(), history: [], frames: [], frame: null, recent: [], report: null }; }
 // Older saves used a different ladder. Keep cosmetics and history, send everyone through placements once.
 function migrateRanked(r) {
   if (!r) return defaultRanked();
-  if (r.schema === 2) return { ...defaultRanked(), ...r };
+  if (r.schema === 2) {
+    const out = { ...defaultRanked(), ...r };
+    // the old prestige button sent people to Bronze with a hidden rating; put them where a season reset would have
+    if (out.mmr != null && out.mmr > (out.rating || 0) + 100) out.rating = Math.max(out.rating || 0, Math.round(RANK_RESET_TARGET + (out.mmr - RANK_RESET_TARGET) * 0.5));
+    delete out.mmr;
+    return out;
+  }
   return { ...defaultRanked(), frames: [...new Set((r.frames || []).map((f) => String(f).replace(/^frame_/, "")))], frame: null, history: [] };
 }
 
@@ -2074,6 +2104,7 @@ function PokerTable({ startStack, name, avatar, photo = null, soundOn, setSoundO
         <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
           <div ref={(el) => { seatRefs.current[0] = el; }} style={{ position: "relative", width: 44, height: 44, flexShrink: 0 }}>
             {peekOpen && <div className="peek-badge hero" aria-label="You looked at your cards"><Icon name="eye" size={11} stroke={2.4} /></div>}
+            {prestige >= 5 && <CrownMark />}
             {humanTurn && (<svg width="44" height="44" style={{ position: "absolute", top: 0, left: 0, transform: "rotate(-90deg)" }}>
               <circle cx="22" cy="22" r="20" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="2.5" />
               <circle cx="22" cy="22" r="20" fill="none" stroke={timeLeft < 8 ? "#FF6B6B" : ringColor} strokeWidth="2.5" strokeDasharray={2 * Math.PI * 20} strokeDashoffset={2 * Math.PI * 20 * (1 - timeLeft / turnSeconds)} style={{ transition: "stroke-dashoffset .25s linear" }} strokeLinecap="round" /></svg>)}
@@ -2081,7 +2112,7 @@ function PokerTable({ startStack, name, avatar, photo = null, soundOn, setSoundO
             {dealerIdx === 0 && <div className="dealer-chip" style={{ bottom: -1, right: -1 }}>D</div>}
           </div>
           <div style={{ minWidth: 0 }}>
-            <div style={{ fontSize: 13.5, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", display: "flex", alignItems: "center", gap: 5 }}>{human?.name}<PrestigeBadge n={prestige} size={15} /></div>
+            <div style={{ fontSize: 13.5, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", display: "flex", alignItems: "center", gap: 5 }}><span className={pnameCls(prestige)}>{human?.name}</span><PrestigeBadge n={prestige} size={15} /></div>
             {title && title !== "rookie" && <TitleTag k={title} size={10.5} style={{ display: "block", marginTop: -1 }} />}
             <div className="num" style={{ fontSize: 12, color: "var(--t-mid)" }}>{(human?.stack ?? 0).toLocaleString()}{ranked && handsCount > 0 && !rankedResult && <span className="standing">{ordinal(rankedPlace)} of {players.length}</span>}</div>
             {human?.streetContributed > 0 && <div className={`chip-badge${collecting ? " collecting" : ""}`} style={{ marginTop: 3 }}><ChipStack amount={human.streetContributed} small vip={vip} />{human.streetContributed.toLocaleString()}</div>}
@@ -2621,24 +2652,22 @@ function SizePicker({ value, onChange }) {
 }
 
 // Every rank from the top down, where you are on it, how RP works, and prestige.
-function RankLadderModal({ ranked, onClose, onPrestige }) {
+function RankLadderModal({ ranked, legendNo, onClose }) {
   const placed = isPlaced(ranked);
   const rating = placed ? Math.round(ranked.rating) : null;
   const myTier = tierOf(ranked);
   const prog = placed ? rankProgress(ranked.rating) : null;
   const meRef = useRef(null);
   useEffect(() => { if (meRef.current && meRef.current.scrollIntoView) meRef.current.scrollIntoView({ block: "center" }); }, []);
-  const ready = canPrestige(ranked);
-  const toChamp = placed ? Math.max(0, 1500 - rating) : null;
+  const pres = ranked.prestige || 0;
   const tiers = RANK_TIERS.slice().reverse();
   return (
     <Modal title="Ranks" onClose={onClose} width={420}>
       <div className="ladder-me" style={{ borderColor: `${myTier.color}66`, background: `linear-gradient(135deg, ${myTier.color}22, rgba(22,38,68,0.9))` }}>
         <TierBadge tier={myTier} size={52} div={placed ? divisionOf(ranked.rating) : null} />
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 6, fontFamily: DISPLAY_FONT, fontSize: 20, fontWeight: 600, color: myTier.color }}>{placed ? rankName(ranked.rating) : "Unranked"}<PrestigeBadge n={ranked.prestige} size={18} /></div>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, fontFamily: DISPLAY_FONT, fontSize: 20, fontWeight: 600, color: myTier.color }}>{placed ? legendLabel(ranked, legendNo) || rankName(ranked.rating) : "Unranked"}<PrestigeBadge n={ranked.prestige} size={18} /></div>
           <div className="num" style={{ fontSize: 12, color: "var(--t-sub)", marginTop: 2 }}>{placed ? `${rating.toLocaleString()} RP${prog.nextLabel ? `, ${prog.toNext} to ${prog.nextLabel}` : ""}` : `${(ranked.placementGames || []).length} of ${PLACEMENT_MATCHES} placement matches played`}</div>
-          {placed && prestigeBoost(ranked) > 1 && <div style={{ fontSize: 11.5, color: "#E9B8FF", marginTop: 3 }}>Matched at {rankName(matchRating(ranked))}, wins count x{prestigeBoost(ranked)}</div>}
           {placed && <div className="bar" style={{ marginTop: 8, height: 6 }}><div style={{ width: `${prog.pct * 100}%`, background: myTier.color }} /></div>}
         </div>
       </div>
@@ -2654,7 +2683,7 @@ function RankLadderModal({ ranked, onClose, onPrestige }) {
                 <TierBadge tier={t} size={38} />
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 15, fontWeight: 700, color: t.color }}>{t.label}</div>
-                  <div style={{ fontSize: 11, color: "var(--t-mut)" }}>{isChamp ? "1,500 RP and up" : `${t.min.toLocaleString()} to ${(t.min + 299).toLocaleString()} RP`}{t.min > 0 ? (owned ? ", frame unlocked" : ", unlocks a frame") : ""}</div>
+                  <div style={{ fontSize: 11, color: "var(--t-mut)" }}>{isChamp ? "1,500 RP and up, ranked by Legend number" : `${t.min.toLocaleString()} to ${(t.min + 299).toLocaleString()} RP`}{t.min > 0 ? (owned ? ", frame unlocked" : ", unlocks a frame") : ""}</div>
                 </div>
               </div>
               <div className="ladder-divs">
@@ -2677,27 +2706,44 @@ function RankLadderModal({ ranked, onClose, onPrestige }) {
       <div className="ladder-section">
         <div className="ladder-h">How RP works</div>
         <div className="ladder-p">Each ranked match is {RANKED_MATCH_HANDS} hands. Where you finish in chips decides most of it: first place is the big gain, last place the big loss. Clearing the table, knockouts, smart decisions and win streaks add more. Leaving early costs 30 RP.</div>
-        <div className="ladder-p">Each tier has three divisions of {DIV_SIZE} RP. Higher ranks match you against tougher players. Ranks soft reset at the start of every month.</div>
+        <div className="ladder-p">Each tier has three divisions of {DIV_SIZE} RP. Higher ranks match you against tougher players. Champion has no divisions. Instead you get a Legend number, your spot among every real player at Champion.</div>
       </div>
 
       <div className="ladder-section prestige-box">
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <PrestigeBadge n={(ranked.prestige || 0) + 1} size={34} />
+          <PrestigeBadge n={Math.max(1, pres)} size={34} />
           <div style={{ flex: 1 }}>
-            <div className="ladder-h" style={{ margin: 0 }}>Prestige</div>
-            <div style={{ fontSize: 11.5, color: "#C9B8F5" }}>{ranked.prestige ? `You're Prestige ${ranked.prestige}` : "Not prestiged yet"}</div>
+            <div className="ladder-h" style={{ margin: 0 }}>Seasons and prestige</div>
+            <div style={{ fontSize: 11.5, color: "#C9B8F5" }}>{pres ? `Prestige ${pres}` : "No prestige yet"} · season ends in {daysLeftInSeason()} days</div>
           </div>
         </div>
-        <div className="ladder-p" style={{ marginTop: 8 }}>Hit Champion, then reset to Bronze to climb again. You get {PRESTIGE_REWARD.toLocaleString()} chips and a badge next to your name that counts every prestige. You keep your frames, titles and stats, and you still get matched against players at your real level, not Bronze. Wins count up to 3x until your badge catches up.</div>
-        <button className="btn prestige-btn" style={{ width: "100%", marginTop: 6 }} disabled={!ready} onClick={() => onPrestige && onPrestige()}>
-          {ready ? `Prestige to ${(ranked.prestige || 0) + 1}` : placed ? `${toChamp.toLocaleString()} RP to Champion` : "Finish placements first"}
-        </button>
+        <div className="ladder-p" style={{ marginTop: 8 }}>Every month is a season. Finish it at Champion and you earn a prestige plus {PRESTIGE_REWARD.toLocaleString()} chips. When a new season starts, everyone's RP comes partway back toward Gold, so you climb again, but nobody drops to Bronze.</div>
+        <div className="perk-list">
+          {PRESTIGE_PERKS.map((pk) => {
+            const got = pres >= pk.n;
+            return (
+              <div key={pk.n} className={`perk${got ? " got" : ""}`}>
+                <PrestigeBadge n={pk.n} size={22} />
+                <span style={{ flex: 1 }}>{pk.label}</span>
+                {got ? <Icon name="check" size={14} stroke={2.6} style={{ color: "var(--t-good)" }} /> : <span className="num" style={{ fontSize: 11, color: "var(--t-faint)" }}>Prestige {pk.n}</span>}
+              </div>
+            );
+          })}
+        </div>
+        {(ranked.history || []).length > 0 && (<>
+          <div className="ladder-h" style={{ marginTop: 12 }}>Past seasons</div>
+          {(ranked.history || []).slice().reverse().map((h) => { const t = RANK_TIERS.find((x) => x.key === h.tier) || RANK_TIERS[0]; const [yy, mm] = String(h.seasonId).split("-"); const name = new Date(+yy, +mm - 1, 1).toLocaleString("en-US", { month: "short", year: "numeric" }); return (
+            <div key={h.seasonId} className="perk"><TierBadge tier={t} size={22} /><span style={{ flex: 1 }}>{name}</span><span style={{ fontSize: 12, fontWeight: 600, color: t.color }}>{t.label}{(ranked.seasonWins || []).includes(h.seasonId) ? " · Prestige" : ""}</span></div>
+          ); })}
+        </>)}
       </div>
     </Modal>
   );
 }
 
-function RankedCard({ ranked, chips, onPlay, onPrestige, onInfo }) {
+// At Champion the tiers run out, so you get a Legend number: your spot among every real Champion
+const legendLabel = (ranked, legendNo) => (isPlaced(ranked) && ranked.rating >= 1500 ? (legendNo ? `Legend #${legendNo}` : "Champion") : null);
+function RankedCard({ ranked, legendNo, chips, onPlay, onInfo }) {
   const placed = isPlaced(ranked);
   const tier = tierOf(ranked);
   const prog = placed ? rankProgress(ranked.rating) : null;
@@ -2713,9 +2759,8 @@ function RankedCard({ ranked, chips, onPlay, onPrestige, onInfo }) {
       <div style={{ display: "flex", alignItems: "center", gap: 14, margin: "16px 0 14px" }}>
         <button className="ranked-badge-btn" onClick={onInfo} aria-label="See all ranks"><TierBadge tier={tier} size={58} div={placed ? divisionOf(ranked.rating) : null} /></button>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontFamily: DISPLAY_FONT, fontSize: 25, fontWeight: 600, color: tier.color, lineHeight: 1.05, display: "flex", alignItems: "center", gap: 8 }}>{placed ? rankName(ranked.rating) : "Unranked"}<PrestigeBadge n={ranked.prestige} size={20} /></div>
-          <div className="num" style={{ fontSize: 13, color: "var(--t-sub)", marginTop: 4 }}>{placed ? `${Math.round(ranked.rating).toLocaleString()} RP` : `${games.length} of ${PLACEMENT_MATCHES} placement matches`}</div>
-          {placed && prestigeBoost(ranked) > 1 && <div style={{ fontSize: 11.5, color: "#E9B8FF", marginTop: 2 }}>Matched at {rankName(matchRating(ranked))}, wins x{prestigeBoost(ranked)}</div>}
+          <div style={{ fontFamily: DISPLAY_FONT, fontSize: 25, fontWeight: 600, color: tier.color, lineHeight: 1.05, display: "flex", alignItems: "center", gap: 8 }}>{placed ? legendLabel(ranked, legendNo) || rankName(ranked.rating) : "Unranked"}<PrestigeBadge n={ranked.prestige} size={20} /></div>
+          <div className="num" style={{ fontSize: 13, color: "var(--t-sub)", marginTop: 4 }}>{placed ? `${Math.round(ranked.rating).toLocaleString()} RP${legendNo && ranked.rating >= 1500 ? " · Champion" : ""}` : `${games.length} of ${PLACEMENT_MATCHES} placement matches`}</div>
         </div>
         {placed && ranked.wins + ranked.losses > 0 && (
           <div style={{ textAlign: "right" }}>
@@ -2727,7 +2772,7 @@ function RankedCard({ ranked, chips, onPlay, onPrestige, onInfo }) {
       {placed ? (
         <>
           <div className="bar"><div style={{ width: `${prog.pct * 100}%`, background: tier.color }} /></div>
-          <div style={{ fontSize: 12, color: "var(--t-mut)", marginTop: 7 }}>{prog.nextLabel ? `${prog.toNext} RP to ${prog.nextLabel}` : "Top of the ladder"}</div>
+          <div style={{ fontSize: 12, color: "var(--t-mut)", marginTop: 7 }}>{prog.nextLabel ? `${prog.toNext} RP to ${prog.nextLabel}` : legendNo ? "Finish the month here to earn a prestige" : "Finish the month at Champion to earn a prestige"}</div>
         </>
       ) : (
         <>
@@ -2735,8 +2780,7 @@ function RankedCard({ ranked, chips, onPlay, onPrestige, onInfo }) {
           <div style={{ fontSize: 12, color: "var(--t-mut)", marginTop: 10, textAlign: "center" }}>Play {PLACEMENT_MATCHES} matches and we'll read your game to set your rank.</div>
         </>
       )}
-      {canPrestige(ranked) && onPrestige && <button className="btn prestige-btn" style={{ width: "100%", marginTop: 14 }} onClick={onPrestige}>Prestige for a badge and {PRESTIGE_REWARD / 1000}k chips</button>}
-      <button className="btn btn-raise shine" style={{ width: "100%", marginTop: canPrestige(ranked) ? 8 : 18 }} disabled={locked} onClick={onPlay}>
+      <button className="btn btn-raise shine" style={{ width: "100%", marginTop: 18 }} disabled={locked} onClick={onPlay}>
         {locked ? `You need ${RANKED_BUYIN.toLocaleString()} chips to buy in` : placed ? "Play ranked" : `Play placement match ${games.length + 1}`}
       </button>
     </section>
@@ -2979,7 +3023,7 @@ function VipCard({ chips, onOpen }) {
   );
 }
 
-function HomeMenu({ onPlayAI, onFriendsTable, data, chips, ranked, onClaimDaily, onClaimChallenge, onSpin, onPrestige, sound }) {
+function HomeMenu({ onPlayAI, onFriendsTable, data, chips, ranked, legendNo, onClaimDaily, onClaimChallenge, onSpin, onPrestige, sound }) {
   const [modal, setModal] = useState(null); // "ranked" | "cash" | "tournament" | "pass"
   const [size, setSize] = useState(TABLE_SIZES[1]);
   const [tBuyIn, setTBuyIn] = useState(TOURNEY_BUYINS[0]);
@@ -3006,7 +3050,7 @@ function HomeMenu({ onPlayAI, onFriendsTable, data, chips, ranked, onClaimDaily,
       <StreakBanner streak={data.streak} onClaim={onClaimDaily} />
       <div style={{ marginBottom: 14 }}><SpinCard ready={spinReady(data)} onOpen={() => setModal("spin")} /></div>
 
-      <div style={{ marginBottom: 14 }}><RankedCard ranked={ranked} chips={chips} onPlay={() => setModal("ranked")} onPrestige={() => setModal("prestige")} onInfo={() => setModal("ladder")} /></div>
+      <div style={{ marginBottom: 14 }}><RankedCard ranked={ranked} legendNo={legendNo} chips={chips} onPlay={() => setModal("ranked")} onInfo={() => setModal("ladder")} /></div>
 
       <div className="mode-grid">
         {modes.map((o) => (
@@ -3028,25 +3072,7 @@ function HomeMenu({ onPlayAI, onFriendsTable, data, chips, ranked, onClaimDaily,
 
       {modal === "pass" && <PassModal pass={data.pass} onClose={close} />}
       {modal === "spin" && <SpinModal ready={spinReady(data)} onSpin={onSpin} onClose={close} sound={sound} />}
-      {modal === "ladder" && <RankLadderModal ranked={ranked} onClose={close} onPrestige={() => setModal("prestige")} />}
-      {modal === "prestige" && (
-        <Modal title="Prestige" onClose={close}>
-          <div style={{ display: "flex", justifyContent: "center", margin: "4px 0 12px" }}><PrestigeBadge n={(ranked.prestige || 0) + 1} size={56} /></div>
-          <p className="sheet-body" style={{ marginTop: 0 }}>You made Champion. Prestige resets your badge to Bronze so you can climb again, and you keep a badge that shows how many times you've done it. You still play against Champion-level players, and wins count up to 3x until you're back on top.</p>
-          <div className="kv-list">
-            <div className="kv"><span>New rank</span><b>Bronze I</b></div>
-            <div className="kv"><span>Badge</span><b>Prestige {(ranked.prestige || 0) + 1}</b></div>
-            <div className="kv"><span>Bonus</span><b className="num">{PRESTIGE_REWARD.toLocaleString()} chips</b></div>
-            <div className="kv"><span>Matched against</span><b>{rankName(matchRating(ranked))} players</b></div>
-            <div className="kv"><span>Climb back</span><b>Up to 3x RP per win</b></div>
-            <div className="kv"><span>You keep</span><b>Frames, titles, stats, peak rank</b></div>
-          </div>
-          <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
-            <button className="btn" onClick={close}>Not yet</button>
-            <button className="btn btn-raise shine" onClick={() => { onPrestige(); close(); }}>Prestige</button>
-          </div>
-        </Modal>
-      )}
+      {modal === "ladder" && <RankLadderModal ranked={ranked} legendNo={legendNo} onClose={close} />}
       {modal === "vip" && (
         <Modal onClose={close} width={380} className="vip-sheet">
           <div className="vs-head">
@@ -3248,13 +3274,14 @@ function CosmeticTile({ item, owned, equipped, chips, onBuy, onEquip, children }
   let label, cls = "", act = null;
   if (equipped) { label = "Equipped"; cls = " eq"; }
   else if (owned) { label = "Equip"; act = onEquip; }
+  else if (item.prestige) { label = `Prestige ${item.prestige}`; cls = " locked"; }
   else if (item.pass) { label = `Pass lvl ${item.pass}`; cls = " locked"; }
   else { label = item.cost.toLocaleString(); act = canAfford ? onBuy : null; cls = canAfford ? " buy" : " locked"; }
   return (
     <button className={`cos-tile${equipped ? " on" : ""}`} onClick={act || undefined} disabled={!act && !equipped} aria-pressed={equipped}>
       <div className="cos-prev">{children}</div>
       <div className="cos-name">{item.label}</div>
-      <div className={`cos-tag num${cls}`}>{!owned && !item.pass && <span className="chip-dot" style={{ width: 9, height: 9 }} />}{item.pass && !owned ? <Icon name="lock" size={10} stroke={2.2} /> : null}{label}</div>
+      <div className={`cos-tag num${cls}`}>{!owned && !item.pass && !item.prestige && <span className="chip-dot" style={{ width: 9, height: 9 }} />}{(item.pass || item.prestige) && !owned ? <Icon name="lock" size={10} stroke={2.2} /> : null}{label}</div>
     </button>
   );
 }
@@ -3323,7 +3350,7 @@ function ShopScreen({ data, onClaimChips, onBuyAvatar, onClaimDaily, onBuyCosmet
       <SectionLabel right="Tap to equip">Table felts</SectionLabel>
       <div className="cos-grid" style={{ marginBottom: 24 }}>
         {FELTS.map((f) => (
-          <CosmeticTile key={f.key} item={f} owned={cos.felts.includes(f.key)} equipped={cos.felt === f.key} chips={data.chips} onBuy={() => onBuyCosmetic("felt", f)} onEquip={() => onEquipCosmetic("felt", f.key)}>
+          <CosmeticTile key={f.key} item={f} owned={ownsCosmetic(cos, "felts", f, data.ranked.prestige)} equipped={cos.felt === f.key} chips={data.chips} onBuy={() => onBuyCosmetic("felt", f)} onEquip={() => onEquipCosmetic("felt", f.key)}>
             <FeltSwatch f={f} />
           </CosmeticTile>
         ))}
@@ -3332,7 +3359,7 @@ function ShopScreen({ data, onClaimChips, onBuyAvatar, onClaimDaily, onBuyCosmet
       <SectionLabel right="Tap to equip">Card backs</SectionLabel>
       <div className="cos-grid" style={{ marginBottom: 24 }}>
         {CARD_BACKS.map((b) => (
-          <CosmeticTile key={b.key} item={b} owned={cos.backs.includes(b.key)} equipped={cos.cardBack === b.key} chips={data.chips} onBuy={() => onBuyCosmetic("back", b)} onEquip={() => onEquipCosmetic("back", b.key)}>
+          <CosmeticTile key={b.key} item={b} owned={ownsCosmetic(cos, "backs", b, data.ranked.prestige)} equipped={cos.cardBack === b.key} chips={data.chips} onBuy={() => onBuyCosmetic("back", b)} onEquip={() => onEquipCosmetic("back", b.key)}>
             <BackSwatch b={b} w={42} />
           </CosmeticTile>
         ))}
@@ -3437,8 +3464,8 @@ function LeaderboardScreen({ data, account, online = {}, onOpenAuth }) {
         {tier && <TierBadge tier={tier} size={30} />}
         {live && p.profile && <PlayerAvatar p={p.profile} size={30} live={!p.isYou && !!online[p.id]} />}
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 14, fontWeight: 600, color: p.isYou ? "var(--t-good)" : "var(--t-text)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.isYou && p.name !== "You" ? `${p.name} (you)` : p.name}{p.prestige ? <PrestigeBadge n={p.prestige} size={15} /> : null}</div>
-          {(tier || (p.title && p.title !== "rookie")) && <div style={{ fontSize: 11, display: "flex", gap: 8, alignItems: "baseline", whiteSpace: "nowrap", overflow: "hidden" }}>{tier && <span style={{ color: tier.color }}>{rankName(p.rating)}</span>}{p.title && p.title !== "rookie" && <TitleTag k={p.title} size={10.5} />}</div>}
+          <div style={{ fontSize: 14, fontWeight: 600, color: p.isYou ? "var(--t-good)" : "var(--t-text)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}><span className={pnameCls(p.prestige)}>{p.isYou && p.name !== "You" ? `${p.name} (you)` : p.name}</span>{p.prestige ? <PrestigeBadge n={p.prestige} size={15} /> : null}</div>
+          {(tier || (p.title && p.title !== "rookie")) && <div style={{ fontSize: 11, display: "flex", gap: 8, alignItems: "baseline", whiteSpace: "nowrap", overflow: "hidden" }}>{tier && <span style={{ color: tier.color }}>{live && p.rating >= 1500 ? `Legend #${i + 1}` : rankName(p.rating)}</span>}{p.title && p.title !== "rookie" && <TitleTag k={p.title} size={10.5} />}</div>}
         </div>
         <div className="num" style={{ fontSize: 13.5, fontWeight: 600, color: "var(--t-text2)" }}>{value(p)}</div>
       </div>
@@ -3654,9 +3681,10 @@ function OnlineTable({ tableId, account, data, sound, soundOn, setSoundOn, onExi
           <div className="bot-av ot-av" style={{ width: av, height: av, fontSize: av * 0.5 }}>{avatarOf(s, av)}</div>
           {s.peekAt && inHand && !s.folded && <div className="peek-badge" aria-label={`${s.name} looks at their cards`}><Icon name="eye" size={11} stroke={2.4} /></div>}
           {st.dealer === i && <div className="dealer-chip">D</div>}
+          {(s.prestige || 0) >= 5 && <CrownMark size={12} top={-8} />}
           {em && <div key={s.emote.at} className="emote-bubble">{em}</div>}
         </div>
-        <div style={{ fontSize: compact ? 10.5 : 11.5, fontWeight: 600, color: "var(--t-text2)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: colW, display: "flex", alignItems: "center", gap: 3 }}>{s.name}<PrestigeBadge n={s.prestige} size={11} /></div>
+        <div style={{ fontSize: compact ? 10.5 : 11.5, fontWeight: 600, color: "var(--t-text2)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: colW, display: "flex", alignItems: "center", gap: 3 }}><span className={pnameCls(s.prestige)}>{s.name}</span><PrestigeBadge n={s.prestige} size={11} /></div>
         <div className="num" style={{ fontSize: 10.5, color: "var(--t-mut)" }}>{s.out ? (s.stack > 0 ? "Away" : "Out") : fmt(s.stack)}</div>
         <div style={{ height: tiny ? 30 : 34, display: "flex", alignItems: "center", justifyContent: "center", gap: 3 }}>
           {reveal[i] ? reveal[i].map((c) => <OnlineCard key={c.id} c={c} mini suitColor={suitColor} cls={`${winnerSeats.has(i) ? "win" : ""}`} />)
@@ -3739,6 +3767,7 @@ function OnlineTable({ tableId, account, data, sound, soundOn, setSoundOn, onExi
           <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
             <div style={{ position: "relative", width: 44, height: 44, flexShrink: 0 }}>
               {peekOpen && <div className="peek-badge hero" aria-label="You're looking at your cards"><Icon name="eye" size={11} stroke={2.4} /></div>}
+              {(me.prestige || 0) >= 5 && <CrownMark />}
               {myTurn && (<svg width="44" height="44" style={{ position: "absolute", top: 0, left: 0, transform: "rotate(-90deg)" }}>
                 <circle cx="22" cy="22" r="20" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="2.5" />
                 <circle cx="22" cy="22" r="20" fill="none" stroke={secsLeft < 8 ? "#FF6B6B" : "#34D399"} strokeWidth="2.5" strokeDasharray={2 * Math.PI * 20} strokeDashoffset={2 * Math.PI * 20 * (1 - secsLeft / TURN_SECS)} style={{ transition: "stroke-dashoffset .25s linear" }} strokeLinecap="round" /></svg>)}
@@ -3747,7 +3776,7 @@ function OnlineTable({ tableId, account, data, sound, soundOn, setSoundOn, onExi
               {me.emote && serverNow - me.emote.at < 3500 && <div key={me.emote.at} className="emote-bubble">{me.emote.e}</div>}
             </div>
             <div style={{ minWidth: 0 }}>
-              <div style={{ fontSize: 13.5, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{me.name}</div>
+              <div style={{ fontSize: 13.5, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}><span className={pnameCls(me.prestige)}>{me.name}</span></div>
               <div className="num" style={{ fontSize: 12, color: "var(--t-mid)" }}>{me.stack.toLocaleString()}</div>
               {me.bet > 0 && <div className="chip-badge" style={{ marginTop: 3 }}><ChipStack amount={me.bet} small />{me.bet.toLocaleString()}</div>}
             </div>
@@ -4069,8 +4098,8 @@ function FriendProfileModal({ friendId, online = {}, onClose, onRemove, account 
   return (
     <Modal title="Profile" onClose={onClose} width={380}>
       <div className="fp-head">
-        <PlayerAvatar p={p} size={84} live={!!live} />
-        <div className="fp-name">{p.display_name}<PrestigeBadge n={p.prestige} size={20} /></div>
+        <div style={{ position: "relative" }}>{(p.prestige || 0) >= 5 && <CrownMark size={22} top={-18} />}<PlayerAvatar p={p} size={84} live={!!live} /></div>
+        <div className="fp-name"><span className={pnameCls(p.prestige)}>{p.display_name}</span><PrestigeBadge n={p.prestige} size={20} /></div>
         <div className="fp-user">@{p.username}</div>
         <div className={`fp-status${live ? " on" : ""}`}>{presenceLine(p, online)}</div>
         {p.title && p.title !== "rookie" && <TitleTag k={p.title} size={12.5} style={{ marginTop: 4 }} />}
@@ -4138,7 +4167,7 @@ function FriendsSection({ account, online = {}, onOpenAuth, sound }) {
     <div key={p.id} className={`friend-row${onTap ? " tap" : ""}`} onClick={onTap || undefined} role={onTap ? "button" : undefined} tabIndex={onTap ? 0 : undefined}>
       <PlayerAvatar p={p} size={36} live={showLive && !!online[p.id]} />
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 13.5, fontWeight: 650, display: "flex", alignItems: "center", gap: 5, whiteSpace: "nowrap", overflow: "hidden" }}>{p.display_name}<PrestigeBadge n={p.prestige} size={14} />{p.placed && <span style={{ fontSize: 11, fontWeight: 600, color: tierForRating(p.rating).color }}>{rankName(p.rating)}</span>}</div>
+        <div style={{ fontSize: 13.5, fontWeight: 650, display: "flex", alignItems: "center", gap: 5, whiteSpace: "nowrap", overflow: "hidden" }}><span className={pnameCls(p.prestige)}>{p.display_name}</span><PrestigeBadge n={p.prestige} size={14} />{p.placed && <span style={{ fontSize: 11, fontWeight: 600, color: tierForRating(p.rating).color }}>{rankName(p.rating)}</span>}</div>
         <div style={{ fontSize: 11, color: showLive && online[p.id] ? "var(--t-good)" : "var(--t-mut)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{showLive ? presenceLine(p, online) : `@${p.username}`}</div>
       </div>
       {right}
@@ -4258,7 +4287,7 @@ function BestHands({ list, suitColor }) {
   );
 }
 
-function ProfileScreen({ data, account, online, isAdmin, onOpenAdmin, onOpenAuth, onSignOut, sound, onUpdateName, onSelectAvatar, onSetPhoto, onUsePhoto, onSelectFrame, onAddFriend, onUpdateSettings, onExportData, onImportData, onResetProfile, onEquipTitle, onPrestige }) {
+function ProfileScreen({ data, account, online, legendNo, isAdmin, onOpenAdmin, onOpenAuth, onSignOut, sound, onUpdateName, onSelectAvatar, onSetPhoto, onUsePhoto, onSelectFrame, onAddFriend, onUpdateSettings, onExportData, onImportData, onResetProfile, onEquipTitle, onPrestige }) {
   const importRef = useRef(null);
   const [ladder, setLadder] = useState(false);
   const [transfer, setTransfer] = useState(false);
@@ -4293,19 +4322,19 @@ function ProfileScreen({ data, account, online, isAdmin, onOpenAdmin, onOpenAuth
         <button className="iconbtn" onClick={() => setShowSettings(true)} aria-label="Settings"><Icon name="settings" size={14} /></button>
       </div>
       <div style={{ textAlign: "center", margin: "0 0 24px" }}>
-        <button onClick={() => setPickingAvatar(true)} className="profile-av" style={{ boxShadow: frameColor ? `0 0 0 3px #0B1426, 0 0 0 6px ${frameColor}` : "none" }} aria-label="Change avatar">{data.usePhoto && data.photo ? <img src={data.photo} alt="" className="av-photo" /> : data.avatar}<span className="av-edit"><Icon name="edit" size={11} stroke={2.2} /></span></button>
+        <button onClick={() => setPickingAvatar(true)} className="profile-av" style={{ boxShadow: frameColor ? `0 0 0 3px #0B1426, 0 0 0 6px ${frameColor}` : "none" }} aria-label="Change avatar">{(rk.prestige || 0) >= 5 && <CrownMark size={20} top={-16} />}{data.usePhoto && data.photo ? <img src={data.photo} alt="" className="av-photo" /> : data.avatar}<span className="av-edit"><Icon name="edit" size={11} stroke={2.2} /></span></button>
         {editingName ? (
           <form onSubmit={(e) => { e.preventDefault(); saveName(); }} style={{ display: "flex", gap: 6, justifyContent: "center", alignItems: "center" }}>
             <input autoFocus value={nameInput} maxLength={16} onChange={(e) => setNameInput(e.target.value)} className="input" style={{ width: 160, textAlign: "center", fontWeight: 600 }} aria-label="Display name" />
             <button type="submit" className="iconbtn" aria-label="Save name"><Icon name="check" size={13} /></button>
           </form>
         ) : (
-          <button onClick={() => setEditingName(true)} className="name-btn">{data.name}<PrestigeBadge n={rk.prestige} size={20} /><Icon name="edit" size={12} style={{ color: "var(--t-faint)", marginLeft: 6 }} /></button>
+          <button onClick={() => setEditingName(true)} className="name-btn"><span className={pnameCls(rk.prestige)}>{data.name}</span><PrestigeBadge n={rk.prestige} size={20} /><Icon name="edit" size={12} style={{ color: "var(--t-faint)", marginLeft: 6 }} /></button>
         )}
         <button className="title-btn" onClick={() => setPickingTitle(true)} aria-label="Change title"><TitleTag k={tt.equipped} size={12.5} /><Icon name="chevron" size={11} style={{ color: "var(--t-faint)", transform: "rotate(90deg)" }} /></button>
         <div style={{ display: "flex", justifyContent: "center", gap: 8, marginTop: 8 }}>
           <span className="chip-pill num"><span className="chip-dot" />{data.chips.toLocaleString()}</span>
-          <span className="chip-pill" style={{ color: tier.color }}><TierBadge tier={tier} size={16} />{placed ? rankName(rk.rating) : "Unranked"}</span>
+          <span className="chip-pill" style={{ color: tier.color }}><TierBadge tier={tier} size={16} />{placed ? legendLabel(rk, legendNo) || rankName(rk.rating) : "Unranked"}</span>
           {skillNow && data.skill.hands >= 10 && <span className="chip-pill num">SR {skillNow.sr}</span>}
         </div>
       </div>
@@ -4315,7 +4344,7 @@ function ProfileScreen({ data, account, online, isAdmin, onOpenAdmin, onOpenAuth
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           <TierBadge tier={tier} size={46} div={placed ? divisionOf(rk.rating) : null} />
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 15, fontWeight: 700, color: tier.color }}>{placed ? rankName(rk.rating) : "Unranked"}</div>
+            <div style={{ fontSize: 15, fontWeight: 700, color: tier.color }}>{placed ? legendLabel(rk, legendNo) || rankName(rk.rating) : "Unranked"}</div>
             <div className="num" style={{ fontSize: 12, color: "var(--t-mut)", marginTop: 1 }}>{placed ? `${Math.round(rk.rating).toLocaleString()} RP${prog.nextLabel ? `, ${prog.toNext} to ${prog.nextLabel}` : ""}` : `${(rk.placementGames || []).length} of ${PLACEMENT_MATCHES} placements played`}</div>
           </div>
           <div style={{ textAlign: "right" }}>
@@ -4411,7 +4440,7 @@ function ProfileScreen({ data, account, online, isAdmin, onOpenAdmin, onOpenAuth
 
       <FriendsSection account={account} online={online} onOpenAuth={onOpenAuth} sound={sound} />
 
-      {ladder && <RankLadderModal ranked={rk} onClose={() => setLadder(false)} onPrestige={() => { onPrestige(); setLadder(false); }} />}
+      {ladder && <RankLadderModal ranked={rk} legendNo={legendNo} onClose={() => setLadder(false)} />}
       {transfer && (
         <Modal title="Move my profile" onClose={() => setTransfer(false)} width={400}>
           <div style={{ fontSize: 12.5, color: "var(--t-mid)", marginBottom: 8 }}>1. On the old copy, copy this code.</div>
@@ -4570,6 +4599,7 @@ function LoadingScreen({ fadingOut }) {
 function hydrate(d) {
   const merged = { ...defaultData(), ...d, stats: { ...defaultData().stats, ...(d.stats || {}) }, settings: { ...defaultData().settings, ...(d.settings || {}) }, skill: d.skill && d.skill.v === 2 ? { ...defaultSkill(), ...d.skill } : { ...defaultSkill(), ...(d.skill || {}), v: 2, idealSum: ((d.skill && d.skill.hands) || 0) * 0.34, report: undefined, reportSource: undefined } };
   merged.ranked = rolloverSeason(migrateRanked(d.ranked));
+  if (merged.ranked.seasonEnd && merged.ranked.seasonEnd.champ && !merged.ranked.seasonEnd.rewarded) { merged.chips = (merged.chips || 0) + PRESTIGE_REWARD; merged.ranked = { ...merged.ranked, seasonEnd: { ...merged.ranked.seasonEnd, rewarded: true } }; }
   merged.stats = { ...merged.stats, pos: { late: [0, 0], early: [0, 0], blinds: [0, 0], ...(merged.stats.pos || {}) } };
   merged.cosmetics = { ...defaultCosmetics(), ...(d.cosmetics || {}) };
   merged.streak = d.streak || { count: 0, last: null };
@@ -4613,6 +4643,13 @@ export default function App() {
   const [invites, setInvites] = useState([]);
   const [inviteNames, setInviteNames] = useState({});
   const [isAdmin, setIsAdmin] = useState(false); const [adminOpen, setAdminOpen] = useState(false);
+  const [legendNo, setLegendNo] = useState(null);
+  const champRating = isPlaced(data.ranked) && data.ranked.rating >= 1500 ? Math.round(data.ranked.rating) : null;
+  useEffect(() => {
+    if (!account || champRating == null) { setLegendNo(null); return; }
+    let on = true; const t = setTimeout(() => cloud.legendRank(account, champRating).then((n) => on && setLegendNo(n)).catch(() => {}), 600);
+    return () => { on = false; clearTimeout(t); };
+  }, [account, champRating]);
   useEffect(() => { if (!account || !account.username) { setIsAdmin(false); return; } api("admin", { op: "check" }).then((r) => setIsAdmin(!!r.admin)).catch(() => setIsAdmin(false)); }, [account]);
   const toastTimer = useRef(null);
   const sound = useSound(soundOn);
@@ -4867,7 +4904,8 @@ export default function App() {
   };
   const handleEquipCosmetic = (type, key) => {
     const cos = data.cosmetics || defaultCosmetics();
-    if (!cos[type === "back" ? "backs" : "felts"].includes(key)) return;
+    const item = (type === "back" ? CARD_BACKS : FELTS).find((x) => x.key === key);
+    if (!item || !ownsCosmetic(cos, type === "back" ? "backs" : "felts", item, data.ranked.prestige)) return;
     sound.tap();
     persist({ ...data, cosmetics: { ...cos, [type === "back" ? "cardBack" : "felt"]: key } });
   };
@@ -4934,7 +4972,7 @@ export default function App() {
           }
         } else {
           const frames = [...r.frames, ...o.newFrames.filter((f) => !r.frames.includes(f))];
-          ranked = { ...ranked, rating: o.after, mmr: o.mmrAfter != null ? o.mmrAfter : o.after, peakRating: Math.max(r.peakRating || 0, o.after), frames, frame: o.newFrames.length > 0 ? o.newFrames[o.newFrames.length - 1] : r.frame, recent: [{ won: o.won, delta: o.delta }, ...(r.recent || [])].slice(0, 10) };
+          ranked = { ...ranked, rating: o.after, mmr: undefined, peakRating: Math.max(r.peakRating || 0, o.after), frames, frame: o.newFrames.length > 0 ? o.newFrames[o.newFrames.length - 1] : r.frame, recent: [{ won: o.won, delta: o.delta }, ...(r.recent || [])].slice(0, 10) };
         }
         const stats = { ...d.stats, netChips: d.stats.netChips + o.net };
         const achievements = checkAchievements(stats, d);
@@ -5059,10 +5097,10 @@ export default function App() {
       <main className="app-main">
         <div key={tab} style={{ width: "100%", maxWidth: 460, height: "100%" }}>
           {tab === "shop" && <ShopScreen data={data} onClaimChips={handleClaimChips} onBuyAvatar={handleBuyAvatar} onClaimDaily={handleClaimDaily} onBuyCosmetic={handleBuyCosmetic} onEquipCosmetic={handleEquipCosmetic} onBuyTitle={handleBuyTitle} onBuyTheme={handleBuyTheme} onEquipTheme={handleEquipTheme} onPreviewTheme={handlePreviewTheme} previewTheme={previewTheme} />}
-          {tab === "home" && <HomeMenu onPlayAI={handlePlayAI} onFriendsTable={() => { sound.tap(); setFtOpen(true); }} data={data} chips={data.chips} ranked={data.ranked} onClaimDaily={handleClaimDaily} onClaimChallenge={handleClaimChallenge} onSpin={handleSpin} onPrestige={handlePrestige} sound={sound} goShop={() => setTab("shop")} />}
+          {tab === "home" && <HomeMenu legendNo={legendNo} onPlayAI={handlePlayAI} onFriendsTable={() => { sound.tap(); setFtOpen(true); }} data={data} chips={data.chips} ranked={data.ranked} onClaimDaily={handleClaimDaily} onClaimChallenge={handleClaimChallenge} onSpin={handleSpin} onPrestige={handlePrestige} sound={sound} goShop={() => setTab("shop")} />}
           {tab === "leaderboard" && <LeaderboardScreen data={data} account={account} online={online} onOpenAuth={setAuthOpen} />}
           {tab === "coach" && <CoachScreen data={data} />}
-          {tab === "profile" && <ProfileScreen data={data} account={account} online={online} isAdmin={isAdmin} onOpenAdmin={() => setAdminOpen(true)} onOpenAuth={setAuthOpen} onSignOut={handleSignOut} sound={sound} onUpdateName={handleUpdateName} onSelectAvatar={handleSelectAvatar} onSetPhoto={handleSetPhoto} onUsePhoto={handleUsePhoto} onSelectFrame={handleSelectFrame} onAddFriend={handleAddFriend} onUpdateSettings={handleUpdateSettings} onExportData={handleExportData} onImportData={handleImportData} onResetProfile={handleResetProfile} onEquipTitle={handleEquipTitle} onPrestige={handlePrestige} />}
+          {tab === "profile" && <ProfileScreen data={data} account={account} online={online} legendNo={legendNo} isAdmin={isAdmin} onOpenAdmin={() => setAdminOpen(true)} onOpenAuth={setAuthOpen} onSignOut={handleSignOut} sound={sound} onUpdateName={handleUpdateName} onSelectAvatar={handleSelectAvatar} onSetPhoto={handleSetPhoto} onUsePhoto={handleUsePhoto} onSelectFrame={handleSelectFrame} onAddFriend={handleAddFriend} onUpdateSettings={handleUpdateSettings} onExportData={handleExportData} onImportData={handleImportData} onResetProfile={handleResetProfile} onEquipTitle={handleEquipTitle} onPrestige={handlePrestige} />}
         </div>
       </main>
       <BottomNav tab={tab} setTab={(t) => { sound.tap(); setTab(t); if (t !== "shop") setPreviewTheme(null); }} />
@@ -5084,6 +5122,23 @@ export default function App() {
         </div>
       )}
       {adminOpen && isAdmin && <AdminModal onClose={() => setAdminOpen(false)} />}
+      {loaded && bootDone && data.ranked.seasonEnd && !data.ranked.seasonEnd.seen && (() => {
+        const se = data.ranked.seasonEnd; const [yy, mm] = String(se.seasonId).split("-");
+        const month = new Date(+yy, +mm - 1, 1).toLocaleString("en-US", { month: "long" });
+        const close = () => persist({ ...data, ranked: { ...data.ranked, seasonEnd: { ...se, seen: true } } });
+        const perk = PRESTIGE_PERKS.find((pk) => pk.n === se.prestige);
+        return (
+          <Modal title="" onClose={close} width={360}>
+            <div className="season-end">
+              {se.champ ? <PrestigeBadge n={se.prestige} size={72} /> : <TierBadge tier={tierForRating(se.to)} size={64} />}
+              <div className="se-kicker">{month} season is over</div>
+              <div className="se-title">{se.champ ? `Prestige ${se.prestige}` : "New season"}</div>
+              <div className="se-body">{se.champ ? `You finished ${month} at Champion. That's a prestige${perk ? `, and it unlocks your ${perk.label.toLowerCase()}` : ""}. +${PRESTIGE_REWARD.toLocaleString()} chips.` : `You finished at ${rankName(se.from)}.`} Everyone's RP came partway back, so you start this season at {rankName(se.to)}.</div>
+              <button className="btn btn-raise" style={{ width: "100%", marginTop: 14 }} onClick={close}>{se.champ ? "Let's go" : "Got it"}</button>
+            </div>
+          </Modal>
+        );
+      })()}
       {ftOpen && <FriendsTableModal account={account} data={data} onClose={() => setFtOpen(false)} onOpenTable={openTable} onOpenAuth={setAuthOpen} onDebit={handleDebit} />}
       {authOpen && <AuthModal mode={authOpen} setMode={setAuthOpen} onClose={() => setAuthOpen(null)} onAuthed={handleAuthed} account={account} data={data} />}
       {toast && (
@@ -5875,6 +5930,18 @@ body.theme-montecarlo .pc-index { top: 11px; left: 11px; } body.theme-montecarlo
 .emote-btn { padding: 14px 6px; border-radius: 14px; border: 1px solid rgba(244,247,252,0.1); background: rgba(244,247,252,0.04); color: var(--t-text); font-size: 22px; cursor: pointer; font-weight: 700; }
 .emote-btn:nth-child(n+7) { font-size: 13.5px; }
 .invite-banner { position: fixed; left: 12px; right: 12px; top: calc(env(safe-area-inset-top) + 10px); z-index: 40; display: flex; align-items: center; gap: 8px; padding: 12px 12px 12px 14px; border-radius: 16px; background: var(--t-panel); border: 1px solid rgba(52,211,153,0.45); box-shadow: 0 14px 34px rgba(0,0,0,0.45); animation: sheetIn .25s ease; max-width: 460px; margin: 0 auto; }
+/* prestige: shimmering names, seat crowns, the perk track, season end */
+.pname { background: linear-gradient(90deg, #F6E3B0 0%, #E9B949 25%, #FFF6D8 50%, #E9B949 75%, #F6E3B0 100%); background-size: 200% auto; -webkit-background-clip: text; background-clip: text; color: transparent !important; -webkit-text-fill-color: transparent; animation: pshine 3.6s linear infinite; }
+@keyframes pshine { to { background-position: -200% center; } }
+.crown-mark { position: absolute; left: 50%; transform: translateX(-50%); z-index: 4; display: flex; align-items: center; justify-content: center; color: #F2C14E; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.6)) drop-shadow(0 0 6px rgba(242,193,78,0.45)); pointer-events: none; }
+.profile-av .crown-mark { z-index: 2; }
+.perk-list { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; }
+.perk { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 10px; background: rgba(244,247,252,0.04); font-size: 12.5px; color: var(--t-sub); }
+.perk.got { color: var(--t-text); background: rgba(227,107,255,0.1); }
+.season-end { display: flex; flex-direction: column; align-items: center; text-align: center; margin-top: -10px; }
+.se-kicker { font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--t-mut); margin-top: 14px; }
+.se-title { font-family: var(--t-display); font-size: 28px; font-weight: 700; margin-top: 4px; }
+.se-body { font-size: 13px; line-height: 1.5; color: var(--t-mid); margin-top: 8px; }
 /* ---------- High Roller Room: black lacquer, emerald baize, champagne gold ---------- */
 .vip-card { width: 100%; display: flex; flex-direction: column; gap: 0; padding: 16px 18px 15px; border-radius: 18px; cursor: pointer; text-align: left; color: #F3EDE0; background-color: #0C0B09; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4' height='4'%3E%3Cpath d='M0 4L4 0' stroke='%23FFFFFF' stroke-opacity='0.025'/%3E%3C/svg%3E"), radial-gradient(120% 90% at 85% 0%, rgba(217,180,106,0.16), transparent 55%), linear-gradient(160deg, #1A1713 0%, #0B0A08 60%, #121009 100%); border: 1px solid rgba(217,180,106,0.32); position: relative; overflow: hidden; transition: transform .14s ease, box-shadow .3s ease; box-shadow: inset 0 1px 0 rgba(255,240,210,0.08), 0 10px 26px rgba(0,0,0,0.35); }
 .vip-card::before { content: ""; position: absolute; top: 5px; right: 5px; bottom: 5px; left: 5px; border-radius: 14px; border: 1px solid rgba(217,180,106,0.14); pointer-events: none; }
