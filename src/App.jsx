@@ -1928,6 +1928,18 @@ function PokerTable({ startStack, name, avatar, soundOn, setSoundOn, onExit, onH
         )}
       </div>
 
+      {tutorial ? (
+        // practice: one panel holds your hand, your odds and the coach, so nothing jumps around
+        <div className={`coach-panel ${coachAdv ? `act-${coachAdv.act}` : coachNote ? `note ${coachNote.good ? "good" : "bad"}` : "idle"}`} role="status">
+          {handLabel && <div className="cp-meter" style={{ width: `${heroEq == null ? 0 : eqShown}%`, background: eqShown >= 50 ? "rgba(52,211,153,0.13)" : "rgba(255,107,107,0.11)" }} />}
+          <div className="cp-top">
+            <span className="coach-badge"><Icon name="cap" size={12} stroke={2.2} />Coach</span>
+            {coachAdv && <span className="coach-act">{coachAdv.text}</span>}
+            {handLabel && <span className="cp-hand"><span className="cp-name">{handLabel}</span><b className="num" style={{ color: heroEq == null ? "var(--t-mut)" : eqShown >= 50 ? "var(--t-good)" : "var(--t-bad)" }}>{heroEq == null ? "…" : `${eqShown}%`}</b></span>}
+          </div>
+          <div className="coach-why">{coachAdv ? coachAdv.why : coachNote ? coachNote.text : stage === "idle" ? "Deal a hand. On every turn I'll tell you the best move and why." : betweenHands ? "Hit Next hand when you're ready." : human && human.folded ? "You're out of this one. Watch how it plays out." : "Waiting on the table. The % is your chance to win right now."}</div>
+        </div>
+      ) : (<>
       <div style={{ width: "100%", maxWidth: 460, flexShrink: 0, height: handLabel ? 46 : 0, overflow: "hidden", transition: "height .2s ease", marginBottom: handLabel ? 8 : 0 }}>
         {handLabel && (<div className="hand-strip" style={{ borderColor: heroEq != null && heroEq >= 50 ? "rgba(52,211,153,0.4)" : "rgba(255,107,107,0.32)" }}>
           <span style={{ fontSize: 13, fontWeight: 600, color: "var(--t-text2)", position: "relative" }}>{handLabel}</span>
@@ -1941,23 +1953,7 @@ function PokerTable({ startStack, name, avatar, soundOn, setSoundOn, onExit, onH
           <button className="iconbtn" onClick={onDismissWinTip} aria-label="Got it"><Icon name="check" size={13} /></button>
         </div>
       )}
-      {tutorial && (coachAdv || coachNote) && (
-        coachAdv ? (
-          <div className={`coach act-${coachAdv.act}`} role="status">
-            <div className="coach-head"><span className="coach-badge"><Icon name="cap" size={12} stroke={2.2} />Coach</span><span className="coach-act">{coachAdv.text}</span></div>
-            <div className="coach-why">{coachAdv.why}</div>
-          </div>
-        ) : (
-          <div className={`coach note ${coachNote.good ? "good" : "bad"}`} role="status">
-            <div className="coach-head"><span className="coach-badge"><Icon name="cap" size={12} stroke={2.2} />Coach</span></div>
-            <div className="coach-why">{coachNote.text}</div>
-          </div>
-        )
-      )}
-      {tutorial && !coachAdv && !coachNote && stage === "idle" && (
-        <div className="coach note good"><div className="coach-head"><span className="coach-badge"><Icon name="cap" size={12} stroke={2.2} />Coach</span></div><div className="coach-why">Deal a hand. On every turn I'll tell you the best move and why.</div></div>
-      )}
-
+      </>)}
       <div className="hero-seat" style={{ borderColor: turnPulse ? (vip ? "rgba(217,180,106,0.75)" : "rgba(52,211,153,0.6)") : (vip ? "rgba(217,180,106,0.2)" : "rgba(244,247,252,0.08)"), boxShadow: turnPulse ? (vip ? "0 0 26px rgba(217,180,106,0.28)" : "0 0 22px rgba(52,211,153,0.25)") : "none" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
           <div ref={(el) => { seatRefs.current[0] = el; }} style={{ position: "relative", width: 44, height: 44, flexShrink: 0 }}>
@@ -4794,6 +4790,37 @@ body.theme-montecarlo .mode-tile .mode-title { letter-spacing: 0.04em; }
 body.theme-montecarlo .pc-index b { font-weight: 400; }
 body.theme-montecarlo .pc-index { top: 11px; left: 11px; } body.theme-montecarlo .pc-index.flip { top: auto; left: auto; bottom: 11px; right: 11px; }
 .mode-tile .mode-sub { padding: 0 3px; }
+/* practice: the coach and your odds share one fixed-height panel */
+.coach-panel { position: relative; overflow: hidden; width: 100%; max-width: 460px; flex-shrink: 0; margin-bottom: 8px; border-radius: 14px; padding: 8px 12px 9px; height: 70px; border: 1px solid rgba(111,168,255,0.3); background: linear-gradient(135deg, rgba(47,111,222,0.13), rgba(139,92,246,0.09)); transition: border-color .25s ease, background .25s ease; }
+.coach-panel > * { position: relative; }
+.coach-panel .cp-meter { position: absolute; top: 0; left: 0; bottom: 0; transition: width .45s ease, background .3s ease; }
+.cp-top { display: flex; align-items: center; gap: 8px; min-height: 20px; margin-bottom: 3px; }
+.cp-hand { margin-left: auto; display: inline-flex; align-items: baseline; gap: 7px; min-width: 0; }
+.cp-name { font-size: 12px; font-weight: 600; color: var(--t-text2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cp-hand b { font-size: 14px; font-weight: 800; }
+.coach-panel .coach-why { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.coach-panel.act-raise .coach-act, .coach-panel.act-bet .coach-act { color: var(--t-accent); }
+.coach-panel.act-call .coach-act, .coach-panel.act-check .coach-act { color: var(--t-good); }
+.coach-panel.act-fold .coach-act { color: #FF8A8A; }
+.coach-panel.note.good { border-color: rgba(52,211,153,0.4); background: rgba(52,211,153,0.08); }
+.coach-panel.note.bad { border-color: rgba(255,138,76,0.45); background: rgba(255,138,76,0.08); }
+.coach-panel.note.bad .coach-badge { color: #FFB37A; }
+.coach-panel.note.good .coach-badge { color: #6EE7B7; }
+.coach-panel.idle .coach-why { color: var(--t-mid); }
+
+/* shorter phones and Safari with its bars showing: tighten everything so the felt never runs into the seats */
+@media (max-height: 760px) {
+  .table-wrap { padding-top: 8px; padding-bottom: 8px; }
+  .table-wrap .status { margin: 4px 0 0; min-height: 16px; }
+  .table-wrap .felt-oval { padding-top: 18px !important; padding-bottom: 14px !important; gap: 7px; }
+  .table-wrap .felt-logo { font-size: 50px; }
+  .table-wrap .felt-center { gap: 6px; }
+  .table-wrap .hero-seat { padding: 8px 12px; border-radius: 16px; }
+  .table-wrap .card.big:not(.o4) { width: clamp(46px,13vw,56px); height: clamp(64px,18.5vw,78px); font-size: clamp(17px,5vw,21px); }
+  .table-wrap .controls { padding-top: 8px; }
+  .table-wrap .controls .btn { padding-top: 11px; padding-bottom: 11px; }
+  .table-wrap .pre-btn { padding-top: 10px; padding-bottom: 10px; }
+}
 /* ---------- High Roller Room: black lacquer, emerald baize, champagne gold ---------- */
 .vip-card { width: 100%; display: flex; flex-direction: column; gap: 0; padding: 16px 18px 15px; border-radius: 18px; cursor: pointer; text-align: left; color: #F3EDE0; background-color: #0C0B09; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4' height='4'%3E%3Cpath d='M0 4L4 0' stroke='%23FFFFFF' stroke-opacity='0.025'/%3E%3C/svg%3E"), radial-gradient(120% 90% at 85% 0%, rgba(217,180,106,0.16), transparent 55%), linear-gradient(160deg, #1A1713 0%, #0B0A08 60%, #121009 100%); border: 1px solid rgba(217,180,106,0.32); position: relative; overflow: hidden; transition: transform .14s ease, box-shadow .3s ease; box-shadow: inset 0 1px 0 rgba(255,240,210,0.08), 0 10px 26px rgba(0,0,0,0.35); }
 .vip-card::before { content: ""; position: absolute; top: 5px; right: 5px; bottom: 5px; left: 5px; border-radius: 14px; border: 1px solid rgba(217,180,106,0.14); pointer-events: none; }
