@@ -13,7 +13,7 @@ const RANK_PLUR = { 2: "Twos", 3: "Threes", 4: "Fours", 5: "Fives", 6: "Sixes", 
 const rankLabel = (r) => (r <= 10 ? String(r) : RANK_SING[r][0]);
 const TURN_SECONDS = 30;
 const DEAL_OFFSET = 0.42; // seconds: cards start flying once the shuffle finishes
-const AVATAR_COLORS = ["#2F6FDE", "#12A36B", "#E0861E", "#8B5CF6", "#E0475B", "#0EA5B7", "#D9468F", "#7C8A1E"];
+const AVATAR_COLORS = ["#3B7BEB", "#1FA463", "#E0861E", "#8B5CF6", "#E2483D", "#0EA5B7", "#D9468F", "#E8B23A"];
 const BOT_EMOJI = ["🧑‍💻", "😼", "🐯", "🦊", "🐼"];
 const BOT_NAMES = ["Marlo", "Yuki", "Renn", "Devon", "Kira", "Teo", "Sasha", "Bram"];
 const VIP_NAMES = ["Laurent", "Vivienne", "Sterling", "Margaux", "Aurelio", "Celeste", "Dmitri", "Isolde"];
@@ -675,32 +675,16 @@ function PrestigeBadge({ n, size = 18 }) {
 }
 
 /* =========================================================================
-   THEME PACKS: buy a whole new look for the app
+   OLD THEME PACKS: retired when felt moved to one look. Owners get their chips back once.
    ========================================================================= */
-const THEMES = [
-  { key: "classic", label: "Classic", cost: 0, sub: "Navy, gold and green felt. The original.", sw: ["#0B1426", "#14223D", "#F5B83D", "#F4F7FC"], font: "'Fraunces', Georgia, serif" },
-  { key: "afterhours", label: "After Hours", cost: 5000, sub: "A private card room. Warm black, ivory and brass.", sw: ["#120F0D", "#1C1814", "#C9A66B", "#EDE6D8"], font: "'Instrument Serif', Georgia, serif" },
-  { key: "cardroom", label: "Card Room", cost: 5000, sub: "Felt green, card white and card red. Your modes are a hand of cards.", sw: ["#0C3528", "#134A39", "#D8343B", "#F6F7F4"], font: "'Archivo Variable', sans-serif" },
-  { key: "montecarlo", label: "Monte Carlo", cost: 10000, sub: "1920s casino. Black lacquer, gold leaf, art deco frames.", sw: ["#0C0C0F", "#16161C", "#D4AF5A", "#F1E9D8"], font: "'Limelight', Georgia, serif" },
-];
-const findTheme = (k) => THEMES.find((t) => t.key === k) || THEMES[0];
-function defaultThemes() { return { owned: ["classic"], equipped: "classic" }; }
-// a tiny mock of the home screen, painted in the theme's own colors
-function ThemePreview({ t }) {
-  const [bg, panel, accent, text] = t.sw;
-  return (
-    <div className="theme-mock" style={{ background: bg }}>
-      <div style={{ fontFamily: t.font, color: t.key === "montecarlo" ? accent : text, fontSize: 15, letterSpacing: t.key === "montecarlo" ? "0.08em" : 0, fontStyle: t.key === "afterhours" ? "italic" : "normal" }}>felt</div>
-      <div className="tm-panel" style={{ background: panel, borderRadius: t.key === "montecarlo" ? 2 : t.key === "afterhours" ? 6 : 8, border: t.key === "montecarlo" ? `1px solid ${accent}66` : "none" }}>
-        <div style={{ width: "55%", height: 5, borderRadius: 2, background: text, opacity: 0.85 }} />
-        <div style={{ width: "35%", height: 4, borderRadius: 2, background: text, opacity: 0.35, marginTop: 4 }} />
-        <div style={{ marginTop: 8, height: 12, borderRadius: t.key === "montecarlo" ? 1 : 4, background: accent }} />
-      </div>
-      <div style={{ display: "flex", gap: 4 }}>
-        {[0, 1, 2].map((i) => <div key={i} style={{ flex: 1, height: 18, borderRadius: t.key === "montecarlo" ? 1 : 4, background: t.key === "cardroom" ? "#F6F7F4" : panel, border: t.key === "montecarlo" ? `1px solid ${accent}55` : "none" }} />)}
-      </div>
-    </div>
-  );
+const OLD_THEME_COST = { afterhours: 5000, cardroom: 5000, montecarlo: 10000 };
+function refundThemes(merged, d) {
+  if (d && d.themes && !d.themesRefunded) {
+    const back = (d.themes.owned || []).reduce((a, k) => a + (OLD_THEME_COST[k] || 0), 0);
+    if (back > 0) { merged.chips = (merged.chips || 0) + back; merged.themeRefund = back; }
+  }
+  delete merged.themes;
+  merged.themesRefunded = true;
 }
 
 // One place decides what a ranked match is worth, so the results screen and the saved profile always agree.
@@ -1100,7 +1084,7 @@ async function saveData(data) {
   try { if (window.storage && window.storage.set) await window.storage.set(SAVE_KEY, raw, false); } catch (e) { /* host storage unavailable */ }
 }
 function defaultData() {
-  return { name: "You", avatar: "🫵", chips: 2000, unlocked: ["🫵", "🙂", "😎", "🐱"], friends: [], achievements: [], lastDailyBonus: null, stats: { handsPlayed: 0, handsWon: 0, biggestPot: 0, netChips: 0, curWinStreak: 0, bestWinStreak: 0, pos: { late: [0, 0], early: [0, 0], blinds: [0, 0] } }, settings: { winTipSeen: false, colorblind: false, cardSize: "normal", animSpeed: "normal", runTwice: false, squeeze: true }, ranked: defaultRanked(), skill: defaultSkill(), cosmetics: defaultCosmetics(), streak: { count: 0, last: null }, challenges: ensureChallenges(null), pass: ensurePass(null), history: { bankroll: [], best: [] }, titles: defaultTitles(), themes: defaultThemes() };
+  return { name: "You", avatar: "🫵", chips: 2000, unlocked: ["🫵", "🙂", "😎", "🐱"], friends: [], achievements: [], lastDailyBonus: null, stats: { handsPlayed: 0, handsWon: 0, biggestPot: 0, netChips: 0, curWinStreak: 0, bestWinStreak: 0, pos: { late: [0, 0], early: [0, 0], blinds: [0, 0] } }, settings: { winTipSeen: false, colorblind: false, cardSize: "normal", animSpeed: "normal", runTwice: false, squeeze: true }, ranked: defaultRanked(), skill: defaultSkill(), cosmetics: defaultCosmetics(), streak: { count: 0, last: null }, challenges: ensureChallenges(null), pass: ensurePass(null), history: { bankroll: [], best: [] }, titles: defaultTitles() };
 }
 // a phone photo comes in huge: center-crop it to a small square so it saves fast and loads instantly
 function shrinkPhoto(file, size = 256) {
@@ -1127,16 +1111,6 @@ function todayStr() { const d = new Date(); return `${d.getFullYear()}-${String(
 
 const DISPLAY_FONT = "var(--t-display)";
 const BODY_FONT = "'Inter', -apple-system, sans-serif";
-function useGoogleFonts() {
-  useEffect(() => {
-    if (document.getElementById("felt-fonts")) return;
-    const link = document.createElement("link");
-    link.id = "felt-fonts";
-    link.rel = "stylesheet";
-    link.href = "https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700;800&display=swap";
-    document.head.appendChild(link);
-  }, []);
-}
 
 /* =========================================================================
    UI PRIMITIVES
@@ -1172,6 +1146,7 @@ const ICON_PATHS = {
   bolt: ["M13 2 3 14h9l-1 8 10-12h-9l1-8z"],
   chart: ["M3 3v18h18", "m7 14 4-4 3 3 5-6"],
   camera: ["M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z", "M12 17a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"],
+  chat: ["M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"],
   coach: ["M9 18h6", "M10 22h4", "M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.2 1 2V17h6v-.3c0-.8.4-1.5 1-2A7 7 0 0 0 12 2z"],
 };
 function Icon({ name, size = 16, stroke = 1.8, style }) {
@@ -1186,9 +1161,10 @@ function SkillDial({ sr, size = 64 }) {
   const color = sr >= 70 ? "var(--t-good)" : sr >= 45 ? "var(--t-accent)" : "var(--t-bad)";
   return (
     <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ flexShrink: 0, display: "block" }} role="img" aria-label={`Skill Rating ${sr}`}>
-      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgba(244,247,252,0.1)" strokeWidth="5" />
-      <circle cx={size / 2} cy={size / 2} r={r} fill="none" style={{ stroke: color }} strokeWidth="5" strokeLinecap="round" strokeDasharray={c} strokeDashoffset={c * (1 - sr / 100)} transform={`rotate(-90 ${size / 2} ${size / 2})`} />
-      <text x={size / 2} y={size / 2 + size * 0.12} textAnchor="middle" fill="#F4F7FC" fontWeight="700" fontSize={size * 0.34} fontFamily="Inter, -apple-system, sans-serif">{sr}</text>
+      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="#2C2F35" strokeWidth={size * 0.1} />
+      <circle cx={size / 2} cy={size / 2} r={r} fill="none" style={{ stroke: color }} strokeWidth={size * 0.1} strokeDasharray={c} strokeDashoffset={c * (1 - sr / 100)} transform={`rotate(-90 ${size / 2} ${size / 2})`} />
+      <circle cx={size / 2} cy={size / 2} r={r - size * 0.11} fill="#111214" stroke="#2C2F35" strokeWidth={size * 0.04} strokeDasharray={`${size * 0.07} ${size * 0.05}`} />
+      <text x={size / 2} y={size / 2 + size * 0.15} textAnchor="middle" fill="#F2F2EE" fontWeight="900" fontSize={size * 0.44} fontFamily="'Big Shoulders Display', Impact, sans-serif">{sr}</text>
     </svg>
   );
 }
@@ -1287,14 +1263,14 @@ function TierBadge({ tier, size = 28, div = null }) {
     </svg>
   );
 }
-function Modal({ title, onClose, children, width = 360, className = "" }) {
+function Modal({ title, onClose, children, width = 380, className = "", stripe }) {
   return (
     <div className={`scrim${className ? ` ${className}-scrim` : ""}`} onClick={onClose}>
-      <div className={`sheet${className ? ` ${className}` : ""}`} style={{ maxWidth: width }} onClick={(e) => e.stopPropagation()} role="dialog" aria-label={title}>
+      <div className={`sheet${className ? ` ${className}` : ""}`} style={{ maxWidth: width, ...(stripe ? { "--sheet-c": stripe } : {}) }} onClick={(e) => e.stopPropagation()} role="dialog" aria-label={title || undefined}>
         {title && (
           <div className="sheet-head">
             <div className="sheet-title">{title}</div>
-            <button className="iconbtn" onClick={onClose} aria-label="Close"><Icon name="close" size={14} /></button>
+            <button className="iconbtn" onClick={onClose} aria-label="Close"><Icon name="close" size={15} stroke={2.4} /></button>
           </div>
         )}
         {children}
@@ -1312,12 +1288,7 @@ function MiniCard({ code, suitColor, dim }) {
   );
 }
 function SectionLabel({ children, right }) {
-  return (
-    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", margin: "0 2px 10px" }}>
-      <div style={{ fontSize: 13, fontWeight: 600, color: "var(--t-mid)" }}>{children}</div>
-      {right && <div style={{ fontSize: 12, color: "var(--t-faint)" }}>{right}</div>}
-    </div>
-  );
+  return <div className="sec-label"><h2>{children}</h2>{right && <span>{right}</span>}</div>;
 }
 // 119,975 becomes 120k so crowded tables still fit
 const shortNum = (n) => (n >= 1e6 ? `${(n / 1e6).toFixed(1).replace(/\.0$/, "")}M` : n >= 1e5 ? `${Math.round(n / 1000)}k` : n >= 1e4 ? `${(n / 1000).toFixed(1).replace(/\.0$/, "")}k` : n.toLocaleString());
@@ -1995,6 +1966,10 @@ function PokerTable({ startStack, name, avatar, photo = null, soundOn, setSoundO
   const placementNo = ranked && !isPlaced(rankedState) ? (rankedState.placementGames || []).length + 1 : null;
 
   const gameTag = [variant !== "holdem" && VARIANTS[variant] ? VARIANTS[variant].label : null, turbo ? "Turbo" : null].filter(Boolean).join(" ");
+  // Chip Stack header: a big title and a small line under it
+  const modeTitle = tournament ? (tournamentOver ? "Tourney over" : "Tourney") : ranked ? (placementNo ? `Placement ${placementNo}/${PLACEMENT_MATCHES}` : "Ranked") : tutorial ? "Practice" : vip ? (stakes?.label || "High Roller") : `Cash ${SB}/${BB}`;
+  const modeSub = tournament ? (tournamentOver ? "" : `Level ${blindLevel + 1} · ${SB}/${BB}${gameTag ? ` · ${gameTag}` : ""}`) : ranked ? `${handsCount === 0 ? `${RANKED_MATCH_HANDS} hand match` : handsCount >= RANKED_MATCH_HANDS ? "Final hand" : `Hand ${handsCount} of ${RANKED_MATCH_HANDS}`} · ${SB}/${BB}` : tutorial ? "Nothing at stake" : vip ? `Blinds ${SB.toLocaleString()}/${BB.toLocaleString()}` : `${gameTag ? `${gameTag} · ` : ""}${tableSize?.label || ""}`;
+  const railColor = vip ? "#E8B23A" : ranked ? (isPlaced(rankedState) ? tierForRating(rankedState.rating).color : "#A3A6AD") : tournament ? "#3B7BEB" : tutorial ? "#1FA463" : "#E2483D";
   const modeLine = tournament
     ? (tournamentOver ? "Tournament over" : `${gameTag || "Tournament"}, level ${blindLevel + 1}, blinds ${SB}/${BB}`)
     : ranked
@@ -2002,12 +1977,12 @@ function PokerTable({ startStack, name, avatar, photo = null, soundOn, setSoundO
       : tutorial ? "Practice, nothing at stake" : vip ? `${stakes?.label || "High Roller"} · ${SB.toLocaleString()} / ${BB.toLocaleString()}` : `${gameTag ? `${gameTag} cash` : "Cash game"}, blinds ${SB}/${BB}`;
 
   return (
-    <div data-felt={felt ? felt.key : "green"} data-back={cardBack ? cardBack.key : "blue"} className={`table-wrap${drama ? " is-drama" : ""}${vip ? " vip" : ""}${bots.length >= 7 ? " crowded" : ""}`} style={{ ...(cardBack ? { "--back-a": cardBack.a, "--back-b": cardBack.b, "--back-ring": cardBack.ring, ...(cardBack.img ? { "--back-img": cardBack.img, "--back-size": cardBack.size } : {}) } : {}), ...(felt ? { "--felt1": felt.c1, "--felt2": felt.c2, "--felt3": felt.c3, "--rail": felt.rail, ...(felt.tex ? { "--felt-tex": felt.tex, "--felt-tex-size": felt.texSize } : {}), ...(felt.line ? { "--felt-line": felt.line } : {}) } : {}) }}>
+    <div data-felt={felt ? felt.key : "green"} data-back={cardBack ? cardBack.key : "blue"} className={`table-wrap${drama ? " is-drama" : ""}${vip ? " vip" : ""}${bots.length >= 7 ? " crowded" : ""}`} style={{ "--rail-c": railColor, ...(cardBack ? { "--back-a": cardBack.a, "--back-b": cardBack.b, "--back-ring": cardBack.ring, ...(cardBack.img ? { "--back-img": cardBack.img, "--back-size": cardBack.size } : {}) } : {}), ...(felt ? { "--felt1": felt.c1, "--felt2": felt.c2, "--felt3": felt.c3, "--rail": felt.rail, ...(felt.tex ? { "--felt-tex": felt.tex, "--felt-tex-size": felt.texSize } : {}), ...(felt.line ? { "--felt-line": felt.line } : {}) } : {}) }}>
       <div className="table-top">
         <button className="iconbtn" onClick={handleBack} aria-label="Leave table"><Icon name="back" size={15} /></button>
         <div style={{ textAlign: "center", minWidth: 0 }}>
-          <div className="wordmark-sm">felt</div>
-          <div className="table-sub">{modeLine}</div>
+          <div className="tt-title">{modeTitle}</div>
+          {modeSub && <div className="table-sub">{modeSub}</div>}
         </div>
         <div style={{ display: "flex", gap: 6 }}>
           <button className="iconbtn" onClick={() => setShowHistory(true)} aria-label="Hand history"><Icon name="history" size={14} /></button>
@@ -2027,7 +2002,7 @@ function PokerTable({ startStack, name, avatar, photo = null, soundOn, setSoundO
       )}
       <div key={statusText} className="status">{stage !== "showdown" ? statusText : ""}</div>
 
-      <div className={`seats${bots.length >= 7 ? " grid4" : ""}`}>
+      <div className={`seats${bots.length >= 7 ? " grid4" : ""}${bots.length >= 4 ? " compact" : ""}`} style={{ gridTemplateColumns: bots.length === 1 ? "minmax(0, 170px)" : `repeat(${bots.length >= 7 ? 4 : bots.length === 2 || bots.length === 4 ? 2 : 3}, minmax(0, 1fr))`, justifyContent: "center" }}>
         {bots.map((p, i) => {
           const realIdx = i + 1; const isActive = activeIdx === realIdx && stage !== "idle" && stage !== "showdown"; const revealed = (stage === "showdown" || allInShow) && !p.folded && !p.eliminated && p.hole.length > 0 && (contested || p.shown);
           const t = tendencyRef.current[realIdx]; const tendencyTag = t && t.total >= 4 ? (t.aggr / t.total >= 0.55 ? "Aggressive" : t.aggr / t.total <= 0.2 ? "Tight" : null) : null;
@@ -2038,34 +2013,31 @@ function PokerTable({ startStack, name, avatar, photo = null, soundOn, setSoundO
           const inHand = !p.eliminated && p.hole.length > 0 && stage !== "idle";
           const botRating = ranked ? botRanks[i] : null;
           return (
-            <div key={p.id} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3, width: colWidth, opacity: p.eliminated ? 0.28 : p.folded ? 0.5 : 1, transition: "opacity .3s ease" }}>
-              <div ref={(el) => { seatRefs.current[p.id] = el; }} style={{ position: "relative", width: ringSize, height: ringSize }}>
-                {isActive && (<svg width={ringSize} height={ringSize} style={{ position: "absolute", top: 0, left: 0, transform: "rotate(-90deg)" }}>
-                  <circle cx={ringSize / 2} cy={ringSize / 2} r={ringSize / 2 - 2} fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="2.5" />
-                  <circle cx={ringSize / 2} cy={ringSize / 2} r={ringSize / 2 - 2} fill="none" stroke={timeLeft < 8 ? "#FF6B6B" : ringColor} strokeWidth="2.5" strokeDasharray={2 * Math.PI * (ringSize / 2 - 2)} strokeDashoffset={2 * Math.PI * (ringSize / 2 - 2) * (1 - timeLeft / turnSeconds)} style={{ transition: "stroke-dashoffset .25s linear" }} strokeLinecap="round" /></svg>)}
-                <div className="bot-av" style={{ width: avSize, height: avSize, background: AVATAR_COLORS[i], fontSize: compact ? 13 : 14 }}>{p.name[0]}</div>
-                {peekers[p.id] && <div className="peek-badge" aria-label={`${p.name} looks at their cards`}><Icon name="eye" size={11} stroke={2.4} /></div>}
-                {thinking === p.id && <div className="think-dots" aria-label={`${p.name} is thinking`}><i /><i /><i /></div>}
-                {dealerIdx === realIdx && !p.eliminated && <div className="dealer-chip">D</div>}
+            <div key={p.id} className={`seat${isActive ? " active" : ""}`} style={{ "--seat-c": AVATAR_COLORS[i % AVATAR_COLORS.length], opacity: p.eliminated ? 0.28 : p.folded ? 0.45 : 1 }}>
+              <div className="seat-top">
+                <div ref={(el) => { seatRefs.current[p.id] = el; }} className="seat-av">
+                  <div className="bot-av" style={{ background: AVATAR_COLORS[i % AVATAR_COLORS.length] }}>{p.name[0]}</div>
+                  {peekers[p.id] && <div className="peek-badge" aria-label={`${p.name} looks at their cards`}><Icon name="eye" size={11} stroke={2.4} /></div>}
+                  {thinking === p.id && <div className="think-dots" aria-label={`${p.name} is thinking`}><i /><i /><i /></div>}
+                </div>
+                <span className="seat-name">{botRating != null && <TierBadge tier={tierForRating(botRating)} size={13} />}<span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{p.name}</span></span>
               </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 4, maxWidth: colWidth }}>
-                {botRating != null && <TierBadge tier={tierForRating(botRating)} size={13} />}
-                <span style={{ fontSize: compact ? 10.5 : 11.5, fontWeight: 600, color: "var(--t-text2)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.name}</span>
-              </div>
-              <div className="num" style={{ fontSize: 10.5, color: "var(--t-mut)" }}>{p.eliminated ? "Out" : fmt(p.stack)}</div>
-              {tendencyTag && !p.eliminated && !tiny && <div style={{ fontSize: 9.5, fontWeight: 600, color: tendencyTag === "Aggressive" ? "var(--t-bad)" : "var(--t-good)" }}>{tendencyTag}</div>}
-              <div style={{ height: tiny ? 30 : 34, display: "flex", alignItems: "center", justifyContent: "center", gap: 3 }}>
-                {revealed && p.hole.map((c, i2) => (<div key={c.id} className={`card mini${hc > 2 ? " m4" : ""}${dim(c.id) ? " dim" : ""}${winningIds && winningIds.has(c.id) ? " win" : ""}`} style={{ marginLeft: hc > 2 && i2 ? -7 : 0, animation: `flipIn .4s cubic-bezier(.2,.8,.2,1) ${i2 * 0.08}s backwards` }}><div style={{ color: suitColor[c.s], fontSize: 9, fontWeight: 700 }}>{rankLabel(c.r)}{SUIT_GLYPH[c.s]}</div></div>))}
+              {dealerIdx === realIdx && !p.eliminated && <div className="dealer-chip">D</div>}
+              <div className="seat-stack num">{p.eliminated ? "OUT" : fmt(p.stack)}</div>
+              {tendencyTag && !p.eliminated && !tiny && <div className="seat-tag" style={{ color: tendencyTag === "Aggressive" ? "var(--t-bad)" : "var(--t-good)" }}>{tendencyTag}</div>}
+              <div className="seat-cards">
+                {revealed && p.hole.map((c, i2) => (<div key={c.id} className={`card mini${hc > 2 ? " m4" : ""}${dim(c.id) ? " dim" : ""}${winningIds && winningIds.has(c.id) ? " win" : ""}`} style={{ marginLeft: hc > 2 && i2 ? -7 : 0, animation: `flipIn .4s cubic-bezier(.2,.8,.2,1) ${i2 * 0.08}s backwards` }}><div style={{ color: suitColor[c.s], fontSize: 10.5, fontWeight: 900 }}>{rankLabel(c.r)}{SUIT_GLYPH[c.s]}</div></div>))}
                 {!revealed && inHand && (
                   <div key={`b${handsCount}`} className={`backs${p.folded ? " folded" : ""}${peekers[p.id] ? " peeking" : ""}`}>
                     {Array.from({ length: hc }).map((_, j) => <div key={j} className="card mini back" style={{ "--r": `${hc > 2 ? (j - 1.5) * 8 : j === 0 ? -7 : 7}deg`, marginLeft: j ? (hc > 2 ? -14 : -11) : 0, animation: `dealToSeat .42s cubic-bezier(.2,.8,.2,1) ${dealDelay(p.id, j)}s backwards` }} />)}
                   </div>
                 )}
               </div>
-              <div style={{ height: 18 }}>
+              <div className="seat-bet">
                 {allInOdds && allInOdds[p.id] != null && stage !== "showdown" ? <div className="odds-badge num" style={{ color: allInOdds[p.id] >= 50 ? "var(--t-good)" : "#FFB4B4" }}>{allInOdds[p.id]}%</div>
                   : p.streetContributed > 0 && <div className={`chip-badge${collecting ? " collecting" : ""}`}>{!compact && <ChipStack amount={p.streetContributed} small vip={vip} set={chipSet} />}{fmt(p.streetContributed)}</div>}
               </div>
+              {isActive && <div className="seat-timer" aria-hidden="true"><div style={{ width: `${(timeLeft / turnSeconds) * 100}%`, background: timeLeft < 8 ? "var(--t-bad)" : "var(--t-accent)" }} /></div>}
             </div>
           );
         })}
@@ -2090,11 +2062,11 @@ function PokerTable({ startStack, name, avatar, photo = null, soundOn, setSoundO
           )}
           <div className="pot-row" style={{ visibility: pot > 0 ? "visible" : "hidden" }}>
             <ChipStack amount={pot} vip={vip} set={chipSet} />
-            <div ref={potRef} className={`pot-num num${potPulse ? " pulse" : ""}`}>Pot {potShown.toLocaleString()}</div>
+            <div ref={potRef} className={`pot-num num${potPulse ? " pulse" : ""}`}>{potShown.toLocaleString()}<span className="pot-l">POT</span></div>
           </div>
         </div>
         {stage === "showdown" && winnerBanner && (
-          <div className="banner" style={{ borderColor: winnerBanner.won ? "rgba(52,211,153,0.45)" : "rgba(244,247,252,0.12)", background: winnerBanner.won ? "rgba(52,211,153,0.12)" : "rgba(244,247,252,0.04)" }}>
+          <div className="banner" style={{ "--banner-c": winnerBanner.won ? "var(--c-green)" : "transparent" }}>
             <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 13.5, fontWeight: 600, color: winnerBanner.won ? "var(--t-good)" : "var(--t-text)" }}>{winnerBanner.text}</div>
@@ -2130,36 +2102,28 @@ function PokerTable({ startStack, name, avatar, photo = null, soundOn, setSoundO
           <div className="coach-why">{coachAdv ? coachAdv.why : coachNote ? coachNote.text : stage === "idle" ? "Deal a hand. On every turn I'll tell you the best move and why." : betweenHands ? "Hit Next hand when you're ready." : human && human.folded ? "You're out of this one. Watch how it plays out." : "Waiting on the table. The % is your chance to win right now."}</div>
         </div>
       ) : (<>
-      <div style={{ width: "100%", maxWidth: 460, flexShrink: 0, height: handLabel ? 46 : 0, overflow: "hidden", transition: "height .2s ease", marginBottom: handLabel ? 8 : 0 }}>
-        {handLabel && (<div className="hand-strip" style={{ borderColor: heroEq != null && heroEq >= 50 ? "rgba(52,211,153,0.4)" : "rgba(255,107,107,0.32)" }}>
-          <span style={{ fontSize: 13, fontWeight: 600, color: "var(--t-text2)", position: "relative" }}>{handLabel}</span>
-          <span className="num" style={{ fontSize: 14.5, fontWeight: 700, position: "relative", color: heroEq == null ? "var(--t-mut)" : eqShown >= 50 ? "var(--t-good)" : "var(--t-bad)" }}>{heroEq == null ? "…" : `${eqShown}% to win`}</span>
-          <div className="eq-meter" style={{ width: `${heroEq == null ? 0 : eqShown}%`, background: eqShown >= 50 ? "rgba(52,211,153,0.16)" : "rgba(255,107,107,0.13)" }} />
-        </div>)}
-      </div>
       {handLabel && showWinTip && (
         <div className="tip" style={{ marginTop: -4, color: "var(--t-accent)", borderColor: "rgba(245,184,61,0.35)", background: "rgba(245,184,61,0.08)" }}>
-          <span>Your current hand and your odds of winning this pot. Use it to decide whether to call or fold.</span>
+          <span>Under your stack: your hand and your odds of winning this pot. Use it to decide whether to call or fold.</span>
           <button className="iconbtn" onClick={onDismissWinTip} aria-label="Got it"><Icon name="check" size={13} /></button>
         </div>
       )}
       </>)}
-      <div className="hero-seat" style={{ borderColor: turnPulse ? (vip ? "rgba(217,180,106,0.75)" : "rgba(52,211,153,0.6)") : (vip ? "rgba(217,180,106,0.2)" : "rgba(244,247,252,0.08)"), boxShadow: turnPulse ? (vip ? "0 0 26px rgba(217,180,106,0.28)" : "0 0 22px rgba(52,211,153,0.25)") : "none" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
-          <div ref={(el) => { seatRefs.current[0] = el; }} style={{ position: "relative", width: 44, height: 44, flexShrink: 0 }}>
+      <div className={`hero-seat${humanTurn ? " turn" : ""}`}>
+        {humanTurn && <div className="hero-timer" aria-hidden="true"><div style={{ width: `${(timeLeft / turnSeconds) * 100}%`, background: timeLeft < 8 ? "var(--t-bad)" : "var(--t-accent)" }} /></div>}
+        <div style={{ display: "flex", alignItems: "flex-start", gap: 10, minWidth: 0, flex: 1 }}>
+          <div ref={(el) => { seatRefs.current[0] = el; }} className="hero-av" style={{ marginTop: 4 }}>
             {peekOpen && <div className="peek-badge hero" aria-label="You looked at your cards"><Icon name="eye" size={11} stroke={2.4} /></div>}
             {prestige >= 5 && <CrownMark />}
-            {humanTurn && (<svg width="44" height="44" style={{ position: "absolute", top: 0, left: 0, transform: "rotate(-90deg)" }}>
-              <circle cx="22" cy="22" r="20" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="2.5" />
-              <circle cx="22" cy="22" r="20" fill="none" stroke={timeLeft < 8 ? "#FF6B6B" : ringColor} strokeWidth="2.5" strokeDasharray={2 * Math.PI * 20} strokeDashoffset={2 * Math.PI * 20 * (1 - timeLeft / turnSeconds)} style={{ transition: "stroke-dashoffset .25s linear" }} strokeLinecap="round" /></svg>)}
-            <div style={{ position: "absolute", top: 3, left: 3, width: 38, height: 38, borderRadius: "50%", background: "var(--t-panel2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, opacity: human?.folded ? 0.4 : 1, boxShadow: frameColor ? `0 0 0 2px ${frameColor}` : "none", overflow: "hidden" }}>{photo ? <img src={photo} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} /> : human?.avatar}</div>
-            {dealerIdx === 0 && <div className="dealer-chip" style={{ bottom: -1, right: -1 }}>D</div>}
+            <div className="hero-av-in" style={{ opacity: human?.folded ? 0.4 : 1, boxShadow: frameColor ? `0 0 0 2px ${frameColor}` : "none" }}>{photo ? <img src={photo} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} /> : human?.avatar}</div>
+            {dealerIdx === 0 && <div className="dealer-chip" style={{ bottom: -3, right: -3 }}>D</div>}
           </div>
-          <div style={{ minWidth: 0 }}>
-            <div style={{ fontSize: 13.5, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", display: "flex", alignItems: "center", gap: 5 }}><span className={pnameCls(prestige)}>{human?.name}</span><PrestigeBadge n={prestige} size={15} /></div>
-            {title && title !== "rookie" && <TitleTag k={title} size={10.5} style={{ display: "block", marginTop: -1 }} />}
-            <div className="num" style={{ fontSize: 12, color: "var(--t-mid)" }}>{(human?.stack ?? 0).toLocaleString()}{ranked && handsCount > 0 && !rankedResult && <span className="standing">{ordinal(rankedPlace)} of {players.length}</span>}</div>
-            {human?.streetContributed > 0 && <div className={`chip-badge${collecting ? " collecting" : ""}`} style={{ marginTop: 3 }}><ChipStack amount={human.streetContributed} small vip={vip} set={chipSet} />{human.streetContributed.toLocaleString()}</div>}
+          <div style={{ minWidth: 0, flex: 1 }}>
+            <div className="hero-name"><span className={pnameCls(prestige)} style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{human?.name}</span><PrestigeBadge n={prestige} size={15} />{humanTurn ? <span className="turn-tag">YOUR TURN</span> : ranked && handsCount > 0 && !rankedResult ? <span className="standing">{ordinal(rankedPlace).toUpperCase()}</span> : null}</div>
+            {title && title !== "rookie" && <TitleTag k={title} size={10.5} style={{ display: "block", marginTop: 1 }} />}
+            <div className="hero-stack num">{(human?.stack ?? 0).toLocaleString()}</div>
+            {!tutorial && <div className="hero-hand">{handLabel ? <>{handLabel} · <b style={{ color: heroEq == null ? "var(--t-mid)" : eqShown >= 50 ? "var(--t-good)" : "var(--t-bad)" }}>{heroEq == null ? "…" : `${eqShown}% to win`}</b></> : proMode && human && human.hole.length > 0 && stage !== "idle" ? "Pro mode, no odds shown" : ""}</div>}
+            {human?.streetContributed > 0 && <div className={`chip-badge${collecting ? " collecting" : ""}`} style={{ marginTop: 4, display: "inline-flex" }}><ChipStack amount={human.streetContributed} small vip={vip} set={chipSet} />{human.streetContributed.toLocaleString()}</div>}
           </div>
         </div>
         <div style={{ display: "flex", gap: 6, position: "relative" }}>
@@ -2183,22 +2147,22 @@ function PokerTable({ startStack, name, avatar, photo = null, soundOn, setSoundO
           const potAmt = clamp(currentBet + pot);
           const presets = [{ label: "Half pot", value: halfPot }, { label: "Pot", value: potAmt }, { label: "All in", value: maxAmt }];
           return (
-            <div style={{ width: "100%" }}>
+            <div className="raise-box">
               {!customRaise ? (
-                <div style={{ display: "flex", gap: 7, width: "100%" }}>
+                <div className="preset-row">
                   {presets.map((p) => (
                     <button key={p.label} className="btn preset-btn" onClick={() => { vibrate(20); setBetInput(p.value); handleAction(0, currentBet === 0 ? "bet" : "raise", p.value); }}>
                       <div style={{ fontSize: 12.5, fontWeight: 600 }}>{p.label}</div>
                       <div className="num" style={{ fontSize: 10.5, opacity: 0.8 }}>{p.value.toLocaleString()}</div>
                     </button>
                   ))}
-                  <button className="iconbtn" style={{ width: 42, height: 42, borderRadius: 12 }} onClick={() => { setBetInput(minAmt); setCustomRaise(true); }} aria-label="Custom amount"><Icon name="edit" size={15} /></button>
+                  <button className="iconbtn" style={{ width: 44, height: 48, borderRadius: 12, background: "var(--t-panel2)" }} onClick={() => { setBetInput(minAmt); setCustomRaise(true); }} aria-label="Custom amount"><Icon name="edit" size={16} /></button>
                 </div>
               ) : (
-                <div className="slider-row">
+                <div className="slider-row" style={{ padding: 0, background: "none" }}>
                   <input type="range" min={minAmt} max={maxAmt} value={clamp(betInput)} onChange={(e) => setBetInput(Number(e.target.value))} style={{ flex: 1 }} aria-label="Bet amount" />
                   <span className="num" style={{ fontSize: 13, minWidth: 48, textAlign: "right", fontWeight: 700 }}>{clamp(betInput).toLocaleString()}</span>
-                  <button className="btn btn-raise" style={{ flex: "none", padding: "8px 16px" }} onClick={() => handleAction(0, currentBet === 0 ? "bet" : "raise", clamp(betInput))}>{currentBet === 0 ? "Bet" : "Raise"}</button>
+                  <button className="btn btn-raise" style={{ flex: "none", padding: "8px 16px", minHeight: 44 }} onClick={() => handleAction(0, currentBet === 0 ? "bet" : "raise", clamp(betInput))}>{currentBet === 0 ? "Bet" : "Raise"}</button>
                 </div>
               )}
             </div>
@@ -2231,17 +2195,21 @@ function PokerTable({ startStack, name, avatar, photo = null, soundOn, setSoundO
             </div>
           </div>
         ) : betweenHands && showChoice && stage === "showdown" && !(ranked && handsCount >= RANKED_MATCH_HANDS) ? (
-          <div style={{ display: "flex", width: "100%", gap: 8 }}>
-            <button className="btn show-btn" disabled={showChoice.shown} onClick={showHand}><Icon name="eye" size={14} stroke={2.2} />{showChoice.shown ? "Shown" : "Show cards"}</button>
-            <button className="btn btn-raise" onClick={startHand}>{showChoice.shown ? "Next hand" : "Muck, next hand"}</button>
+          <div className="show-choice">
+            <div className="disp">{showChoice.shown ? "Cards shown" : "Show your cards?"}</div>
+            <div style={{ fontSize: 12.5, color: "var(--t-mid)", marginTop: 4 }}>{showChoice.shown ? "The table saw what you had." : "Nobody called, so it's your choice."}</div>
+            <div className="act-row two" style={{ marginTop: 12 }}>
+              <button className="btn btn-raise show-btn" disabled={showChoice.shown} onClick={showHand}>{showChoice.shown ? "Shown" : "Show"}</button>
+              <button className="btn" onClick={startHand}>{showChoice.shown ? "Next hand" : "Muck"}</button>
+            </div>
           </div>
         ) : betweenHands ? (
           <button className="btn btn-raise" style={{ flex: "none", width: "100%" }} onClick={startHand}>{stage === "idle" ? "Deal" : "Next hand"}</button>
         ) : humanTurn ? (
-          <div style={{ display: "flex", width: "100%", gap: 8 }}>
-            <button className="btn btn-fold" onClick={handleFoldClick}>{confirmFold ? "Tap again" : "Fold"}</button>
+          <div className="act-row">
+            <button className="btn btn-fold" onClick={handleFoldClick}>{confirmFold ? "Sure?" : "Fold"}</button>
             {humanToCall <= 0 ? (<button className="btn btn-go" onClick={() => { vibrate(15); handleAction(0, "check"); }}>Check</button>) : (<button className="btn btn-go" onClick={() => { vibrate(15); handleAction(0, "call"); }}>Call {Math.min(humanToCall, human.stack).toLocaleString()}</button>)}
-            {!showRaise ? (<button className="btn" onClick={() => setShowRaise(true)} disabled={human.stack + human.streetContributed <= currentBet}>{currentBet === 0 ? "Bet" : "Raise"}</button>) : (<button className="btn" onClick={() => { setShowRaise(false); setCustomRaise(false); }}>Cancel</button>)}
+            {!showRaise ? (<button className="btn btn-raise" onClick={() => setShowRaise(true)} disabled={human.stack + human.streetContributed <= currentBet}>{currentBet === 0 ? "Bet" : "Raise"}</button>) : (<button className="btn" onClick={() => { setShowRaise(false); setCustomRaise(false); }}>Cancel</button>)}
           </div>
         ) : human && !human.folded && !human.allIn && !human.eliminated && !betweenHands ? (
           <div className="pre-row" role="group" aria-label="Act in advance">
@@ -2254,7 +2222,7 @@ function PokerTable({ startStack, name, avatar, photo = null, soundOn, setSoundO
               return <button key={o.key} className={`pre-btn${on ? " on" : ""}`} aria-pressed={on} onClick={() => { sound.tap(); setPreAction(on ? null : k); }}><span className="pre-box">{on && <Icon name="check" size={11} stroke={3} />}</span>{o.label}</button>;
             })}
           </div>
-        ) : (<div style={{ fontSize: 12.5, color: "var(--t-faint)", padding: "12px 0" }}>Waiting on the table</div>)}
+        ) : (<div className="lbl" style={{ padding: "20px 0" }}>Waiting on the table</div>)}
       </div>
 
       <div className="flights" aria-hidden="true">
@@ -2398,21 +2366,24 @@ function drawShareImage(hand) {
   const cv = document.createElement("canvas"); cv.width = W; cv.height = H;
   const g = cv.getContext("2d");
   const sans = "-apple-system, 'Inter', 'Helvetica Neue', Arial, sans-serif";
-  const bg = g.createRadialGradient(W / 2, -150, 80, W / 2, 380, 1250); bg.addColorStop(0, "#1E427E"); bg.addColorStop(0.62, "#0B1426"); bg.addColorStop(1, "#0B1426");
-  g.fillStyle = bg; g.fillRect(0, 0, W, H);
+  const disp = "'Big Shoulders Display', Impact, 'Arial Narrow', sans-serif";
+  g.fillStyle = "#111214"; g.fillRect(0, 0, W, H);
   const rr = (x, y, w, h, r) => { g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); };
   // table
-  g.beginPath(); g.ellipse(W / 2, 560, 480, 270, 0, 0, Math.PI * 2); g.fillStyle = "#5A3A20"; g.fill();
-  g.beginPath(); g.ellipse(W / 2, 560, 458, 248, 0, 0, Math.PI * 2);
+  // a chip-striped rail, like the app
+  g.beginPath(); g.ellipse(W / 2, 560, 480, 270, 0, 0, Math.PI * 2); g.fillStyle = "#E2483D"; g.fill();
+  g.save(); g.beginPath(); g.ellipse(W / 2, 560, 469, 259, 0, 0, Math.PI * 2); g.strokeStyle = "#F2F2EE"; g.lineWidth = 22; g.setLineDash([16, 30]); g.stroke(); g.restore();
+  g.beginPath(); g.ellipse(W / 2, 560, 458, 248, 0, 0, Math.PI * 2); g.fillStyle = "#111214"; g.fill();
+  g.beginPath(); g.ellipse(W / 2, 560, 452, 242, 0, 0, Math.PI * 2);
   const fg = g.createRadialGradient(W / 2, 520, 30, W / 2, 560, 470); fg.addColorStop(0, "#22A866"); fg.addColorStop(0.55, "#138048"); fg.addColorStop(1, "#0B5C33"); g.fillStyle = fg; g.fill();
   const drawCard = (id, x, y, w, h, faded) => {
     const suit = id.slice(-1), rank = Number(id.slice(0, -1));
     g.save(); g.globalAlpha = faded ? 0.5 : 1;
     g.shadowColor = "rgba(0,0,0,0.35)"; g.shadowBlur = 18; g.shadowOffsetY = 8;
-    rr(x, y, w, h, w * 0.12); g.fillStyle = "#FFFFFF"; g.fill();
+    rr(x, y, w, h, w * 0.12); g.fillStyle = "#F2F2EE"; g.fill();
     g.shadowColor = "transparent";
-    g.fillStyle = suit === "h" || suit === "d" ? "#E5383B" : "#111827"; g.textAlign = "center";
-    g.font = `800 ${Math.round(w * 0.42)}px ${sans}`; g.fillText(rankLabel(rank), x + w / 2, y + h * 0.46);
+    g.fillStyle = suit === "h" || suit === "d" ? "#E5383B" : "#111214"; g.textAlign = "center";
+    g.font = `900 ${Math.round(w * 0.5)}px ${disp}`; g.fillText(rankLabel(rank), x + w / 2, y + h * 0.48);
     g.font = `${Math.round(w * 0.4)}px ${sans}`; g.fillText(SUIT_GLYPH[suit], x + w / 2, y + h * 0.86);
     g.restore();
   };
@@ -2423,14 +2394,15 @@ function drawShareImage(hand) {
   const hw = hand.hero.length > 2 ? 132 : 168, hh = hand.hero.length > 2 ? 184 : 236;
   row(hand.hero, 868, hw, hh, 20);
   // words
-  g.textAlign = "left"; g.fillStyle = "#F4F7FC"; g.font = `700 76px Georgia, 'Times New Roman', serif`; g.fillText("felt", 72, 130);
-  g.textAlign = "right"; g.fillStyle = "#8FA1BE"; g.font = `500 30px ${sans}`;
+  g.textAlign = "left"; g.fillStyle = "#F2F2EE"; g.font = `900 104px ${disp}`; g.fillText("FELT", 72, 140);
+  for (let i = 0; i < 6; i++) { g.fillStyle = i % 2 ? "#F2F2EE" : "#E8B23A"; g.fillRect(72 + i * 26, 158, i % 2 ? 12 : 26, 12); }
+  g.textAlign = "right"; g.fillStyle = "#A3A6AD"; g.font = `600 30px ${sans}`;
   g.fillText(`${VARIANTS[hand.variant] ? VARIANTS[hand.variant].label : "Hold'em"}, ${new Date(hand.at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`, W - 72, 122);
   g.textAlign = "center";
   const fit = (text, size, weight, color, y) => { let s = size; g.font = `${weight} ${s}px ${sans}`; while (g.measureText(text).width > W - 120 && s > 26) { s -= 2; g.font = `${weight} ${s}px ${sans}`; } g.fillStyle = color; g.fillText(text, W / 2, y); };
-  fit(hand.headline, 50, 800, hand.won ? "var(--t-good)" : "var(--t-text)", 1186);
-  if (hand.headline2) fit(hand.headline2, 38, 700, "var(--t-text2)", 1240);
-  else if (hand.heroDesc) fit(`You had ${hand.heroDesc}`, 36, 600, "var(--t-sub)", 1240);
+  fit(hand.headline, 50, 800, hand.won ? "#3DD68C" : "#F2F2EE", 1186);
+  if (hand.headline2) fit(hand.headline2, 38, 700, "#D7D9DD", 1240);
+  else if (hand.heroDesc) fit(`You had ${hand.heroDesc}`, 36, 600, "#BFC2C8", 1240);
   return cv.toDataURL("image/png");
 }
 function ShareModal({ hand, onClose }) {
@@ -2588,7 +2560,7 @@ function RankedResults({ result, rankedState, skill, tableLabel, canPlayAgain, o
       <div className="results" role="dialog" aria-label="Placement match result">
         <div className="results-inner">
           <div className="results-kicker">Placement match {result.placementNumber} of {PLACEMENT_MATCHES}{tableLabel ? `, ${tableLabel}` : ""}</div>
-          <h1 className="results-head" style={{ color: result.won ? "var(--t-text)" : "#B9C6DA" }}>{headline}</h1>
+          <h1 className="results-head" style={{ color: result.won ? "var(--t-text)" : "var(--t-mid)" }}>{headline}</h1>
           <div className="results-sub">{sub}</div>
           <div style={{ margin: "26px 0 10px" }}><PlacementDots games={games} size={16} /></div>
           <div className="results-sub" style={{ fontSize: 13 }}>{PLACEMENT_MATCHES - games.length} more to go. Your rank comes from how you play, not just whether you win.</div>
@@ -2614,10 +2586,10 @@ function RatedResults({ result, headline, sub, tableLabel, stats, buttons }) {
     <div className="results" role="dialog" aria-label="Match results">
       <div className="results-inner">
         <div className="results-kicker">Ranked match{tableLabel ? `, ${tableLabel}` : ""}</div>
-        <h1 className="results-head" style={{ color: result.won ? "var(--t-text)" : "#B9C6DA" }}>{headline}</h1>
+        <h1 className="results-head" style={{ color: result.won ? "var(--t-text)" : "var(--t-mid)" }}>{headline}</h1>
         <div className="results-sub">{sub}</div>
         <div className="results-delta num" style={{ color: result.delta >= 0 ? "var(--t-good)" : "var(--t-bad)" }}>{signed(result.delta)}<span>RP</span></div>
-        <div className="results-tier">
+        <div className="results-tier" style={{ "--tc": tierNow.color }}>
           <TierBadge tier={tierNow} size={50} div={divisionOf(shown)} />
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
@@ -2731,7 +2703,7 @@ function RankLadderModal({ ranked, legendNo, onClose }) {
   const tiers = RANK_TIERS.slice().reverse();
   return (
     <Modal title="Ranks" onClose={onClose} width={420}>
-      <div className="ladder-me" style={{ borderColor: `${myTier.color}66`, background: `linear-gradient(135deg, ${myTier.color}22, rgba(22,38,68,0.9))` }}>
+      <div className="ladder-me" style={{ "--lc": myTier.color }}>
         <TierBadge tier={myTier} size={52} div={placed ? divisionOf(ranked.rating) : null} />
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 6, fontFamily: DISPLAY_FONT, fontSize: 20, fontWeight: 600, color: myTier.color }}>{placed ? legendLabel(ranked, legendNo) || rankName(ranked.rating) : "Unranked"}<PrestigeBadge n={ranked.prestige} size={18} /></div>
@@ -2818,39 +2790,44 @@ function RankedCard({ ranked, legendNo, chips, onPlay, onInfo }) {
   const games = ranked.placementGames || [];
   const locked = chips < RANKED_BUYIN;
   const month = new Date().toLocaleString("en-US", { month: "long" });
+  const lit = placed ? Math.round(prog.pct * 10) : 0;
   return (
-    <section className="panel" style={{ background: `linear-gradient(160deg, ${tier.color}2E 0%, #14223D 58%)`, borderColor: `${tier.color}55` }}>
-      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "var(--t-mut)" }}>
-        <button className="ranked-info" onClick={onInfo} aria-label="See all ranks"><span style={{ fontWeight: 600, color: "var(--t-sub)" }}>Ranked</span><Icon name="help" size={14} stroke={2} /></button>
-        <span>{month} season ends in {daysLeftInSeason()} days</span>
-      </div>
-      <div style={{ display: "flex", alignItems: "center", gap: 14, margin: "16px 0 14px" }}>
-        <button className="ranked-badge-btn" onClick={onInfo} aria-label="See all ranks"><TierBadge tier={tier} size={58} div={placed ? divisionOf(ranked.rating) : null} /></button>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontFamily: DISPLAY_FONT, fontSize: 25, fontWeight: 600, color: tier.color, lineHeight: 1.05, display: "flex", alignItems: "center", gap: 8 }}>{placed ? legendLabel(ranked, legendNo) || rankName(ranked.rating) : "Unranked"}<PrestigeBadge n={ranked.prestige} size={20} /></div>
-          <div className="num" style={{ fontSize: 13, color: "var(--t-sub)", marginTop: 4 }}>{placed ? `${Math.round(ranked.rating).toLocaleString()} RP${legendNo && ranked.rating >= 1500 ? " · Champion" : ""}` : `${games.length} of ${PLACEMENT_MATCHES} placement matches`}</div>
-        </div>
-        {placed && ranked.wins + ranked.losses > 0 && (
-          <div style={{ textAlign: "right" }}>
-            <div className="num" style={{ fontSize: 15, fontWeight: 600 }}>{ranked.wins}<span style={{ color: "var(--t-faint)" }}> W</span> {ranked.losses}<span style={{ color: "var(--t-faint)" }}> L</span></div>
-            {ranked.streak >= 2 && <div style={{ fontSize: 11.5, color: "var(--t-good)", marginTop: 2 }}>{ranked.streak} in a row</div>}
+    <section className="rk-card" style={{ "--sc": placed ? tier.color : "#A3A6AD" }}>
+      <div className="stripe" />
+      <div className="rk-body">
+        <div className="rk-top"><span className="lbl">Ranked · {month}</span><button className="rk-link" onClick={onInfo}>All ranks</button></div>
+        {placed ? (
+          <div className="rk-main">
+            <div className="rk-rp num">{Math.round(ranked.rating).toLocaleString()}</div>
+            <div style={{ paddingBottom: 6, minWidth: 0 }}>
+              <div className="rk-tier" style={{ color: tier.color }}>{legendLabel(ranked, legendNo) || rankName(ranked.rating)}<PrestigeBadge n={ranked.prestige} size={18} /></div>
+              <div style={{ fontSize: 12, fontWeight: 600, color: "var(--t-mid)", marginTop: 3 }}>RP · {prog.nextLabel ? `${prog.toNext} to ${prog.nextLabel}` : legendNo ? "finish the month here for a prestige" : "top of the ladder"}</div>
+            </div>
+          </div>
+        ) : (
+          <div className="rk-main">
+            <div className="rk-rp num">{games.length}<span style={{ fontSize: 44, color: "var(--t-mid)" }}>/{PLACEMENT_MATCHES}</span></div>
+            <div style={{ paddingBottom: 6, minWidth: 0 }}>
+              <div className="rk-tier">Placements</div>
+              <div style={{ fontSize: 12, fontWeight: 600, color: "var(--t-mid)", marginTop: 3 }}>We read your game to set your rank</div>
+            </div>
           </div>
         )}
+        {placed ? (
+          <div className="rk-segs" aria-hidden="true">{Array.from({ length: 10 }, (_, i) => <span key={i} style={i < lit ? { background: tier.color } : undefined} />)}</div>
+        ) : (
+          <div className="rk-segs" style={{ gridTemplateColumns: `repeat(${PLACEMENT_MATCHES}, minmax(0, 1fr))` }} aria-label={`${games.filter((g) => g.won).length} wins in ${games.length} placement matches`}>
+            {Array.from({ length: PLACEMENT_MATCHES }, (_, i) => <span key={i} style={games[i] ? { background: games[i].won ? "var(--c-green)" : "var(--c-red)" } : undefined} />)}
+          </div>
+        )}
+        <div className="rk-wl">
+          {placed && ranked.wins + ranked.losses > 0 && <><span><b>{ranked.wins}</b> wins</span><span><b>{ranked.losses}</b> losses</span>{ranked.streak >= 2 && <span><b>W{ranked.streak}</b> streak</span>}</>}
+          <span style={{ marginLeft: "auto" }}>{daysLeftInSeason()} days left</span>
+        </div>
+        <button className="btn btn-raise big-cta" disabled={locked} onClick={onPlay}>
+          {locked ? `Need ${RANKED_BUYIN.toLocaleString()} chips` : placed ? "Play ranked" : `Placement match ${games.length + 1}`}
+        </button>
       </div>
-      {placed ? (
-        <>
-          <div className="bar"><div style={{ width: `${prog.pct * 100}%`, background: tier.color }} /></div>
-          <div style={{ fontSize: 12, color: "var(--t-mut)", marginTop: 7 }}>{prog.nextLabel ? `${prog.toNext} RP to ${prog.nextLabel}` : legendNo ? "Finish the month here to earn a prestige" : "Finish the month at Champion to earn a prestige"}</div>
-        </>
-      ) : (
-        <>
-          <PlacementDots games={games} size={14} />
-          <div style={{ fontSize: 12, color: "var(--t-mut)", marginTop: 10, textAlign: "center" }}>Play {PLACEMENT_MATCHES} matches and we'll read your game to set your rank.</div>
-        </>
-      )}
-      <button className="btn btn-raise shine" style={{ width: "100%", marginTop: 18 }} disabled={locked} onClick={onPlay}>
-        {locked ? `You need ${RANKED_BUYIN.toLocaleString()} chips to buy in` : placed ? "Play ranked" : `Play placement match ${games.length + 1}`}
-      </button>
     </section>
   );
 }
@@ -2885,18 +2862,29 @@ function TurboRow({ on, onToggle, tournament }) {
   );
 }
 
+const kNum = (n) => (n >= 1000 ? `${(n / 1000).toFixed(n % 1000 ? 1 : 0)}K` : String(n));
 function StreakBanner({ streak, onClaim }) {
   const st = streakState(streak);
   if (st.claimedToday) return null;
-  const amount = STREAK_REWARDS[st.nextDay - 1];
+  const day = st.nextDay;
   return (
-    <section className="streak-banner">
-      <div className="streak-flame"><Icon name="flame" size={22} stroke={2} /></div>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 14.5, fontWeight: 700 }}>Day {st.nextDay} reward is ready</div>
-        <div style={{ fontSize: 12, color: "#FFD9B0", marginTop: 1 }}>{st.nextDay === 1 && streak && streak.count > 0 ? "Streak reset. Come back daily to grow it." : st.nextDay === 7 ? "Biggest reward of the week" : `Tomorrow pays ${STREAK_REWARDS[st.nextDay].toLocaleString()}`}</div>
+    <section className="streak-card">
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 10 }}>
+        <div className="disp" style={{ fontSize: 21, fontWeight: 800 }}>Daily streak</div>
+        <div style={{ fontSize: 12.5, color: "var(--t-mid)" }}>{day === 1 && streak && streak.count > 0 ? "Streak reset, start again" : `Day ${day} of 7`}</div>
       </div>
-      <button className="btn btn-raise btn-sm shine" onClick={onClaim}>+{amount.toLocaleString()}</button>
+      <div className="streak-days">
+        {STREAK_REWARDS.map((amt, i) => {
+          const d = i + 1;
+          return (
+            <div key={d} className={`sday${d < day ? " got" : d === day ? " today" : ""}${d === 7 ? " big" : ""}`}>
+              <i>{d < day ? <Icon name="check" size={14} stroke={3.2} /> : d}</i>
+              <span className="num">{kNum(amt)}</span>
+            </div>
+          );
+        })}
+      </div>
+      <button className="btn btn-raise big-cta" style={{ minHeight: 50, fontSize: 22 }} onClick={onClaim}>Claim {STREAK_REWARDS[day - 1].toLocaleString()}</button>
     </section>
   );
 }
@@ -2908,35 +2896,29 @@ function ChallengesCard({ challenges, onClaim }) {
   const ready = [...ch.daily, ...ch.weekly].filter((c) => c.progress >= c.target && !c.claimed).length;
   const rw = CHALLENGE_REWARD[which];
   return (
-    <section className="panel chal-panel">
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <div className="sec-ic" style={{ background: "rgba(52,211,153,0.16)", color: "var(--t-good)" }}><Icon name="star" size={15} stroke={2} /></div>
-          <div style={{ fontSize: 15, fontWeight: 700 }}>Challenges</div>
-          {ready > 0 && <span className="badge-dot num">{ready}</span>}
+    <section className="chal-card">
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
+        <span style={{ display: "flex", alignItems: "center", gap: 8 }}><span className="disp" style={{ fontSize: 22, fontWeight: 800 }}>Challenges</span>{ready > 0 && <span className="badge-dot num">{ready}</span>}</span>
+        <div className="mini-seg" role="tablist" aria-label="Challenge list">
+          {[["daily", "Daily"], ["weekly", "Weekly"]].map(([v, l]) => <button key={v} role="tab" aria-selected={which === v} className={which === v ? "on" : ""} onClick={() => setWhich(v)}>{l}</button>)}
         </div>
-        <SegToggle options={[{ v: "daily", l: "Daily" }, { v: "weekly", l: "Weekly" }]} value={which} onChange={setWhich} />
       </div>
-      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+      <div style={{ fontSize: 12, color: "var(--t-mid)", marginTop: 6 }}>{which === "daily" ? `New ones in ${hoursLeftToday()}h.` : `Resets in ${weekResetDays()} day${weekResetDays() === 1 ? "" : "s"}.`} Each pays {rw.chips.toLocaleString()} chips and {rw.xp} XP.</div>
+      <div style={{ marginTop: 4 }}>
         {list.map((c) => {
           const done = c.progress >= c.target;
           return (
-            <div key={c.id} className={`chal${c.claimed ? " claimed" : ""}`}>
+            <div key={c.id} className={`chal-row${c.claimed ? " claimed" : ""}`}>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 13.5, fontWeight: 600, marginBottom: 6 }}>{challengeText(c)}</div>
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <div className="bar" style={{ flex: 1, height: 6 }}><div style={{ width: `${(c.progress / c.target) * 100}%`, background: done ? "var(--t-good)" : "linear-gradient(90deg,#6FA8FF,#8B5CF6)" }} /></div>
-                  <span className="num" style={{ fontSize: 11.5, color: "var(--t-mid)", minWidth: 34, textAlign: "right" }}>{c.progress}/{c.target}</span>
-                </div>
+                <div className="chal-text"><span>{challengeText(c)}</span><span className="num" style={{ color: done ? "var(--t-good)" : "var(--t-mid)", flexShrink: 0 }}>{Math.min(c.progress, c.target)}/{c.target}</span></div>
+                <div className="bar" style={{ marginTop: 8, height: 6 }}><div style={{ width: `${Math.min(100, (c.progress / c.target) * 100)}%`, background: done ? "var(--c-green)" : "#F2F2EE" }} /></div>
               </div>
-              {c.claimed ? <div className="chal-done"><Icon name="check" size={15} stroke={2.4} /></div>
-                : <button className={`btn btn-sm ${done ? "btn-go shine" : ""}`} disabled={!done} style={{ padding: "7px 11px", fontSize: 12 }} onClick={() => onClaim(which, c.id)}>{done ? "Claim" : `+${rw.chips}`}</button>}
+              {c.claimed ? <span className="chal-reward" style={{ color: "var(--t-good)" }} aria-label="Claimed"><Icon name="check" size={18} stroke={3} /></span>
+                : done ? <button className="btn btn-sm btn-raise" style={{ minHeight: 44 }} onClick={() => onClaim(which, c.id)}>Claim</button>
+                : <span className="chal-reward">+{kNum(rw.chips)}</span>}
             </div>
           );
         })}
-      </div>
-      <div style={{ fontSize: 11.5, color: "var(--t-faint)", marginTop: 12 }}>
-        {which === "daily" ? `New ones in ${hoursLeftToday()}h. Each pays ${rw.chips} chips and ${rw.xp} XP.` : `Resets in ${weekResetDays()} day${weekResetDays() === 1 ? "" : "s"}. Each pays ${rw.chips.toLocaleString()} chips and ${rw.xp} XP.`}
       </div>
     </section>
   );
@@ -2955,36 +2937,38 @@ function PassArt({ r, size = 54 }) {
 }
 function PassRewardIcon({ r, size = 34 }) { return <div className="pr-ic" style={{ width: size, height: size }}><PassArt r={r} size={size} /></div>; }
 
+const passShortLabel = (r) => r.type === "chips" ? `${r.amount.toLocaleString()} chips` : r.type === "back" ? `${findBack(r.key).label} back` : r.type === "felt" ? `${findFelt(r.key).label} felt` : r.type === "fx" ? WIN_FX.find((x) => x.key === r.key).label : r.type === "title" ? findTitle(r.key).label : r.type === "emote" ? "Emote" : r.type === "avatar" ? "Avatar" : r.type === "chipset" ? `${CHIP_SETS.find((x) => x.key === r.key).label} chips` : passRewardLabel(r);
 function PassCard({ pass, onOpen }) {
   const p = ensurePass(pass);
   const lvl = passLevel(p.xp);
   const into = p.xp - lvl * PASS_XP;
   const maxed = lvl >= PASS_LEVELS;
-  const month = new Date().toLocaleString("en-US", { month: "long" });
   const stripRef = useRef(null);
   useEffect(() => { const el = stripRef.current; if (el) el.scrollLeft = 0; }, []);
-  const upcoming = Array.from({ length: Math.min(8, PASS_LEVELS - lvl) }, (_, i) => lvl + 1 + i);
+  const from = Math.max(1, Math.min(lvl - 1, PASS_LEVELS - 7));
+  const shown = Array.from({ length: Math.min(8, PASS_LEVELS - from + 1) }, (_, i) => from + i);
   return (
     <section className="pass-card">
-      <button className="pass-head" onClick={() => onOpen(lvl + 1)}>
-        <div className="pass-lvl num"><div style={{ fontSize: 10, fontWeight: 700, opacity: 0.8, letterSpacing: "0.06em" }}>LVL</div>{lvl}</div>
-        <div style={{ flex: 1, minWidth: 0, textAlign: "left" }}>
-          <div style={{ fontSize: 15, fontWeight: 700 }}>{month} season pass</div>
-          <div className="num" style={{ fontSize: 12, color: "#D6C7FF", marginTop: 2 }}>{maxed ? "Maxed out. Nice." : `${into} / ${PASS_XP} XP · ends in ${daysLeftInSeason()} days`}</div>
-        </div>
-        <Icon name="chevron" size={16} style={{ color: "#D6C7FF" }} />
-      </button>
-      <div className="bar" style={{ marginTop: 12, height: 8, background: "rgba(255,255,255,0.14)" }}><div style={{ width: `${maxed ? 100 : (into / PASS_XP) * 100}%`, background: "linear-gradient(90deg,#F5B83D,#FF7AB8)" }} /></div>
-      {!maxed && (
-        <div className="pass-strip" ref={stripRef}>
-          {upcoming.map((l, i) => { const r = passReward(l); return (
-            <button key={l} className={`pass-mini r-${r.rarity}${i === 0 ? " next" : ""}`} onClick={() => onOpen(l)} aria-label={`Level ${l}: ${passRewardLabel(r)}`}>
-              <div className="pm-art"><PassArt r={r} size={38} /></div>
-              <div className="pm-l num">{l}</div>
+      <div className="pass-top">
+        <button className="rk-link" style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: 8, color: "var(--t-text)" }} onClick={() => onOpen(lvl + 1)}>
+          <span className="disp" style={{ fontSize: 22, fontWeight: 800 }}>Season pass</span><span className="pass-lvl num">LV {lvl}</span>
+        </button>
+        <button className="rk-link" onClick={() => onOpen(lvl + 1)}>See all {PASS_LEVELS}</button>
+      </div>
+      <div className="pass-xp"><div className="bar"><div style={{ width: `${maxed ? 100 : (into / PASS_XP) * 100}%`, background: "var(--t-accent)" }} /></div><span className="num">{maxed ? "Maxed out" : `${into} / ${PASS_XP} XP`}</span></div>
+      <div className="pass-strip" ref={stripRef}>
+        {shown.map((l) => {
+          const r = passReward(l); const got = l <= lvl; const next = l === lvl + 1;
+          return (
+            <button key={l} className={`pass-mini r-${r.rarity}${got ? " got" : ""}${next ? " next" : ""}`} onClick={() => onOpen(l)} aria-label={`Level ${l}: ${passRewardLabel(r)}`}>
+              <span className="pm-l num">{next ? `NEXT · ${l}` : `LV ${l}`}</span>
+              <span className="pm-art"><PassArt r={r} size={40} /></span>
+              <span className="pm-name">{passShortLabel(r)}</span>
+              {got ? <span className="pm-r" style={{ color: "var(--t-good)" }}>Got it</span> : <span className="pm-r">{r.rarity}</span>}
             </button>
-          ); })}
-        </div>
-      )}
+          );
+        })}
+      </div>
     </section>
   );
 }
@@ -3004,25 +2988,34 @@ function PassModal({ pass, data, focus, onClose, onEquip }) {
   const equipped = r.type === "back" ? cos.cardBack === r.key : r.type === "felt" ? cos.felt === r.key : r.type === "chipset" ? cos.chipset === r.key : r.type === "fx" ? cos.fx === r.key : r.type === "title" ? (data.titles || defaultTitles()).equipped === r.key : r.type === "avatar" ? data.avatar === r.key && !data.usePhoto : false;
   const canEquip = got && ["back", "felt", "chipset", "fx", "title", "avatar"].includes(r.type);
   const month = new Date().toLocaleString("en-US", { month: "long" });
+  const maxed = lvl >= PASS_LEVELS;
   return (
-    <Modal title="" onClose={onClose} width={440} className="pass-sheet">
-      <div className="ps-head">
-        <div className="pass-lvl num" style={{ width: 48, height: 48 }}><div style={{ fontSize: 9.5, fontWeight: 700, opacity: 0.8 }}>LVL</div>{lvl}</div>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 17, fontWeight: 800 }}>{month} season pass</div>
-          <div className="num" style={{ fontSize: 12, color: "#D6C7FF" }}>{lvl >= PASS_LEVELS ? "Maxed out" : `${into} / ${PASS_XP} XP to level ${lvl + 1}`} · {daysLeftInSeason()} days left</div>
+    <Modal title="" onClose={onClose} width={460} className="pass-sheet">
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
+        <div>
+          <div className="sheet-title">Season pass</div>
+          <div className="lbl" style={{ marginTop: 6 }}>{month} · {daysLeftInSeason()} days left</div>
         </div>
-        <button className="iconbtn" onClick={onClose} aria-label="Close"><Icon name="close" size={14} /></button>
+        <button className="iconbtn" onClick={onClose} aria-label="Close"><Icon name="close" size={15} stroke={2.4} /></button>
+      </div>
+      <div className="ps-head" style={{ marginTop: 16 }}>
+        <div className="ps-big num">{lvl}</div>
+        <div style={{ flex: 1, paddingBottom: 4 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12.5, color: "var(--t-mid)" }}><span>Level {lvl} of {PASS_LEVELS}</span><span className="num">{maxed ? "Maxed out" : `${into} / ${PASS_XP} XP`}</span></div>
+          <div className="bar" style={{ height: 12, borderRadius: 6, marginTop: 8 }}><div style={{ width: `${maxed ? 100 : (into / PASS_XP) * 100}%`, borderRadius: 6, background: "repeating-linear-gradient(90deg, var(--t-accent) 0 14px, #F5D27A 14px 18px)" }} /></div>
+        </div>
       </div>
 
       <div className={`ps-preview r-${r.rarity}`}>
-        <div className="ps-art"><PassArt r={r} size={96} /></div>
+        <div className="ps-art"><PassArt r={r} size={88} /></div>
         <div className="ps-meta">
-          <div className="ps-rarity" style={{ color: RARITY[r.rarity] }}>{r.rarity} · {passTypeLabel(r)}</div>
-          <div className="ps-name">{r.type === "chips" ? `${r.amount.toLocaleString()} chips` : passRewardLabel(r).replace(/ (felt|card back|title|emote|chips|win effect|avatar)$/, "").replace(/"/g, "")}</div>
-          <div className="ps-sub">{r.type === "emote" ? "Send it at friends tables." : r.type === "fx" ? "Plays when you win a big pot." : r.type === "chipset" ? "Every chip you bet, in this set." : r.type === "title" ? "Shows under your name." : r.type === "chips" ? "Straight to your bankroll." : "Only from the season pass."}</div>
-          {got ? (canEquip ? <button className={`btn btn-sm${equipped ? "" : " btn-raise"}`} disabled={equipped} onClick={() => onEquip(r)}>{equipped ? "Equipped" : "Equip"}</button> : <span className="ps-got"><Icon name="check" size={13} stroke={2.6} /> Unlocked</span>)
-            : <span className="ps-lock num"><Icon name="lock" size={12} stroke={2.2} /> Level {sel} · {((sel * PASS_XP) - p.xp).toLocaleString()} XP to go</span>}
+          <div className="ps-rarity" style={{ color: "var(--rt)" }}>Level {sel} · {r.rarity}</div>
+          <div className="ps-name">{r.type === "chips" ? `${r.amount.toLocaleString()} chips` : passShortLabel(r)}</div>
+          <div className="ps-sub">{passTypeLabel(r)}. {r.type === "emote" ? "Send it at friends tables." : r.type === "fx" ? "Plays when you win a big pot." : r.type === "chipset" ? "Every chip you bet, in this set." : r.type === "title" ? "Shows under your name." : r.type === "chips" ? "Straight to your bankroll." : "Only from the season pass."}</div>
+          <div style={{ marginTop: "auto", paddingTop: 4 }}>
+            {got ? (canEquip ? <button className={`btn btn-sm${equipped ? "" : " btn-raise"}`} disabled={equipped} onClick={() => onEquip(r)}>{equipped ? "Equipped" : "Equip"}</button> : <span className="ps-got"><Icon name="check" size={14} stroke={2.8} /> Unlocked</span>)
+              : <span className="ps-lock num">{((sel * PASS_XP) - p.xp).toLocaleString()} XP TO GO</span>}
+          </div>
         </div>
       </div>
 
@@ -3032,27 +3025,29 @@ function PassModal({ pass, data, focus, onClose, onEquip }) {
           const rr = passReward(l); const g = l <= lvl;
           return (
             <button key={l} data-l={l} className={`ps-tile r-${rr.rarity}${g ? " got" : ""}${l === lvl + 1 ? " next" : ""}${l === sel ? " sel" : ""}`} onClick={() => setSel(l)} aria-label={`Level ${l}: ${passRewardLabel(rr)}`}>
-              <div className="ps-node num">{g ? <Icon name="check" size={11} stroke={3} /> : l}</div>
-              <div className="ps-tile-art"><PassArt r={rr} size={46} /></div>
-              <div className="ps-tile-name">{rr.type === "chips" ? shortNum(rr.amount) : passTypeLabel(rr)}</div>
+              <span className="ps-card">
+                <span className="ps-tile-art"><PassArt r={rr} size={44} /></span>
+                <span className="ps-tile-name">{rr.type === "chips" ? `${shortNum(rr.amount)} chips` : passTypeLabel(rr)}</span>
+              </span>
+              <span className="ps-node num">{g ? <Icon name="check" size={13} stroke={3.4} /> : l}</span>
             </button>
           );
         })}
       </div>
-      <div style={{ fontSize: 11.5, color: "var(--t-mut)", marginTop: 10, textAlign: "center" }}>Swipe for every level. XP comes from hands, ranked matches, tournaments and challenges.</div>
+      <div style={{ fontSize: 12, color: "var(--t-mid)", marginTop: 12, textAlign: "center" }}>Swipe for every level. XP comes from hands, ranked matches, tournaments and challenges.</div>
     </Modal>
   );
 }
 
 function SpinCard({ ready, onOpen }) {
   return (
-    <button className={`spin-card${ready ? " ready" : ""}`} onClick={onOpen}>
-      <div className="spin-ic"><Icon name="wheel" size={20} stroke={2} /></div>
-      <div style={{ flex: 1, minWidth: 0, textAlign: "left" }}>
-        <div style={{ fontSize: 14, fontWeight: 700 }}>{ready ? "Daily spin is ready" : "Daily spin"}</div>
-        <div style={{ fontSize: 11.5, color: ready ? "#CFE6FF" : "var(--t-mut)", marginTop: 1 }}>{ready ? "Chips, XP, or a 5,000 chip jackpot" : `Next spin in ${hoursUntilTomorrow()}h`}</div>
-      </div>
-      {ready ? <span className="btn btn-raise btn-sm shine" style={{ pointerEvents: "none" }}>Spin</span> : <Icon name="lock" size={14} style={{ color: "var(--t-faint)" }} />}
+    <button className={`spin-row${ready ? " ready" : " used"}`} onClick={onOpen}>
+      <span className="spin-wheel" aria-hidden="true" />
+      <span style={{ flex: 1, minWidth: 0 }}>
+        <span className="ec-title">Daily spin</span>
+        <span className="ec-sub">{ready ? "Free spin ready. Jackpot is 5,000" : `Next free spin in ${hoursUntilTomorrow()}h`}</span>
+      </span>
+      <span className="spin-go">{ready ? "SPIN" : <Icon name="lock" size={15} stroke={2.2} />}</span>
     </button>
   );
 }
@@ -3080,7 +3075,7 @@ function SpinModal({ ready, onSpin, onClose, sound }) {
   const r = 120, cx = 130, cy = 130;
   const pt = (deg, rad) => { const a = ((deg - 90) * Math.PI) / 180; return [cx + rad * Math.cos(a), cy + rad * Math.sin(a)]; };
   return (
-    <Modal title="Daily spin" onClose={spinning ? () => {} : onClose} width={360}>
+    <Modal title="Daily spin" onClose={spinning ? () => {} : onClose} width={400} stripe="#E8B23A">
       <div className="wheel-wrap">
         <div className="wheel-pointer" aria-hidden="true" />
         <svg viewBox="0 0 260 260" className="wheel" style={{ transform: `rotate(${rot}deg)`, transition: spinning ? `transform ${T}s cubic-bezier(.33,1,.68,1)` : "none" }} role="img" aria-label="Prize wheel">
@@ -3090,22 +3085,21 @@ function SpinModal({ ready, onSpin, onClose, sound }) {
             const [sx, sy] = pt(i * SEG + SEG / 2, r * 0.44);
             return (
               <g key={i}>
-                <path d={`M${cx} ${cy} L${x1} ${y1} A${r} ${r} 0 0 1 ${x2} ${y2} Z`} fill={p.color} stroke="#0B1426" strokeWidth="2" />
-                <g transform={`rotate(${i * SEG + SEG / 2} ${lx} ${ly})`}><text x={lx} y={ly + 6} textAnchor="middle" fontSize="19" fontWeight="800" fill="#FFFFFF" fontFamily="Inter, -apple-system, sans-serif">{p.label}</text></g>
-                <g transform={`rotate(${i * SEG + SEG / 2} ${sx} ${sy})`}><text x={sx} y={sy + 4} textAnchor="middle" fontSize="9.5" fontWeight="700" fill="rgba(255,255,255,0.8)" fontFamily="Inter, -apple-system, sans-serif">{p.sub.toUpperCase()}</text></g>
+                <path d={`M${cx} ${cy} L${x1} ${y1} A${r} ${r} 0 0 1 ${x2} ${y2} Z`} fill={p.color} stroke="#111214" strokeWidth="1.5" />
+                <g transform={`rotate(${i * SEG + SEG / 2} ${lx} ${ly})`}><text x={lx} y={ly + 8} textAnchor="middle" fontSize="25" fontWeight="900" fill={p.color === "#C9A24D" ? "#111214" : "#FFFFFF"} fontFamily="'Big Shoulders Display', Impact, sans-serif">{p.label.toUpperCase()}</text></g>
+                <g transform={`rotate(${i * SEG + SEG / 2} ${sx} ${sy})`}><text x={sx} y={sy + 4} textAnchor="middle" fontSize="10" fontWeight="700" letterSpacing="1" fill={p.color === "#C9A24D" ? "rgba(17,18,20,0.75)" : "rgba(255,255,255,0.85)"} fontFamily="'Familjen Grotesk Variable', -apple-system, sans-serif">{p.sub.toUpperCase()}</text></g>
               </g>
             );
           })}
-          <circle cx={cx} cy={cy} r={r} fill="none" stroke="#F5C451" strokeWidth="5" />
-          {SPIN_PRIZES.map((_, i) => { const [x, y] = pt(i * SEG, r - 1); return <circle key={i} cx={x} cy={y} r="3.5" fill="#FFF3C4" />; })}
-          <circle cx={cx} cy={cy} r="20" fill="#0B1426" stroke="#F5C451" strokeWidth="3" />
-          <text x={cx} y={cy + 6} textAnchor="middle" fontSize="17" fill="#F5C451">{"♠"}</text>
+          <circle cx={cx} cy={cy} r={r - 1} fill="none" stroke="#F2F2EE" strokeWidth="10" strokeDasharray="15 9" />
+          <circle cx={cx} cy={cy} r="30" fill="#111214" stroke="var(--t-accent)" strokeWidth="5" strokeDasharray="7 5" />
+          <text x={cx} y={cy + 7} textAnchor="middle" fontSize="19" fontWeight="900" fill="#F2F2EE" fontFamily="'Big Shoulders Display', Impact, sans-serif">FELT</text>
         </svg>
       </div>
       {result ? (
         <div className="spin-result">
           <div style={{ fontSize: 12, color: "var(--t-mid)" }}>{result.big ? "Jackpot" : "You won"}</div>
-          <div style={{ fontFamily: DISPLAY_FONT, fontSize: 26, fontWeight: 700, color: "#F5C451" }}>{result.text}</div>
+          <div className="disp">{result.text}</div>
           <button className="btn btn-raise" style={{ width: "100%", marginTop: 12 }} onClick={onClose}>Nice</button>
         </div>
       ) : (
@@ -3117,25 +3111,26 @@ function SpinModal({ ready, onSpin, onClose, sound }) {
 
 function VipCard({ chips, onOpen }) {
   const unlocked = chips >= HIGH_ROLLER_MIN;
+  const pct = Math.min(100, (chips / HIGH_ROLLER_MIN) * 100);
   return (
-    <button className={`vip-card${unlocked ? " open" : ""}`} onClick={onOpen}>
-      <div className="vc-top">
-        <span className="vc-kicker">felt · Private Room</span>
-        <span className="vc-crest"><Icon name={unlocked ? "crown" : "lock"} size={15} stroke={1.8} /></span>
-      </div>
-      <div className="vc-title">The High Roller Room</div>
-      {unlocked ? (
-        <div className="vc-foot"><span className="num">Blinds from 250 / 500</span><span className="vc-enter"><span className="vc-enter-t">Enter</span><Icon name="chevron" size={12} stroke={2.2} /></span></div>
-      ) : (
-        <>
-          <div className="vc-foot"><span className="num">Opens at {HIGH_ROLLER_MIN.toLocaleString()} chips</span><span className="num">{Math.floor(Math.min(100, (chips / HIGH_ROLLER_MIN) * 100))}%</span></div>
-          <div className="vc-bar"><div style={{ width: `${Math.min(100, (chips / HIGH_ROLLER_MIN) * 100)}%` }} /></div>
-        </>
-      )}
+    <button className="hr-card" onClick={onOpen}>
+      <span className="hr-stripe" />
+      <span className="hr-body">
+        <span className="hr-crest"><Icon name={unlocked ? "crown" : "lock"} size={22} stroke={2} /></span>
+        <span style={{ flex: 1, minWidth: 0 }}>
+          <span className="hr-kicker">MEMBERS ONLY</span>
+          <span className="hr-title">HIGH ROLLER ROOM</span>
+          <span className="hr-sub num">{unlocked ? "Blinds 250/500 and up. No hand odds." : `Opens at ${HIGH_ROLLER_MIN.toLocaleString()} chips. You're ${Math.floor(pct)}% there.`}</span>
+        </span>
+        {unlocked && <span className="hr-enter">ENTER</span>}
+      </span>
+      {!unlocked && <span className="hr-bar"><span style={{ width: `${pct}%` }} /></span>}
     </button>
   );
 }
 
+const STAKE_CHIP = { micro: "#F2F2EE", low: "#E2483D", high: "#3B7BEB" };
+const PODIUM = [["#E8B23A", "#C9952A"], ["#C9D4E2", "#A9B4C2"], ["#D9894E", "#B9693A"]];
 function HomeMenu({ onPlayAI, onFriendsTable, onEquipPass, topCards, data, chips, ranked, legendNo, onClaimDaily, onClaimChallenge, onSpin, onPrestige, sound }) {
   const [modal, setModal] = useState(null); // "ranked" | "cash" | "tournament" | "pass"
   const [passFocus, setPassFocus] = useState(null);
@@ -3143,112 +3138,127 @@ function HomeMenu({ onPlayAI, onFriendsTable, onEquipPass, topCards, data, chips
   const [tBuyIn, setTBuyIn] = useState(TOURNEY_BUYINS[0]);
   const [turbo, setTurbo] = useState(false);
   const placed = isPlaced(ranked);
+  const tier = tierOf(ranked);
   const close = () => setModal(null);
   const st = streakState(data.streak);
   const streakCount = st.claimedToday ? data.streak.count : st.nextDay > 1 ? st.nextDay - 1 : 0;
   const modes = [
-    { key: "cash", title: "Cash", sub: "Rebuy anytime", icon: "chips", rank: "K", suit: "d", act: () => setModal("cash") },
-    { key: "tournament", title: "Tournament", sub: "Real payouts", icon: "trophy", rank: "A", suit: "s", act: () => setModal("tournament") },
-    { key: "practice", title: "Practice", sub: "Tips as you play", icon: "cap", rank: "Q", suit: "h", act: () => onPlayAI({ mode: "practice", tableSize: TABLE_SIZES[1], stakes: { sb: 10, bb: 20 } }) },
+    { key: "cash", title: "Cash", sub: "Rebuy anytime", color: "#E2483D", core: "$", act: () => setModal("cash") },
+    { key: "tournament", title: "Tourney", sub: "Real payouts", color: "#3B7BEB", core: <Icon name="trophy" size={24} stroke={2.2} />, act: () => setModal("tournament") },
+    { key: "practice", title: "Practice", sub: "Tips as you play", color: "#1FA463", core: <Icon name="cap" size={24} stroke={2.2} />, act: () => onPlayAI({ mode: "practice", tableSize: TABLE_SIZES[1], stakes: { sb: 10, bb: 20 } }) },
   ];
   return (
     <div className="screen screen-fade">
       <header className="home-head">
         <div className="wordmark">felt</div>
-        <div style={{ display: "flex", gap: 6 }}>
-          {streakCount > 0 && <div className="chip-pill num streak-pill" title="Login streak"><Icon name="flame" size={13} stroke={2.2} />{streakCount}</div>}
-          <div className="chip-pill num"><span className="chip-dot" />{chips.toLocaleString()}</div>
+        <div style={{ display: "flex", alignItems: "flex-end", gap: 14 }}>
+          {streakCount > 0 && <div className="streak-pill num" title="Login streak"><Icon name="flame" size={14} stroke={2.4} />{streakCount}</div>}
+          <div className="home-chips"><b className="num">{chips.toLocaleString()}</b><span>CHIPS</span></div>
         </div>
       </header>
 
-      {topCards}
-      <StreakBanner streak={data.streak} onClaim={onClaimDaily} />
-      <div style={{ marginBottom: 14 }}><SpinCard ready={spinReady(data)} onOpen={() => setModal("spin")} /></div>
-
-      <div style={{ marginBottom: 14 }}><RankedCard ranked={ranked} legendNo={legendNo} chips={chips} onPlay={() => setModal("ranked")} onInfo={() => setModal("ladder")} /></div>
-
-      <div className="mode-grid">
-        {modes.map((o) => (
-          <button key={o.key} className={`mode-tile m-${o.key} suit-${o.suit}`} onClick={o.act}>
-            <span className="pc-index" aria-hidden="true"><b>{o.rank}</b><i>{SUIT_GLYPH[o.suit]}</i></span>
-            <span className="pc-pip" aria-hidden="true">{SUIT_GLYPH[o.suit]}</span>
-            <div className="mode-ic"><Icon name={o.icon} size={20} stroke={2} /></div>
-            <div className="mode-title">{o.title}</div>
-            <div className="mode-sub">{o.sub}</div>
-            <span className="pc-index flip" aria-hidden="true"><b>{o.rank}</b><i>{SUIT_GLYPH[o.suit]}</i></span>
-          </button>
-        ))}
+      <div className="home-stack">
+        {topCards}
+        <StreakBanner streak={data.streak} onClaim={onClaimDaily} />
+        <SpinCard ready={spinReady(data)} onOpen={() => setModal("spin")} />
+        <RankedCard ranked={ranked} legendNo={legendNo} chips={chips} onPlay={() => setModal("ranked")} onInfo={() => setModal("ladder")} />
+        <div className="mode-chips">
+          {modes.map((o) => (
+            <button key={o.key} className="mode-chip" onClick={o.act} style={{ "--cc": o.color }}>
+              <span className="mc-disc"><span className="mc-core">{o.core}</span></span>
+              <span className="mc-name">{o.title}</span>
+              <span className="mc-sub">{o.sub}</span>
+            </button>
+          ))}
+        </div>
+        {cloudEnabled() && onFriendsTable && <FriendsTableCard onOpen={onFriendsTable} />}
+        <VipCard chips={chips} onOpen={() => setModal("vip")} />
+        <PassCard pass={data.pass} onOpen={(l) => { setPassFocus(l); setModal("pass"); }} />
+        <ChallengesCard challenges={data.challenges} onClaim={onClaimChallenge} />
       </div>
-
-      {cloudEnabled() && onFriendsTable && <div style={{ marginBottom: 14 }}><FriendsTableCard onOpen={onFriendsTable} /></div>}
-      <div style={{ marginBottom: 14 }}><VipCard chips={chips} onOpen={() => setModal("vip")} /></div>
-      <div style={{ marginBottom: 14 }}><PassCard pass={data.pass} onOpen={(l) => { setPassFocus(l); setModal("pass"); }} /></div>
-      <ChallengesCard challenges={data.challenges} onClaim={onClaimChallenge} />
 
       {modal === "pass" && <PassModal pass={data.pass} data={data} focus={passFocus} onClose={close} onEquip={onEquipPass} />}
       {modal === "spin" && <SpinModal ready={spinReady(data)} onSpin={onSpin} onClose={close} sound={sound} />}
       {modal === "ladder" && <RankLadderModal ranked={ranked} legendNo={legendNo} onClose={close} />}
       {modal === "vip" && (
-        <Modal onClose={close} width={380} className="vip-sheet">
-          <div className="vs-head">
-            <button className="iconbtn vs-close" onClick={close} aria-label="Close"><Icon name="close" size={14} /></button>
-            <div className="vs-crest"><Icon name="crown" size={20} stroke={1.6} /></div>
-            <div className="vs-kicker">felt private room</div>
-            <div className="vs-title">The High Roller Room</div>
-            <p className="vs-body">{chips >= HIGH_ROLLER_MIN ? "Sharp players, big blinds, no hand odds. You read the table yourself. Your whole bankroll sits down with you." : `Members only. Get to ${HIGH_ROLLER_MIN.toLocaleString()} chips to get in. You have ${chips.toLocaleString()}.`}</p>
+        <Modal onClose={close} width={460} className="hr-sheet">
+          <div style={{ display: "flex", justifyContent: "flex-end", marginTop: -4 }}><button className="iconbtn" onClick={close} aria-label="Close"><Icon name="close" size={15} stroke={2.4} /></button></div>
+          <div className="hr-head">
+            <span className="hr-crest"><Icon name="crown" size={32} stroke={1.8} /></span>
+            <div className="lbl" style={{ color: "#E8B23A", letterSpacing: "0.3em", marginTop: 20 }}>felt private room</div>
+            <div className="hr-big">The High<br />Roller Room</div>
+            <p className="hr-body-txt">{chips >= HIGH_ROLLER_MIN ? "Sharp players, big blinds, no hand odds. You read the table yourself. Your whole bankroll sits down with you." : `Members only. Get to ${HIGH_ROLLER_MIN.toLocaleString()} chips to get in. You have ${chips.toLocaleString()}.`}</p>
           </div>
+          <div className="lbl" style={{ color: "#B9B3A6", margin: "20px 0 8px" }}>Table size</div>
           <SizePicker value={size} onChange={setSize} />
-          <div className="list" style={{ marginTop: 12 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 16 }}>
             {HIGH_ROLLER_TABLES.map((t, i) => {
               const locked = chips < t.minBankroll;
               return (
-                <button key={t.key} disabled={locked} className={`vip-row t-${t.key}`} onClick={() => onPlayAI({ mode: "cash", tableSize: size, stakes: t, vip: true })}>
-                  <div className="vr-no">{i === 0 ? "I" : "II"}</div>
-                  <div style={{ flex: 1, minWidth: 0, textAlign: "left" }}>
-                    <div className="vr-title">{t.label}</div>
-                    <div className="vr-sub num">Blinds {t.sb.toLocaleString()} / {t.bb.toLocaleString()}</div>
-                    <div className="vr-min num">{locked ? `Needs ${t.minBankroll.toLocaleString()} chips` : `Min ${t.minBankroll.toLocaleString()}`}</div>
-                  </div>
-                  <Icon name={locked ? "lock" : "chevron"} size={15} style={{ flexShrink: 0 }} />
+                <button key={t.key} disabled={locked} className="hr-row" onClick={() => onPlayAI({ mode: "cash", tableSize: size, stakes: t, vip: true })}>
+                  <span className="hr-no">{i === 0 ? "I" : "II"}</span>
+                  <span style={{ flex: 1, minWidth: 0 }}>
+                    <span className="hr-name">{t.label}</span>
+                    <span className="hr-meta num">Blinds {t.sb.toLocaleString()}/{t.bb.toLocaleString()} · {locked ? `Needs ${t.minBankroll.toLocaleString()}` : `Min ${t.minBankroll.toLocaleString()}`}</span>
+                  </span>
+                  {locked ? <Icon name="lock" size={18} stroke={2} style={{ color: "#B9B3A6", flexShrink: 0 }} /> : <span className="hr-sit">SIT</span>}
                 </button>
               );
             })}
+          </div>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 16, padding: "12px 16px", borderRadius: 14, border: "1px dashed rgba(232,178,58,0.35)" }}>
+            <span className="lbl" style={{ color: "#B9B3A6" }}>Your bankroll</span>
+            <span className="disp num" style={{ fontSize: 26, color: "#E8B23A" }}>{chips.toLocaleString()}</span>
           </div>
         </Modal>
       )}
 
       {modal === "ranked" && (
-        <Modal title={placed ? "Ranked match" : `Placement match ${(ranked.placementGames || []).length + 1} of ${PLACEMENT_MATCHES}`} onClose={close}>
+        <Modal title={placed ? "Ranked match" : `Placement ${(ranked.placementGames || []).length + 1} of ${PLACEMENT_MATCHES}`} onClose={close} stripe={placed ? tier.color : "#A3A6AD"}>
+          <div style={{ fontSize: 13, color: "var(--t-mid)", margin: "-8px 0 16px" }}>{placed ? <>You're <b style={{ color: tier.color }}>{rankName(ranked.rating)}</b>, {Math.round(ranked.rating).toLocaleString()} RP</> : "Five matches to find where you start"}</div>
+          <div className="lbl" style={{ marginBottom: 8 }}>Table size</div>
           <SizePicker value={size} onChange={setSize} />
-          <div className="kv-list">
-            <div className="kv"><span>Game</span><b>Hold'em</b></div>
-            <div className="kv"><span>Buy-in</span><b className="num">{RANKED_BUYIN.toLocaleString()} chips</b></div>
-            <div className="kv"><span>Blinds</span><b className="num">{RANKED_STAKES.sb}/{RANKED_STAKES.bb}</b></div>
-            <div className="kv"><span>Rebuys</span><b>None</b></div>
-            <div className="kv"><span>Match length</span><b className="num">{RANKED_MATCH_HANDS} hands</b></div>
-            <div className="kv"><span>Opponents</span><b>{placed ? `Near ${rankName(matchRating(ranked))}` : "Mixed, to test you"}</b></div>
+          <div className="spec-grid">
+            <div className="spec"><span className="lbl">Buy-in</span><b className="num">{RANKED_BUYIN.toLocaleString()}</b></div>
+            <div className="spec"><span className="lbl">Blinds</span><b className="num">{RANKED_STAKES.sb}/{RANKED_STAKES.bb}</b></div>
+            <div className="spec"><span className="lbl">Length</span><b className="num">{RANKED_MATCH_HANDS} hands</b></div>
+            <div className="spec"><span className="lbl">Game</span><b>Hold'em</b></div>
+            <div className="spec"><span className="lbl">Rebuys</span><b>None</b></div>
+            <div className="spec"><span className="lbl">Versus</span><b style={{ color: placed ? tierForRating(matchRating(ranked)).color : "var(--t-text)", fontSize: 19 }}>{placed ? rankName(matchRating(ranked)).replace("Platinum", "Plat") : "Mixed"}</b></div>
+          </div>
+          <div className="pro-note">
+            <Icon name="eye" size={20} stroke={2} style={{ color: "var(--t-accent)", flexShrink: 0, marginTop: 1 }} />
+            <div>
+              <div className="disp" style={{ fontSize: 17, fontWeight: 800 }}>Pro mode</div>
+              <div style={{ fontSize: 12.5, lineHeight: 1.45, color: "var(--t-mid)", marginTop: 2 }}>No hand names and no win odds. You read the table yourself.</div>
+            </div>
           </div>
           <p className="sheet-body">{placed
-            ? `Play ${RANKED_MATCH_HANDS} hands. Finish in the top half in chips to climb, and the higher you finish the more you gain. Knock everyone out for the biggest jump. Leave early and it counts as a loss.`
-            : `Every call, fold and raise gets checked against the odds. Each match is ${RANKED_MATCH_HANDS} hands. After 5 matches that read decides where you start.`}</p>
-          <button className="btn btn-raise shine" style={{ width: "100%" }} onClick={() => onPlayAI({ mode: "ranked", tableSize: size, stakes: RANKED_STAKES, buyIn: RANKED_BUYIN })}>Find match</button>
+            ? `Finish in the top half in chips to climb. The higher you finish, the more you gain. Knock everyone out for the biggest jump. Leaving early counts as a loss.`
+            : `Every call, fold and raise gets checked against the odds. After ${PLACEMENT_MATCHES} matches that read decides where you start.`}</p>
+          <button className="btn btn-raise big-cta" style={{ marginTop: 0 }} onClick={() => onPlayAI({ mode: "ranked", tableSize: size, stakes: RANKED_STAKES, buyIn: RANKED_BUYIN })}>Find match</button>
         </Modal>
       )}
 
       {modal === "cash" && (
-        <Modal title="Cash game" onClose={close} width={380}>
+        <Modal title="Cash game" onClose={close} stripe="#E2483D">
+          <div className="lbl" style={{ marginBottom: 8 }}>Table size</div>
           <SizePicker value={size} onChange={setSize} />
+          <div style={{ fontSize: 12.5, color: "var(--t-mid)", margin: "8px 2px 0" }}>{size.sub}</div>
           <TurboRow on={turbo} onToggle={() => setTurbo((t) => !t)} />
-          <div className="list" style={{ marginTop: 12 }}>
+          <div className="lbl" style={{ margin: "16px 0 8px" }}>Stakes</div>
+          <div className="list">
             {STAKES_TIERS.map((t) => {
               const locked = chips < t.minBankroll;
+              const c = STAKE_CHIP[t.key] || "#E8B23A";
               return (
-                <button key={t.key} disabled={locked} className="row" onClick={() => onPlayAI({ mode: "cash", tableSize: size, stakes: t, turbo })}>
-                  <div style={{ textAlign: "left" }}>
-                    <div className="row-title">{t.label}</div>
-                    <div className="row-sub num">Blinds {t.sb}/{t.bb}{locked ? `, needs ${t.minBankroll.toLocaleString()} chips` : ""}</div>
-                  </div>
-                  <Icon name={locked ? "lock" : "chevron"} size={15} style={{ color: "var(--t-faint)", flexShrink: 0 }} />
+                <button key={t.key} disabled={locked} className="stake-row" onClick={() => onPlayAI({ mode: "cash", tableSize: size, stakes: t, turbo })}>
+                  <span className="chip-ic" style={{ width: 44, height: 44, borderWidth: 5, "--cc": c, ...(c === "#F2F2EE" ? { borderColor: "#111214" } : {}) }} />
+                  <span style={{ flex: 1, minWidth: 0 }}>
+                    <span className="row-title" style={{ display: "block" }}>{t.label.replace(/ Stakes$/, "")}</span>
+                    <span className="row-sub num" style={{ display: "block" }}>Blinds {t.sb}/{t.bb} · {t.minBankroll ? `Needs ${t.minBankroll.toLocaleString()}` : "Anyone can sit"}</span>
+                  </span>
+                  <Icon name={locked ? "lock" : "chevron"} size={16} stroke={2.4} style={{ color: "var(--t-mid)", flexShrink: 0 }} />
                 </button>
               );
             })}
@@ -3260,23 +3270,31 @@ function HomeMenu({ onPlayAI, onFriendsTable, onEquipPass, topCards, data, chips
         const field = size.seats;
         const pays = PAYOUTS[field] || [1];
         const canAfford = chips >= tBuyIn.buyIn;
+        const pool = tBuyIn.buyIn * field;
         return (
-          <Modal title="Tournament" onClose={close} width={380}>
+          <Modal title="Tournament" onClose={close} stripe="#3B7BEB">
+            <div className="lbl" style={{ marginBottom: 8 }}>Players</div>
             <SizePicker value={size} onChange={setSize} />
-            <div style={{ fontSize: 12, color: "var(--t-mut)", margin: "14px 2px 6px" }}>Buy-in</div>
+            <div className="lbl" style={{ margin: "16px 0 8px" }}>Buy-in</div>
             <div className="seg">
               {TOURNEY_BUYINS.map((b) => (
                 <button key={b.key} className={`segbtn${tBuyIn.key === b.key ? " on" : ""}`} disabled={chips < b.buyIn} style={{ opacity: chips < b.buyIn ? 0.4 : 1 }} onClick={() => setTBuyIn(b)}>{b.label}</button>
               ))}
             </div>
-            <TurboRow on={turbo} onToggle={() => setTurbo((t) => !t)} tournament />
-            <div className="kv-list">
-              <div className="kv"><span>Starting stack</span><b className="num">{TOURNEY_STACK.toLocaleString()}</b></div>
-              <div className="kv"><span>Prize pool</span><b className="num">{tBuyIn.buyIn ? (tBuyIn.buyIn * field).toLocaleString() : "None"}</b></div>
-              <div className="kv"><span>Pays</span><b className="num">{pays.map((x, i) => `${ordinal(i + 1)} ${Math.round(x * 100)}%`).join(", ")}</b></div>
+            <div className="prize-box">
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 10 }}><span className="lbl">Prize pool</span><span style={{ fontSize: 12.5, color: "var(--t-mid)" }}>Start with {TOURNEY_STACK.toLocaleString()} chips</span></div>
+              <div className="disp num" style={{ fontSize: 48, marginTop: 4 }}>{pool ? pool.toLocaleString() : "Freeroll"}</div>
+              {pool > 0 && (
+                <div className="prize-bars">
+                  {pays.map((x, i) => (
+                    <div key={i}><i style={{ height: 20 + x * 60, background: `repeating-linear-gradient(180deg, ${PODIUM[i][0]} 0 8px, ${PODIUM[i][1]} 8px 10px)` }} /><span className="num">{ordinal(i + 1).toUpperCase()} · {Math.round(x * pool).toLocaleString()}</span></div>
+                  ))}
+                </div>
+              )}
             </div>
-            <p className="sheet-body">Blinds start at 10/20 and go up every {turbo ? 3 : 5} hands. Cashing earns tournament index points. Bigger buy-ins and deeper runs score more.</p>
-            <button className="btn btn-raise shine" style={{ width: "100%" }} disabled={!canAfford} onClick={() => onPlayAI({ mode: "tournament", tableSize: size, stakes: { sb: 10, bb: 20 }, buyIn: tBuyIn.buyIn, turbo })}>{tBuyIn.buyIn ? `Buy in for ${tBuyIn.buyIn.toLocaleString()}` : "Start freeroll"}</button>
+            <TurboRow on={turbo} onToggle={() => setTurbo((t) => !t)} tournament />
+            <p className="sheet-body">Blinds start at 10/20 and go up every {turbo ? 3 : 5} hands. Cashing earns tournament index points, and bigger buy-ins and deeper runs score more.</p>
+            <button className="btn btn-raise big-cta" style={{ marginTop: 0 }} disabled={!canAfford} onClick={() => onPlayAI({ mode: "tournament", tableSize: size, stakes: { sb: 10, bb: 20 }, buyIn: tBuyIn.buyIn, turbo })}>{tBuyIn.buyIn ? `Buy in for ${tBuyIn.buyIn.toLocaleString()}` : "Start freeroll"}</button>
           </Modal>
         );
       })()}
@@ -3406,8 +3424,7 @@ function CosmeticTile({ item, owned, equipped, chips, onBuy, onEquip, children }
   );
 }
 
-function ShopScreen({ data, onClaimChips, onBuyAvatar, onClaimDaily, onBuyCosmetic, onEquipCosmetic, onBuyTitle, onBuyTheme, onEquipTheme, onPreviewTheme, previewTheme }) {
-  const ts = data.themes || defaultThemes();
+function ShopScreen({ data, onClaimChips, onBuyAvatar, onClaimDaily, onBuyCosmetic, onEquipCosmetic, onBuyTitle }) {
   const st = streakState(data.streak);
   const cos = data.cosmetics || defaultCosmetics();
   const curDay = st.claimedToday ? data.streak.count : st.nextDay;
@@ -3415,56 +3432,28 @@ function ShopScreen({ data, onClaimChips, onBuyAvatar, onClaimDaily, onBuyCosmet
     <div className="screen screen-fade">
       <header className="home-head">
         <div className="wordmark">Shop</div>
-        <div className="chip-pill num"><span className="chip-dot" />{data.chips.toLocaleString()}</div>
+        <div className="home-chips"><b className="num">{data.chips.toLocaleString()}</b><span>CHIPS</span></div>
       </header>
 
-      <SectionLabel right="Changes the whole app">Themes</SectionLabel>
-      <div className="theme-grid" style={{ marginBottom: 24 }}>
-        {THEMES.map((t) => {
-          const owned = ts.owned.includes(t.key), on = ts.equipped === t.key, viewing = previewTheme === t.key;
-          return (
-            <div key={t.key} className={`theme-card${on ? " on" : ""}${viewing ? " viewing" : ""}`}>
-              <ThemePreview t={t} />
-              <div className="theme-name">{t.label}</div>
-              <div className="theme-sub">{t.sub}</div>
-              <div style={{ display: "flex", gap: 6, marginTop: "auto" }}>
-                {on ? <span className="cos-tag eq" style={{ flex: 1, justifyContent: "center", padding: "7px 8px" }}>Equipped</span>
-                  : owned ? <button className="btn btn-sm" style={{ flex: 1 }} onClick={() => onEquipTheme(t.key)}>Equip</button>
-                  : (<>
-                      <button className="btn btn-sm" style={{ flex: 1, padding: "7px 6px" }} onClick={() => onPreviewTheme(t.key)}>{viewing ? "Viewing" : "Preview"}</button>
-                      <button className="btn btn-sm btn-raise" style={{ flex: 1, padding: "7px 6px" }} disabled={data.chips < t.cost} onClick={() => onBuyTheme(t)}>{shortNum(t.cost)}</button>
-                    </>)}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      <section className="panel streak-panel" style={{ marginBottom: 24 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <div className="sec-ic" style={{ background: "rgba(255,138,76,0.18)", color: "#FF8A4C" }}><Icon name="flame" size={15} stroke={2} /></div>
-            <div>
-              <div style={{ fontSize: 15, fontWeight: 700 }}>Daily streak</div>
-              <div style={{ fontSize: 11.5, color: "var(--t-sub)" }}>{st.claimedToday ? "Claimed. Come back tomorrow." : "Miss a day and it starts over"}</div>
-            </div>
-          </div>
-          <button className={`btn btn-raise btn-sm${st.claimedToday ? "" : " shine"}`} disabled={st.claimedToday} onClick={onClaimDaily}>{st.claimedToday ? "Claimed" : "Claim"}</button>
+      <section className="streak-card" style={{ marginBottom: 24 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 10 }}>
+          <div className="disp" style={{ fontSize: 21, fontWeight: 800 }}>Daily streak</div>
+          <div style={{ fontSize: 12.5, color: "var(--t-mid)" }}>{st.claimedToday ? "Claimed. Back tomorrow" : `Day ${curDay} of 7`}</div>
         </div>
-        <div className="streak-row">
+        <div className="streak-days">
           {STREAK_REWARDS.map((amt, i) => {
             const day = i + 1;
             const got = st.claimedToday ? day <= curDay : day < curDay;
-            const today = day === curDay;
+            const today = day === curDay && !st.claimedToday;
             return (
-              <div key={day} className={`streak-day${got ? " got" : ""}${today && !st.claimedToday ? " today" : ""}${day === 7 ? " big" : ""}`}>
-                <div className="sd-n">Day {day}</div>
-                {got ? <Icon name="check" size={14} stroke={2.6} /> : <span className="chip-dot" style={{ width: 11, height: 11 }} />}
-                <div className="sd-amt num">{amt >= 1000 ? `${amt / 1000}k` : amt}</div>
+              <div key={day} className={`sday${got ? " got" : ""}${today ? " today" : ""}${day === 7 ? " big" : ""}`}>
+                <i>{got ? <Icon name="check" size={14} stroke={3.2} /> : day}</i>
+                <span className="num">{kNum(amt)}</span>
               </div>
             );
           })}
         </div>
+        {!st.claimedToday && <button className="btn btn-raise big-cta" style={{ minHeight: 50, fontSize: 22 }} onClick={onClaimDaily}>Claim {STREAK_REWARDS[curDay - 1].toLocaleString()}</button>}
       </section>
 
       <SectionLabel right="Tap to equip">Table felts</SectionLabel>
@@ -3589,27 +3578,48 @@ function LeaderboardScreen({ data, account, online = {}, onOpenAuth }) {
   const renderRow = (p, i, pinned = false) => {
     const tier = isRanked ? tierForRating(p.rating) : null;
     return (
-      <div key={(pinned ? "pin-" : "") + (p.id || p.name) + (p.isYou ? "-you" : "")} ref={p.isYou && !pinned ? meRef : null} className={`lb-row${pinned ? " lb-pinned" : ""}${p.profile && !p.isYou ? " tap" : ""}`} onClick={p.profile && !p.isYou ? () => setOpenF(p.id) : undefined} style={{ background: p.isYou ? "rgba(52,211,153,0.1)" : "var(--t-panel)", borderColor: p.isYou ? "rgba(52,211,153,0.4)" : "rgba(244,247,252,0.06)" }}>
-        <div className="num" style={{ width: 26, fontSize: 13.5, fontWeight: 700, color: i < 3 ? medal[i] : "var(--t-faint)" }}>{i + 1}</div>
+      <div key={(pinned ? "pin-" : "") + (p.id || p.name) + (p.isYou ? "-you" : "")} ref={p.isYou && !pinned ? meRef : null} className={`lb-row${pinned ? " lb-pinned" : ""}${p.profile && !p.isYou ? " tap" : ""}`} onClick={p.profile && !p.isYou ? () => setOpenF(p.id) : undefined} style={{ background: p.isYou ? "var(--t-raise)" : "var(--t-panel)", boxShadow: p.isYou ? "inset 0 0 0 2px var(--t-accent)" : "none" }}>
+        <div className="num" style={{ minWidth: 26, fontFamily: "var(--t-display)", fontSize: 20, fontWeight: 900, color: p.isYou ? "var(--t-accent)" : i < 3 ? medal[i] : "var(--t-mid)" }}>{p.isYou && pinned ? `#${i + 1}` : i + 1}</div>
         {tier && <TierBadge tier={tier} size={30} />}
         {live && p.profile && <PlayerAvatar p={p.profile} size={30} live={!p.isYou && !!online[p.id]} />}
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 14, fontWeight: 600, color: p.isYou ? "var(--t-good)" : "var(--t-text)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}><span className={pnameCls(p.prestige)}>{p.isYou && p.name !== "You" ? `${p.name} (you)` : p.name}</span>{p.prestige ? <PrestigeBadge n={p.prestige} size={15} /> : null}</div>
+          <div style={{ fontSize: 14.5, fontWeight: 700, color: "var(--t-text)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}><span className={pnameCls(p.prestige)}>{p.isYou && p.name !== "You" ? `${p.name} (you)` : p.name}</span>{p.prestige ? <PrestigeBadge n={p.prestige} size={15} /> : null}</div>
           {(tier || (p.title && p.title !== "rookie")) && <div style={{ fontSize: 11, display: "flex", gap: 8, alignItems: "baseline", whiteSpace: "nowrap", overflow: "hidden" }}>{tier && <span style={{ color: tier.color }}>{live && scope === "world" && p.rating >= 1500 ? `Legend #${i + 1}` : rankName(p.rating)}</span>}{p.title && p.title !== "rookie" && <TitleTag k={p.title} size={10.5} />}</div>}
         </div>
-        <div className="num" style={{ fontSize: 13.5, fontWeight: 600, color: "var(--t-text2)" }}>{value(p)}</div>
+        <div className="num" style={{ fontFamily: "var(--t-display)", fontSize: 20, fontWeight: 800 }}>{isRanked ? p.rating.toLocaleString() : p.index.toLocaleString()}<span style={{ fontFamily: "var(--t-body)", fontSize: 10.5, fontWeight: 700, letterSpacing: "0.1em", color: "var(--t-mid)", marginLeft: 4 }}>{isRanked ? "RP" : "PTS"}</span></div>
       </div>
     );
   };
+  // the top three stand on a podium
+  const podium = (
+    <section className="podium" aria-label="Top three">
+      {[1, 0, 2].map((k) => {
+        const p = visible[k];
+        if (!p) return <div key={k} />;
+        const tier = isRanked ? tierForRating(p.rating) : null;
+        const ring = tier ? tier.color : ["#E8B23A", "#C9D4E2", "#D9894E"][k];
+        const big = k === 0;
+        return (
+          <button key={k} ref={p.isYou ? meRef : null} className={`pod${big ? " first" : ""}`} disabled={!p.profile || p.isYou} onClick={() => setOpenF(p.id)}>
+            {big && <Icon name="crown" size={22} stroke={1.8} style={{ color: "#E8B23A" }} />}
+            <span className="pod-av" style={{ boxShadow: `0 0 0 3px var(--t-bg), 0 0 0 6px ${ring}` }}>{live && p.profile ? <PlayerAvatar p={p.profile} size={big ? 64 : 52} live={!p.isYou && !!online[p.id]} /> : <span className="pod-letter" style={{ width: big ? 64 : 52, height: big ? 64 : 52, background: AVATAR_COLORS[hashStr(p.name) % AVATAR_COLORS.length] }}>{(p.name || "?")[0]}</span>}</span>
+            <span className="pod-name"><span className={pnameCls(p.prestige)}>{p.isYou ? "You" : p.name}</span></span>
+            <span className="pod-val num">{isRanked ? p.rating.toLocaleString() : p.index.toLocaleString()}</span>
+            <span className="pod-block" style={{ height: big ? 92 : k === 1 ? 64 : 48, "--sc": big ? "#E8B23A" : ring }}><b>{k + 1}</b></span>
+          </button>
+        );
+      })}
+    </section>
+  );
   if (tab === "friends") {
     const me = { id: "me", ...publicProfile(data), username: account ? account.username : null, isYou: true };
     const rows = [...(fl || []), me].sort((a, b) => (b.placed ? b.rating : -1) - (a.placed ? a.rating : -1));
     return (
       <div className="screen screen-fade">
-        <header className="home-head" style={{ marginBottom: 12 }}><div className="wordmark">Leaderboard</div></header>
-        <div className="seg" style={{ marginBottom: 10 }}>
+        <header className="home-head" style={{ marginBottom: 14 }}><div className="wordmark">Ranks</div></header>
+        <div className="seg" style={{ marginBottom: 12 }}>
           <button onClick={() => setTab("ranked")} className="segbtn">Ranked</button>
-          <button onClick={() => setTab("index")} className="segbtn">Tournament index</button>
+          <button onClick={() => setTab("index")} className="segbtn">Tourney</button>
           <button onClick={() => setTab("friends")} className="segbtn on">Friends</button>
         </div>
         {!account ? (
@@ -3617,11 +3627,11 @@ function LeaderboardScreen({ data, account, online = {}, onOpenAuth }) {
         ) : fl === null ? <div className="empty">Loading…</div> : (
           <div className="list" style={{ gap: 6 }}>
             {rows.map((p, i) => (
-              <div key={p.id} className={`friend-row${p.isYou ? "" : " tap"}`} style={p.isYou ? { borderColor: "rgba(52,211,153,0.4)", background: "rgba(52,211,153,0.08)" } : undefined} onClick={p.isYou ? undefined : () => setOpenF(p.id)}>
-                <div className="num" style={{ width: 22, fontSize: 13.5, fontWeight: 700, color: i < 3 ? ["var(--t-accent)", "#C9D4E2", "#D9894E"][i] : "var(--t-faint)" }}>{i + 1}</div>
+              <div key={p.id} className={`friend-row${p.isYou ? "" : " tap"}`} style={p.isYou ? { background: "var(--t-raise)", boxShadow: "inset 0 0 0 2px var(--t-accent)" } : undefined} onClick={p.isYou ? undefined : () => setOpenF(p.id)}>
+                <div className="num" style={{ minWidth: 22, fontFamily: "var(--t-display)", fontSize: 20, fontWeight: 900, color: p.isYou ? "var(--t-accent)" : i < 3 ? ["var(--t-accent)", "#C9D4E2", "#D9894E"][i] : "var(--t-mid)" }}>{i + 1}</div>
                 <PlayerAvatar p={p} size={34} live={!p.isYou && !!online[p.id]} />
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 13.5, fontWeight: 650, color: p.isYou ? "var(--t-good)" : "var(--t-text)", display: "flex", alignItems: "center", gap: 5 }}>{p.display_name}{p.isYou ? " (you)" : ""}<PrestigeBadge n={p.prestige} size={14} /></div>
+                  <div style={{ fontSize: 14.5, fontWeight: 700, color: "var(--t-text)", display: "flex", alignItems: "center", gap: 5 }}>{p.display_name}{p.isYou ? " (you)" : ""}<PrestigeBadge n={p.prestige} size={14} /></div>
                   <div style={{ fontSize: 11, color: p.placed ? tierForRating(p.rating).color : "var(--t-mut)" }}>{p.placed ? rankName(p.rating) : "Unranked"}</div>
                 </div>
                 <div className="num" style={{ fontSize: 13, fontWeight: 600, color: "var(--t-text2)" }}>{p.placed ? `${p.rating.toLocaleString()} RP` : "-"}</div>
@@ -3636,10 +3646,10 @@ function LeaderboardScreen({ data, account, online = {}, onOpenAuth }) {
   }
   return (
     <div ref={scrollRef} className="screen screen-fade" style={{ paddingBottom: 0, display: "flex", flexDirection: "column" }}>
-      <header className="home-head" style={{ marginBottom: 12 }}><div className="wordmark">Leaderboard</div></header>
-      <div className="seg" style={{ marginBottom: 10 }}>
+      <header className="home-head" style={{ marginBottom: 14 }}><div className="wordmark">Ranks</div></header>
+      <div className="seg" style={{ marginBottom: 12 }}>
         <button onClick={() => setTab("ranked")} className={`segbtn${isRanked ? " on" : ""}`}>Ranked</button>
-        <button onClick={() => setTab("index")} className={`segbtn${!isRanked ? " on" : ""}`}>Tournament index</button>
+        <button onClick={() => setTab("index")} className={`segbtn${!isRanked ? " on" : ""}`}>Tourney</button>
         {cloudEnabled() && <button onClick={() => setTab("friends")} className="segbtn">Friends</button>}
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 10, margin: "0 2px 12px" }}>
@@ -3652,7 +3662,8 @@ function LeaderboardScreen({ data, account, online = {}, onOpenAuth }) {
         )}
       </div>
       <div className="list" style={{ gap: 6, flex: 1 }}>
-        {visible.map((p, i) => renderRow(p, i))}
+        {visible.length >= 3 && podium}
+        {(visible.length >= 3 ? visible.slice(3) : visible).map((p, j) => renderRow(p, visible.length >= 3 ? j + 3 : j))}
         <div style={{ fontSize: 11, color: "var(--t-faint)", textAlign: "center", padding: "8px 0 4px" }}>{live ? (pool.length <= 1 ? (scope === "local" ? `No one else in ${tzLabel(tz)} time yet. Get your friends on felt.` : "No one else is on the board yet. Get your friends on felt.") : scope === "local" ? `Everyone in ${tzLabel(tz)} time. Tap a player to see their profile.` : "Everyone with a felt account. Tap a player to see their profile.") : realList === undefined && cloudEnabled() ? "Loading players…" : "Other players are samples until online play is added."}</div>
       </div>
       {/* your spot stays visible at the bottom, even when you're off the list */}
@@ -3781,7 +3792,7 @@ function OnlineTable({ tableId, account, data, sound, soundOn, setSoundOn, onExi
   }, [row && row.version]);
 
   if (!row || !st) {
-    return (<div className="table-wrap online"><div className="table-top"><button className="iconbtn" onClick={() => onExit()} aria-label="Back"><Icon name="back" size={15} /></button><div className="wordmark-sm">felt</div><span style={{ width: 30 }} /></div><div className="empty" style={{ marginTop: 80 }}>{err || "Joining the table…"}</div></div>);
+    return (<div className="table-wrap online"><div className="table-top"><button className="iconbtn" onClick={() => onExit()} aria-label="Back"><Icon name="back" size={15} /></button><div className="tt-title">Friends table</div><span style={{ width: 42 }} /></div><div className="empty" style={{ marginTop: 80 }}>{err || "Joining the table…"}</div></div>);
   }
 
   const n = st.seats.length;
@@ -3804,41 +3815,38 @@ function OnlineTable({ tableId, account, data, sound, soundOn, setSoundOn, onExi
   const shareLink = `${window.location.origin}/?table=${row.code}`;
   const compact = order.length >= 5; const tiny = order.length >= 7;
 
-  const seatView = (i) => {
+  const seatView = (i, k) => {
     const s = st.seats[i];
-    const colW = tiny ? 76 : compact ? 62 : 78; const ring = tiny ? 34 : compact ? 38 : 42; const av = ring - 6;
     if (!s) {
-      return (
-        <div key={i} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3, width: colW }}>
-          {mySeat < 0 ? <button className="ot-sit" style={{ width: ring, height: ring }} onClick={() => openSit(i)} aria-label={`Sit in seat ${i + 1}`}>+</button> : <div className="ot-open" style={{ width: ring, height: ring }} />}
-          <div style={{ fontSize: 10.5, color: "var(--t-faint)", fontWeight: 600 }}>{mySeat < 0 ? "Sit here" : "Open"}</div>
-        </div>
-      );
+      return mySeat < 0
+        ? <button key={i} className="seat seat-open" onClick={() => openSit(i)} aria-label={`Sit in seat ${i + 1}`}><span className="disp" style={{ fontSize: 20 }}>+</span><span className="lbl" style={{ color: "var(--t-text)" }}>Sit here</span></button>
+        : <div key={i} className="seat seat-open" aria-label="Open seat"><span className="lbl">Open</span></div>;
     }
     const active = betting && st.turn === i; const inHand = s.inHand && st.stage !== "waiting";
     const em = s.emote && serverNow - s.emote.at < 3500 ? s.emote.e : null;
     const fmt = compact ? shortNum : (x) => x.toLocaleString();
+    const col = AVATAR_COLORS[i % AVATAR_COLORS.length];
     return (
-      <div key={i} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3, width: colW, opacity: s.out ? 0.45 : s.folded && inHand ? 0.55 : 1, transition: "opacity .3s ease" }}>
-        <div style={{ position: "relative", width: ring, height: ring }}>
-          {active && (<svg width={ring} height={ring} style={{ position: "absolute", top: 0, left: 0, transform: "rotate(-90deg)" }}>
-            <circle cx={ring / 2} cy={ring / 2} r={ring / 2 - 2} fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="2.5" />
-            <circle cx={ring / 2} cy={ring / 2} r={ring / 2 - 2} fill="none" stroke={secsLeft < 8 ? "#FF6B6B" : "#34D399"} strokeWidth="2.5" strokeDasharray={2 * Math.PI * (ring / 2 - 2)} strokeDashoffset={2 * Math.PI * (ring / 2 - 2) * (1 - secsLeft / TURN_SECS)} style={{ transition: "stroke-dashoffset .25s linear" }} strokeLinecap="round" /></svg>)}
-          <div className="bot-av ot-av" style={{ width: av, height: av, fontSize: av * 0.5 }}>{avatarOf(s, av)}</div>
-          {s.peekAt && inHand && !s.folded && <div className="peek-badge" aria-label={`${s.name} looks at their cards`}><Icon name="eye" size={11} stroke={2.4} /></div>}
-          {st.dealer === i && <div className="dealer-chip">D</div>}
-          {(s.prestige || 0) >= 5 && <CrownMark size={12} top={-8} />}
-          {em && <div key={s.emote.at} className="emote-bubble">{em}</div>}
+      <div key={i} className={`seat${active ? " active" : ""}`} style={{ "--seat-c": col, opacity: s.out ? 0.45 : s.folded && inHand ? 0.5 : 1 }}>
+        {em && <div key={s.emote.at} className="emote-bubble">{em}</div>}
+        <div className="seat-top">
+          <div className="seat-av">
+            <div className="bot-av ot-av" style={{ width: 24, height: 24, fontSize: 13, overflow: "hidden" }}>{avatarOf(s, 24)}</div>
+            {s.peekAt && inHand && !s.folded && <div className="peek-badge" aria-label={`${s.name} looks at their cards`}><Icon name="eye" size={11} stroke={2.4} /></div>}
+            {(s.prestige || 0) >= 5 && <CrownMark size={12} top={-8} />}
+          </div>
+          <span className="seat-name"><span className={pnameCls(s.prestige)} style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{s.name}</span><PrestigeBadge n={s.prestige} size={11} /></span>
         </div>
-        <div style={{ fontSize: compact ? 10.5 : 11.5, fontWeight: 600, color: "var(--t-text2)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: colW, display: "flex", alignItems: "center", gap: 3 }}><span className={pnameCls(s.prestige)}>{s.name}</span><PrestigeBadge n={s.prestige} size={11} /></div>
-        <div className="num" style={{ fontSize: 10.5, color: "var(--t-mut)" }}>{s.out ? (s.stack > 0 ? "Away" : "Out") : fmt(s.stack)}</div>
-        <div style={{ height: tiny ? 30 : 34, display: "flex", alignItems: "center", justifyContent: "center", gap: 3 }}>
+        {st.dealer === i && <div className="dealer-chip">D</div>}
+        <div className="seat-stack num">{s.out ? (s.stack > 0 ? "AWAY" : "OUT") : fmt(s.stack)}</div>
+        <div className="seat-cards">
           {reveal[i] ? reveal[i].map((c) => <OnlineCard key={c.id} c={c} mini suitColor={suitColor} cls={`${winnerSeats.has(i) ? "win" : ""}`} />)
             : inHand && !s.folded ? (<div className={`backs${s.peekAt ? " peeking" : ""}`}>{[0, 1].map((j) => <div key={j} className="card mini back" style={{ "--r": `${j === 0 ? -7 : 7}deg`, marginLeft: j ? -11 : 0 }} />)}</div>) : null}
         </div>
-        <div style={{ height: 18 }}>
+        <div className="seat-bet">
           {s.bet > 0 ? <div className="chip-badge">{!compact && <ChipStack amount={s.bet} small set={chipSet} />}{fmt(s.bet)}</div> : s.last && inHand ? <div className="ot-last">{s.last}</div> : null}
         </div>
+        {active && <div className="seat-timer" aria-hidden="true"><div style={{ width: `${(secsLeft / TURN_SECS) * 100}%`, background: secsLeft < 8 ? "var(--t-bad)" : "var(--t-accent)" }} /></div>}
       </div>
     );
   };
@@ -3849,15 +3857,15 @@ function OnlineTable({ tableId, account, data, sound, soundOn, setSoundOn, onExi
     const presets = [{ label: "Half pot", value: clamp(st.currentBet + Math.round(pot * 0.5)) }, { label: "Pot", value: clamp(st.currentBet + pot) }, { label: "All in", value: maxTo }];
     const go = (v) => { vibrate(20); setShowRaise(false); setCustom(false); send("act", { move: st.currentBet ? "raise" : "bet", amount: v }); };
     return !custom ? (
-      <div style={{ display: "flex", gap: 7, width: "100%" }}>
+      <div className="raise-box"><div className="preset-row">
         {presets.map((p) => <button key={p.label} className="btn preset-btn" onClick={() => go(p.value)}><div style={{ fontSize: 12.5, fontWeight: 600 }}>{p.label}</div><div className="num" style={{ fontSize: 10.5, opacity: 0.8 }}>{p.value.toLocaleString()}</div></button>)}
-        <button className="iconbtn" style={{ width: 42, height: 42, borderRadius: 12 }} onClick={() => { setRaiseTo(minTo); setCustom(true); }} aria-label="Custom amount"><Icon name="edit" size={15} /></button>
-      </div>
+        <button className="iconbtn" style={{ width: 44, height: 48, borderRadius: 12, background: "var(--t-panel2)" }} onClick={() => { setRaiseTo(minTo); setCustom(true); }} aria-label="Custom amount"><Icon name="edit" size={16} /></button>
+      </div></div>
     ) : (
       <div className="slider-row">
         <input type="range" min={minTo} max={maxTo} value={clamp(raiseTo)} onChange={(e) => setRaiseTo(Number(e.target.value))} style={{ flex: 1 }} aria-label="Bet amount" />
         <span className="num" style={{ fontSize: 13, minWidth: 48, textAlign: "right", fontWeight: 700 }}>{clamp(raiseTo).toLocaleString()}</span>
-        <button className="btn btn-raise" style={{ flex: "none", padding: "8px 16px" }} onClick={() => go(clamp(raiseTo))}>{st.currentBet ? "Raise" : "Bet"}</button>
+        <button className="btn btn-raise" style={{ flex: "none", padding: "8px 16px", minHeight: 44 }} onClick={() => go(clamp(raiseTo))}>{st.currentBet ? "Raise" : "Bet"}</button>
       </div>
     );
   };
@@ -3866,23 +3874,23 @@ function OnlineTable({ tableId, account, data, sound, soundOn, setSoundOn, onExi
   const iWonUncontested = st.stage === "showdown" && st.result && st.result.uncontested && st.result.winners[0] && st.result.winners[0].seat === mySeat && !st.result.shown;
 
   return (
-    <div data-felt={felt.key} data-back={back.key} className={`table-wrap online${order.length >= 7 ? " crowded" : ""}`} style={{ "--back-a": back.a, "--back-b": back.b, "--back-ring": back.ring, ...(back.img ? { "--back-img": back.img, "--back-size": back.size } : {}), "--felt1": felt.c1, "--felt2": felt.c2, "--felt3": felt.c3, "--rail": felt.rail, ...(felt.tex ? { "--felt-tex": felt.tex, "--felt-tex-size": felt.texSize } : {}), ...(felt.line ? { "--felt-line": felt.line } : {}) }}>
+    <div data-felt={felt.key} data-back={back.key} className={`table-wrap online${order.length >= 7 ? " crowded" : ""}`} style={{ "--rail-c": "#1FA463", "--back-a": back.a, "--back-b": back.b, "--back-ring": back.ring, ...(back.img ? { "--back-img": back.img, "--back-size": back.size } : {}), "--felt1": felt.c1, "--felt2": felt.c2, "--felt3": felt.c3, "--rail": felt.rail, ...(felt.tex ? { "--felt-tex": felt.tex, "--felt-tex-size": felt.texSize } : {}), ...(felt.line ? { "--felt-line": felt.line } : {}) }}>
       <div className="table-top">
         <button className="iconbtn" onClick={() => (mySeat >= 0 ? setSheet({ kind: "leave" }) : onExit())} aria-label="Leave table"><Icon name="back" size={15} /></button>
         <div style={{ textAlign: "center", minWidth: 0 }}>
-          <div className="wordmark-sm">felt</div>
-          <div className="table-sub">Table {row.code} · {row.sb}/{row.bb}{row.friendly ? " · Friendly" : ""}</div>
+          <div className="tt-title">Table {row.code}</div>
+          <div className="table-sub">{row.sb}/{row.bb} · {row.friendly ? "Friendly" : "Real chips"}</div>
         </div>
         <div style={{ display: "flex", gap: 6 }}>
           <button className="iconbtn" onClick={openInvite} aria-label="Invite friends"><Icon name="user" size={14} /></button>
-          {mySeat >= 0 && <button className="iconbtn" onClick={() => setSheet({ kind: "emote" })} aria-label="Send a reaction"><span style={{ fontSize: 14, lineHeight: 1 }}>😀</span></button>}
+          {mySeat >= 0 && <button className="iconbtn" onClick={() => setSheet({ kind: "emote" })} aria-label="Send a reaction"><Icon name="chat" size={16} stroke={2} /></button>}
           <button className="iconbtn" onClick={() => setSoundOn((x) => !x)} aria-label={soundOn ? "Mute" : "Unmute"}><Icon name={soundOn ? "soundOn" : "soundOff"} size={14} /></button>
         </div>
       </div>
 
       <div key={statusLine} className="status">{err ? <span style={{ color: "var(--t-bad)" }}>{err}</span> : statusLine}</div>
 
-      <div className={`seats${order.length >= 7 ? " grid4" : ""}`}>{order.map(seatView)}</div>
+      <div className={`seats${order.length >= 7 ? " grid4" : ""}${order.length >= 4 ? " compact" : ""}`} style={{ gridTemplateColumns: order.length === 1 ? "minmax(0, 170px)" : `repeat(${order.length >= 7 ? 4 : order.length === 2 || order.length === 4 ? 2 : 3}, minmax(0, 1fr))`, justifyContent: "center", paddingTop: 26 }}>{order.map(seatView)}</div>
       {fxAt && <WinFx key={fxAt} kind={winFx} />}
 
       <div className="felt-center">
@@ -3894,12 +3902,12 @@ function OnlineTable({ tableId, account, data, sound, soundOn, setSoundOn, onExi
           </div>
           <div className="pot-row" style={{ visibility: pot > 0 ? "visible" : "hidden" }}>
             <ChipStack amount={pot} set={chipSet} />
-            <div className="pot-num num">Pot {pot.toLocaleString()}</div>
+            <div className="pot-num num">{pot.toLocaleString()}<span className="pot-l">POT</span></div>
           </div>
         </div>
         {st.stage === "showdown" && st.result && (
-          <div className="banner" style={{ borderColor: winnerSeats.has(mySeat) ? "rgba(52,211,153,0.45)" : "rgba(244,247,252,0.12)", background: winnerSeats.has(mySeat) ? "rgba(52,211,153,0.12)" : "rgba(244,247,252,0.04)" }}>
-            <div style={{ fontSize: 13.5, fontWeight: 600, color: winnerSeats.has(mySeat) ? "var(--t-good)" : "var(--t-text)" }}>{st.result.headline}</div>
+          <div className="banner" style={{ "--banner-c": winnerSeats.has(mySeat) ? "var(--c-green)" : "transparent" }}>
+            <div className="disp" style={{ fontSize: 20, color: winnerSeats.has(mySeat) ? "var(--t-good)" : "var(--t-text)" }}>{st.result.headline}</div>
             {st.result.hands && st.result.hands.length > 1 && (
               <div style={{ display: "flex", flexDirection: "column", gap: 3, paddingTop: 7, marginTop: 7, borderTop: "1px solid rgba(244,247,252,0.08)" }}>
                 {st.result.hands.map((h) => <div key={h.seat} style={{ display: "flex", justifyContent: "space-between", gap: 10, fontSize: 11.5, color: winnerSeats.has(h.seat) ? "var(--t-good)" : "var(--t-mid)", fontWeight: winnerSeats.has(h.seat) ? 600 : 400 }}><span>{st.seats[h.seat] ? st.seats[h.seat].name : "Player"}</span><span>{h.desc}</span></div>)}
@@ -3910,22 +3918,20 @@ function OnlineTable({ tableId, account, data, sound, soundOn, setSoundOn, onExi
       </div>
 
       {me ? (
-        <div className="hero-seat" style={{ borderColor: myTurn ? "rgba(52,211,153,0.6)" : "rgba(244,247,252,0.08)", boxShadow: myTurn ? "0 0 22px rgba(52,211,153,0.2)" : "none" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
-            <div style={{ position: "relative", width: 44, height: 44, flexShrink: 0 }}>
+        <div className={`hero-seat${myTurn ? " turn" : ""}`}>
+          {myTurn && <div className="hero-timer" aria-hidden="true"><div style={{ width: `${(secsLeft / TURN_SECS) * 100}%`, background: secsLeft < 8 ? "var(--t-bad)" : "var(--t-accent)" }} /></div>}
+          <div style={{ display: "flex", alignItems: "flex-start", gap: 10, minWidth: 0, flex: 1 }}>
+            <div className="hero-av" style={{ marginTop: 4 }}>
               {peekOpen && <div className="peek-badge hero" aria-label="You're looking at your cards"><Icon name="eye" size={11} stroke={2.4} /></div>}
               {(me.prestige || 0) >= 5 && <CrownMark />}
-              {myTurn && (<svg width="44" height="44" style={{ position: "absolute", top: 0, left: 0, transform: "rotate(-90deg)" }}>
-                <circle cx="22" cy="22" r="20" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="2.5" />
-                <circle cx="22" cy="22" r="20" fill="none" stroke={secsLeft < 8 ? "#FF6B6B" : "#34D399"} strokeWidth="2.5" strokeDasharray={2 * Math.PI * 20} strokeDashoffset={2 * Math.PI * 20 * (1 - secsLeft / TURN_SECS)} style={{ transition: "stroke-dashoffset .25s linear" }} strokeLinecap="round" /></svg>)}
-              <div style={{ position: "absolute", top: 3, left: 3, width: 38, height: 38, borderRadius: "50%", background: "var(--t-panel2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, overflow: "hidden", opacity: me.folded && me.inHand ? 0.45 : 1 }}>{avatarOf(me, 38)}</div>
-              {st.dealer === mySeat && <div className="dealer-chip" style={{ bottom: -1, right: -1 }}>D</div>}
+              <div className="hero-av-in" style={{ opacity: me.folded && me.inHand ? 0.45 : 1 }}>{avatarOf(me, 36)}</div>
+              {st.dealer === mySeat && <div className="dealer-chip" style={{ bottom: -3, right: -3 }}>D</div>}
               {me.emote && serverNow - me.emote.at < 3500 && <div key={me.emote.at} className="emote-bubble">{me.emote.e}</div>}
             </div>
-            <div style={{ minWidth: 0 }}>
-              <div style={{ fontSize: 13.5, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}><span className={pnameCls(me.prestige)}>{me.name}</span></div>
-              <div className="num" style={{ fontSize: 12, color: "var(--t-mid)" }}>{me.stack.toLocaleString()}</div>
-              {me.bet > 0 && <div className="chip-badge" style={{ marginTop: 3 }}><ChipStack amount={me.bet} small set={chipSet} />{me.bet.toLocaleString()}</div>}
+            <div style={{ minWidth: 0, flex: 1 }}>
+              <div className="hero-name"><span className={pnameCls(me.prestige)} style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{me.name}</span>{myTurn && <span className="turn-tag">YOUR TURN</span>}</div>
+              <div className="hero-stack num">{me.stack.toLocaleString()}</div>
+              {me.bet > 0 && <div className="chip-badge" style={{ marginTop: 4, display: "inline-flex" }}><ChipStack amount={me.bet} small set={chipSet} />{me.bet.toLocaleString()}</div>}
             </div>
           </div>
           <div style={{ display: "flex", gap: 6, position: "relative" }}>
@@ -3937,7 +3943,7 @@ function OnlineTable({ tableId, account, data, sound, soundOn, setSoundOn, onExi
         </div>
       ) : (
         <div className="hero-seat ot-watch">
-          <div style={{ fontSize: 13.5, fontWeight: 700 }}>Pick a seat</div>
+          <div className="disp" style={{ fontSize: 22 }}>Pick a seat</div>
           <div style={{ fontSize: 12, color: "var(--t-mid)" }}>{row.friendly ? `Friendly table. Everyone sits with ${(row.bb * 100).toLocaleString()} free chips.` : `Buy in ${lo.toLocaleString()} to ${hi.toLocaleString()} from your ${data.chips.toLocaleString()} chips.`}</div>
         </div>
       )}
@@ -3945,11 +3951,11 @@ function OnlineTable({ tableId, account, data, sound, soundOn, setSoundOn, onExi
       <div className="controls">
         {showRaise && myTurn && raisePanel()}
         {myTurn ? (
-          <div style={{ display: "flex", width: "100%", gap: 8 }}>
+          <div className="act-row">
             <button className="btn btn-fold" onClick={() => { vibrate(20); setShowRaise(false); send("act", { move: "fold" }); }}>Fold</button>
             {toCall <= 0 ? <button className="btn btn-go" onClick={() => { vibrate(15); send("act", { move: "check" }); }}>Check</button>
               : <button className="btn btn-go" onClick={() => { vibrate(15); send("act", { move: "call" }); }}>Call {Math.min(toCall, me.stack).toLocaleString()}</button>}
-            {!showRaise ? <button className="btn" disabled={me.stack <= toCall} onClick={() => setShowRaise(true)}>{st.currentBet ? "Raise" : "Bet"}</button> : <button className="btn" onClick={() => { setShowRaise(false); setCustom(false); }}>Cancel</button>}
+            {!showRaise ? <button className="btn btn-raise" disabled={me.stack <= toCall} onClick={() => setShowRaise(true)}>{st.currentBet ? "Raise" : "Bet"}</button> : <button className="btn" onClick={() => { setShowRaise(false); setCustom(false); }}>Cancel</button>}
           </div>
         ) : me && me.out ? (
           <div style={{ display: "flex", width: "100%", gap: 8, alignItems: "center" }}>
@@ -3958,9 +3964,9 @@ function OnlineTable({ tableId, account, data, sound, soundOn, setSoundOn, onExi
               : <button className="btn btn-raise" style={{ flex: "none" }} onClick={() => { setBuyIn(row.friendly ? row.bb * 100 : Math.min(hi, Math.max(lo, Math.min(data.chips, row.bb * 50)))); setSheet({ kind: "rebuy" }); }}>Rebuy</button>}
           </div>
         ) : iWonUncontested ? (
-          <button className="btn show-btn" style={{ width: "100%" }} onClick={() => send("show")}><Icon name="eye" size={14} stroke={2.2} />Show cards</button>
+          <div className="show-choice"><div className="disp">Show your cards?</div><div style={{ fontSize: 12.5, color: "var(--t-mid)", marginTop: 4 }}>Nobody called. Show them or let the next hand deal.</div><button className="btn btn-raise show-btn" style={{ width: "100%", marginTop: 12 }} onClick={() => send("show")}>Show</button></div>
         ) : me ? (
-          <div style={{ fontSize: 12.5, color: "var(--t-faint)", padding: "12px 0" }}>{st.stage === "waiting" ? (st.seats.filter(Boolean).length < 2 ? "Invite friends to start" : "Starting soon") : st.stage === "showdown" ? (nextIn ? `Next hand in ${nextIn}` : "Next hand coming") : me.folded ? "You folded. Waiting for the hand to finish." : turnName ? `Waiting on ${turnName}` : "Waiting"}</div>
+          <div className="lbl" style={{ padding: "20px 0", textAlign: "center" }}>{st.stage === "waiting" ? (st.seats.filter(Boolean).length < 2 ? "Invite friends to start" : "Starting soon") : st.stage === "showdown" ? (nextIn ? `Next hand in ${nextIn}` : "Next hand coming") : me.folded ? "You folded. Waiting for the hand to finish." : turnName ? `Waiting on ${turnName}` : "Waiting"}</div>
         ) : (
           <button className="btn btn-raise" style={{ width: "100%" }} onClick={openInvite}>Invite friends</button>
         )}
@@ -3999,7 +4005,7 @@ function OnlineTable({ tableId, account, data, sound, soundOn, setSoundOn, onExi
       )}
       {sheet && sheet.kind === "invite" && (
         <Modal title="Invite friends" onClose={() => setSheet(null)}>
-          <div className="code-card"><div style={{ fontSize: 11, color: "var(--t-mut)", fontWeight: 700, letterSpacing: "0.08em" }}>TABLE CODE</div><div className="code-big">{row.code}</div></div>
+          <div className="code-card"><div className="lbl">Table code</div><div className="code-big">{row.code}</div></div>
           <button className="btn" style={{ width: "100%", marginBottom: 12 }} onClick={async () => { try { if (navigator.share) await navigator.share({ title: "felt", text: shareText, url: shareLink }); else { await navigator.clipboard.writeText(`${shareText} ${shareLink}`); flash("Invite link copied"); } } catch (e) { /* cancelled */ } }}><Icon name="share" size={14} /> Share invite link</button>
           <div className="friend-sub">Your friends</div>
           <div className="list" style={{ gap: 6, maxHeight: "40vh", overflowY: "auto" }}>
@@ -4119,13 +4125,12 @@ function NotifyCard({ onEnable, onDismiss, busy }) {
 // Home screen entry: make a table, join one with a code, or get back to one you're sitting at
 function FriendsTableCard({ onOpen }) {
   return (
-    <button className="ft-card" onClick={onOpen}>
-      <div className="ft-ic"><Icon name="user" size={19} stroke={2} /></div>
-      <div style={{ flex: 1, minWidth: 0, textAlign: "left" }}>
-        <div style={{ fontSize: 14.5, fontWeight: 750 }}>Play with friends</div>
-        <div style={{ fontSize: 11.5, color: "var(--t-sub)", marginTop: 1 }}>Real people, your own table</div>
-      </div>
-      <Icon name="chevron" size={15} style={{ color: "var(--t-faint)" }} />
+    <button className="edge-card" onClick={onOpen} style={{ "--sc": "#1FA463" }}>
+      <span style={{ flex: 1, minWidth: 0 }}>
+        <span className="ec-title">Play friends</span>
+        <span className="ec-sub">Real people, your own table</span>
+      </span>
+      <Icon name="chevron" size={16} stroke={2.4} style={{ color: "var(--t-mid)", flexShrink: 0 }} />
     </button>
   );
 }
@@ -4493,26 +4498,35 @@ function ProfileScreen({ data, account, online, legendNo, pushOn, pushBusy, onEn
 
   return (
     <div className="screen screen-fade">
-      <div style={{ display: "flex", justifyContent: "flex-end" }}>
-        <button className="iconbtn" onClick={() => setShowSettings(true)} aria-label="Settings"><Icon name="settings" size={14} /></button>
-      </div>
-      <div style={{ textAlign: "center", margin: "0 0 24px" }}>
-        <button onClick={() => setPickingAvatar(true)} className="profile-av" style={{ boxShadow: frameColor ? `0 0 0 3px #0B1426, 0 0 0 6px ${frameColor}` : "none" }} aria-label="Change avatar">{(rk.prestige || 0) >= 5 && <CrownMark size={20} top={-16} />}{data.usePhoto && data.photo ? <img src={data.photo} alt="" className="av-photo" /> : data.avatar}<span className="av-edit"><Icon name="edit" size={11} stroke={2.2} /></span></button>
+      <header className="home-head">
+        <div className="wordmark">Me</div>
+        <button className="iconbtn" onClick={() => setShowSettings(true)} aria-label="Settings"><Icon name="settings" size={17} stroke={2} /></button>
+      </header>
+      <section className="id-card" style={{ "--sc": frameColor || (placed ? tier.color : "#A3A6AD") }}>
+        <div className="stripe" />
+        <div className="id-top">
+        <button onClick={() => setPickingAvatar(true)} className="profile-av" style={{ boxShadow: frameColor ? `0 0 0 4px var(--t-panel), 0 0 0 8px ${frameColor}` : "none" }} aria-label="Change avatar">{(rk.prestige || 0) >= 5 && <CrownMark size={20} top={-16} />}{data.usePhoto && data.photo ? <img src={data.photo} alt="" className="av-photo" /> : data.avatar}<span className="av-edit"><Icon name="edit" size={11} stroke={2.2} /></span></button>
         {editingName ? (
-          <form onSubmit={(e) => { e.preventDefault(); saveName(); }} style={{ display: "flex", gap: 6, justifyContent: "center", alignItems: "center" }}>
-            <input autoFocus value={nameInput} maxLength={16} onChange={(e) => setNameInput(e.target.value)} className="input" style={{ width: 160, textAlign: "center", fontWeight: 600 }} aria-label="Display name" />
-            <button type="submit" className="iconbtn" aria-label="Save name"><Icon name="check" size={13} /></button>
+          <div style={{ flex: 1, minWidth: 0 }}>
+          <form onSubmit={(e) => { e.preventDefault(); saveName(); }} style={{ display: "flex", gap: 6, alignItems: "center" }}>
+            <input autoFocus value={nameInput} maxLength={16} onChange={(e) => setNameInput(e.target.value)} className="input" style={{ width: 150, fontWeight: 600 }} aria-label="Display name" />
+            <button type="submit" className="iconbtn" aria-label="Save name"><Icon name="check" size={14} /></button>
           </form>
+          </div>
         ) : (
-          <button onClick={() => setEditingName(true)} className="name-btn"><span className={pnameCls(rk.prestige)}>{data.name}</span><PrestigeBadge n={rk.prestige} size={20} /><Icon name="edit" size={12} style={{ color: "var(--t-faint)", marginLeft: 6 }} /></button>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <button onClick={() => setEditingName(true)} className="name-btn"><span className={pnameCls(rk.prestige)}>{data.name}</span><PrestigeBadge n={rk.prestige} size={20} /><Icon name="edit" size={13} style={{ color: "var(--t-mid)", marginLeft: 6 }} /></button>
+            {account && account.username && <div style={{ fontSize: 13, color: "var(--t-mid)", marginTop: 2 }}>@{account.username}</div>}
+            <button className="title-btn" onClick={() => setPickingTitle(true)} aria-label="Change title"><TitleTag k={tt.equipped} size={13} /><Icon name="chevron" size={11} style={{ color: "var(--t-mid)", transform: "rotate(90deg)" }} /></button>
+          </div>
         )}
-        <button className="title-btn" onClick={() => setPickingTitle(true)} aria-label="Change title"><TitleTag k={tt.equipped} size={12.5} /><Icon name="chevron" size={11} style={{ color: "var(--t-faint)", transform: "rotate(90deg)" }} /></button>
-        <div style={{ display: "flex", justifyContent: "center", gap: 8, marginTop: 8 }}>
+        </div>
+        <div className="id-pills">
           <span className="chip-pill num"><span className="chip-dot" />{data.chips.toLocaleString()}</span>
           <span className="chip-pill" style={{ color: tier.color }}><TierBadge tier={tier} size={16} />{placed ? legendLabel(rk, legendNo) || rankName(rk.rating) : "Unranked"}</span>
           {skillNow && data.skill.hands >= 10 && <span className="chip-pill num">SR {skillNow.sr}</span>}
         </div>
-      </div>
+      </section>
 
       <SectionLabel right={<button className="ranked-info" onClick={() => setLadder(true)}>{placed && rk.peakRating > rk.rating ? `Peak ${rankName(rk.peakRating)}, ` : ""}all ranks<Icon name="chevron" size={11} /></button>}>Ranked</SectionLabel>
       <section className="panel" style={{ marginBottom: 26 }}>
@@ -4736,8 +4750,8 @@ function SettingRow({ label, sub, children }) {
 }
 function Toggle({ on, onClick, label }) {
   return (
-    <button onClick={onClick} role="switch" aria-checked={on} aria-label={label} style={{ width: 44, height: 26, borderRadius: 14, border: "none", background: on ? "var(--t-good)" : "rgba(244,247,252,0.14)", position: "relative", cursor: "pointer", transition: "background .2s ease", flexShrink: 0 }}>
-      <div style={{ position: "absolute", top: 3, left: on ? 21 : 3, width: 20, height: 20, borderRadius: "50%", background: "var(--t-text)", transition: "left .2s ease" }} />
+    <button onClick={onClick} role="switch" aria-checked={on} aria-label={label} style={{ width: 50, height: 30, borderRadius: 15, border: "none", background: on ? "var(--t-accent)" : "var(--t-track)", position: "relative", cursor: "pointer", transition: "background .2s ease", flexShrink: 0 }}>
+      <div style={{ position: "absolute", top: 3, left: on ? 23 : 3, width: 24, height: 24, borderRadius: "50%", background: on ? "#111214" : "var(--t-mid)", transition: "left .2s ease, background .2s ease" }} />
     </button>
   );
 }
@@ -4787,7 +4801,7 @@ function hydrate(d) {
   merged.pass = ensurePass(d.pass);
   merged.history = { bankroll: [], best: [], ...(d.history || {}) };
   merged.titles = { ...defaultTitles(), ...(d.titles || {}) };
-  merged.themes = { ...defaultThemes(), ...(d.themes || {}) };
+  refundThemes(merged, d);
   Object.assign(merged, passBackfill(merged));
   { const earned = newlyEarnedTitles(merged); if (earned.length) merged.titles = { ...merged.titles, owned: [...merged.titles.owned, ...earned.map((t) => t.key)] }; }
   if (merged.history.bankroll.length === 0) merged.history = { ...merged.history, bankroll: [{ t: Date.now(), v: merged.chips }] };
@@ -4808,7 +4822,6 @@ function publicProfile(d) {
 }
 
 export default function App() {
-  useGoogleFonts();
   const [loaded, setLoaded] = useState(false);
   const [bootDone, setBootDone] = useState(false);
   const [data, setData] = useState(defaultData());
@@ -4818,7 +4831,6 @@ export default function App() {
   const [tableKey, setTableKey] = useState(0);
   const [soundOn, setSoundOn] = useState(true);
   const [toast, setToast] = useState(null);
-  const [previewTheme, setPreviewTheme] = useState(null);
   const [account, setAccount] = useState(null); // { id, email, username } when signed in
   const [authOpen, setAuthOpen] = useState(null); // "signup" | "signin" | "username"
   const [online, setOnline] = useState({}); // user id -> what they're doing, for everyone in the app right now
@@ -5095,27 +5107,13 @@ export default function App() {
     persist({ ...data, chips: data.chips + PRESTIGE_REWARD, ranked: { ...r, rating: 0, mmr: matchRating(r), prestige: n, streak: 0, recent: [] } });
     showToast({ title: `Prestige ${n}`, label: `Back to Bronze. +${PRESTIGE_REWARD.toLocaleString()} chips` }, 3200);
   };
-  // theme packs: the body gets a class, every screen restyles from there
-  const themeState = data.themes || defaultThemes();
-  const activeTheme = previewTheme || themeState.equipped || "classic";
+  // themes were retired: tell anyone who got chips back, once
   useEffect(() => {
-    try { document.body.className = `theme-${activeTheme}`; const m = document.querySelector('meta[name="theme-color"]'); if (m) m.setAttribute("content", findTheme(activeTheme).sw[0]); } catch (e) { /* no document */ }
-  }, [activeTheme]);
-  const handleBuyTheme = (t) => {
-    const ts = data.themes || defaultThemes();
-    if (ts.owned.includes(t.key) || data.chips < t.cost) return;
-    sound.rankUp(); vibrate([20, 30, 20]);
-    setPreviewTheme(null);
-    persist({ ...data, chips: data.chips - t.cost, themes: { owned: [...ts.owned, t.key], equipped: t.key } });
-    showToast({ title: "Theme unlocked", label: `${t.label} is on. Switch anytime in the shop.` });
-  };
-  const handleEquipTheme = (key) => {
-    const ts = data.themes || defaultThemes();
-    if (!ts.owned.includes(key)) return;
-    sound.tap(); setPreviewTheme(null);
-    persist({ ...data, themes: { ...ts, equipped: key } });
-  };
-  const handlePreviewTheme = (key) => { sound.tap(); setPreviewTheme(key); };
+    if (!data.themeRefund) return;
+    showToast({ title: "Themes are gone", label: `You got ${data.themeRefund.toLocaleString()} chips back` }, 3600);
+    const { themeRefund, ...rest } = data;
+    persist(rest);
+  }, [data.themeRefund]); // eslint-disable-line react-hooks/exhaustive-deps
   const handleBuyTitle = (t) => {
     const tt = data.titles || defaultTitles();
     if (!t.cost || tt.owned.includes(t.key) || data.chips < t.cost) return;
@@ -5280,7 +5278,7 @@ export default function App() {
         merged.pass = ensurePass(d.pass);
         merged.history = { bankroll: [], best: [], ...(d.history || {}) };
         merged.titles = { ...defaultTitles(), ...(d.titles || {}) };
-        merged.themes = { ...defaultThemes(), ...(d.themes || {}) };
+        refundThemes(merged, d);
         merged.skill = d.skill && d.skill.v === 2 ? { ...defaultSkill(), ...d.skill } : defaultSkill();
         sound.coin(); persist(merged);
         showToast({ title: "Profile imported", label: `${merged.name}, ${merged.chips.toLocaleString()} chips` });
@@ -5330,7 +5328,7 @@ export default function App() {
       {!bootDone && <LoadingScreen fadingOut={loaded} />}
       <main className="app-main">
         <div key={tab} style={{ width: "100%", maxWidth: 460, height: "100%" }}>
-          {tab === "shop" && <ShopScreen data={data} onClaimChips={handleClaimChips} onBuyAvatar={handleBuyAvatar} onClaimDaily={handleClaimDaily} onBuyCosmetic={handleBuyCosmetic} onEquipCosmetic={handleEquipCosmetic} onBuyTitle={handleBuyTitle} onBuyTheme={handleBuyTheme} onEquipTheme={handleEquipTheme} onPreviewTheme={handlePreviewTheme} previewTheme={previewTheme} />}
+          {tab === "shop" && <ShopScreen data={data} onClaimChips={handleClaimChips} onBuyAvatar={handleBuyAvatar} onClaimDaily={handleClaimDaily} onBuyCosmetic={handleBuyCosmetic} onEquipCosmetic={handleEquipCosmetic} onBuyTitle={handleBuyTitle} />}
           {tab === "home" && <HomeMenu topCards={<>
             {!isStandalone() && !hideInstall && (installPrompt || isIOS()) && <div style={{ marginBottom: 14 }}><InstallCard prompt={installPrompt ? async () => { installPrompt.prompt(); try { await installPrompt.userChoice; } catch (e) { /* closed */ } setInstallPrompt(null); } : null} onDismiss={() => dismiss("felt-hide-install", setHideInstall)} /></div>}
             {account && pushSupported() && !pushOn && !hideNotify && (isStandalone() || !isIOS()) && typeof Notification !== "undefined" && Notification.permission !== "denied" && <div style={{ marginBottom: 14 }}><NotifyCard busy={pushBusy} onEnable={turnOnPush} onDismiss={() => dismiss("felt-hide-notify", setHideNotify)} /></div>}
@@ -5340,17 +5338,7 @@ export default function App() {
           {tab === "profile" && <ProfileScreen data={data} account={account} online={online} legendNo={legendNo} pushOn={pushOn} pushBusy={pushBusy} onEnablePush={turnOnPush} isAdmin={isAdmin} onOpenAdmin={() => setAdminOpen(true)} onOpenAuth={setAuthOpen} onSignOut={handleSignOut} sound={sound} onUpdateName={handleUpdateName} onSelectAvatar={handleSelectAvatar} onSetPhoto={handleSetPhoto} onUsePhoto={handleUsePhoto} onSelectFrame={handleSelectFrame} onAddFriend={handleAddFriend} onUpdateSettings={handleUpdateSettings} onExportData={handleExportData} onImportData={handleImportData} onResetProfile={handleResetProfile} onEquipTitle={handleEquipTitle} onPrestige={handlePrestige} />}
         </div>
       </main>
-      <BottomNav tab={tab} setTab={(t) => { sound.tap(); setTab(t); if (t !== "shop") setPreviewTheme(null); }} />
-      {previewTheme && tab === "shop" && (() => {
-        const t = findTheme(previewTheme);
-        return (
-          <div className="preview-bar" role="status">
-            <div style={{ flex: 1, minWidth: 0 }}><div style={{ fontWeight: 700, fontSize: 13.5 }}>Previewing {t.label}</div><div style={{ fontSize: 11.5, opacity: 0.75 }}>Scroll around to see it</div></div>
-            <button className="btn btn-sm" onClick={() => setPreviewTheme(null)}>Stop</button>
-            <button className="btn btn-sm btn-raise" disabled={data.chips < t.cost} onClick={() => handleBuyTheme(t)}>{data.chips < t.cost ? `Need ${shortNum(t.cost)}` : `Buy ${t.cost.toLocaleString()}`}</button>
-          </div>
-        );
-      })()}
+      <BottomNav tab={tab} setTab={(t) => { sound.tap(); setTab(t); }} />
       {invites.length > 0 && !inTable && (
         <div className="invite-banner" role="status">
           <div style={{ flex: 1, minWidth: 0 }}><div style={{ fontSize: 13, fontWeight: 700 }}>{inviteNames[invites[0].from_user] || "A friend"} invited you</div><div style={{ fontSize: 11.5, color: "var(--t-sub)" }}>Table {invites[0].code}</div></div>
@@ -5389,30 +5377,511 @@ export default function App() {
 }
 
 function BottomNav({ tab, setTab }) {
-  const side = (it) => {
-    const active = tab === it.key;
-    return (
-      <button key={it.key} onClick={() => setTab(it.key)} className="navbtn" aria-current={active ? "page" : undefined} style={{ color: active ? "var(--t-text)" : "#566A90" }}>
-        <Icon name={it.icon} size={20} stroke={active ? 2 : 1.7} />
-        <div style={{ fontSize: 10.5, fontWeight: 600, marginTop: 3 }}>{it.label}</div>
-      </button>
-    );
-  };
-  const playActive = tab === "home";
+  const items = [{ key: "shop", label: "Shop" }, { key: "leaderboard", label: "Ranks" }, { key: "home", label: "Play" }, { key: "coach", label: "Coach" }, { key: "profile", label: "Me" }];
   return (
-    <nav className="bottom-nav">
-      {side({ key: "shop", icon: "bag", label: "Shop" })}
-      {side({ key: "leaderboard", icon: "ranks", label: "Ranks" })}
-      <button onClick={() => setTab("home")} className={`play-fab${playActive ? " on" : ""}`} aria-current={playActive ? "page" : undefined} aria-label="Play">
-        <span className="play-fab-disc"><span style={{ fontSize: 20, lineHeight: 1 }}>{"♠"}</span></span>
-        <span style={{ fontSize: 10.5, fontWeight: 700, marginTop: 3 }}>Play</span>
-      </button>
-      {side({ key: "coach", icon: "coach", label: "Coach" })}
-      {side({ key: "profile", icon: "user", label: "Profile" })}
+    <nav className="bottom-nav" aria-label="Main">
+      {items.map((it) => <button key={it.key} className="navbtn" aria-current={tab === it.key ? "page" : undefined} onClick={() => setTab(it.key)}>{it.label}</button>)}
     </nav>
   );
 }
 
+const CHIP_STACK_CSS = `
+/* =====================================================================
+   CHIP STACK: the one felt look. Near black, chip colors, condensed caps,
+   and the striped edge of a poker chip on anything that matters.
+   ===================================================================== */
+:root { --t-bg: #111214; --t-panel: #1C1E22; --t-raise: #24262B; --t-panel2: #2A2C31; --t-track: #2C2F35; --t-text: #F2F2EE; --t-text2: #D7D9DD; --t-sub: #BFC2C8; --t-mid: #A3A6AD; --t-mut: #9A9DA4; --t-faint: #868A91; --t-accent: #E8B23A; --t-good: #3DD68C; --t-bad: #FF6B5E; --t-display: 'Big Shoulders Display', 'Arial Narrow', Impact, sans-serif; --t-body: 'Familjen Grotesk Variable', 'Familjen Grotesk', -apple-system, system-ui, sans-serif; --c-red: #E2483D; --c-blue: #3B7BEB; --c-green: #1FA463; --c-gold: #E8B23A; --c-white: #F2F2EE; --rule: rgba(242,242,238,0.08); }
+body { background: var(--t-bg); }
+input, textarea, select { font-family: inherit; }
+:focus-visible { outline: 2px solid var(--t-accent); outline-offset: 2px; }
+/* anything drawn with the display face reads as Chip Stack caps */
+[style*="var(--t-display)"] { text-transform: uppercase; font-weight: 800 !important; letter-spacing: 0.02em; }
+.disp { font-family: var(--t-display); font-weight: 900; text-transform: uppercase; letter-spacing: 0.02em; line-height: 0.95; }
+.lbl { font-size: 11px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: var(--t-mid); }
+.stripe { height: 10px; background: repeating-linear-gradient(90deg, var(--sc, var(--t-accent)) 0 18px, #F2F2EE 18px 28px); }
+.stripe.thin { height: 6px; background: repeating-linear-gradient(90deg, var(--sc, var(--t-accent)) 0 12px, #F2F2EE 12px 18px); }
+.chip-ic { display: inline-block; flex-shrink: 0; border-radius: 50%; box-sizing: border-box; border: 4px dashed #F2F2EE; background: var(--cc, var(--t-accent)); }
+
+.app, .app-table, .loading, .mm, .results { background: var(--t-bg) !important; }
+.app::before, .table-wrap::before { display: none !important; }
+.app-main { padding-top: 0; }
+.screen { padding: 0 16px 40px; }
+.screen-fade { animation: screenIn .18s ease; }
+.home-head { display: flex; justify-content: space-between; align-items: flex-end; margin: 18px 4px 16px; gap: 12px; }
+.wordmark { font-family: var(--t-display); font-weight: 900; font-size: 40px; line-height: 0.85; letter-spacing: 0.04em; text-transform: uppercase; }
+.wordmark::after { content: ""; display: block; height: 6px; width: 74px; margin-top: 7px; border-radius: 3px; background: repeating-linear-gradient(90deg, var(--t-accent) 0 10px, #F2F2EE 10px 16px); }
+.chip-pill { display: inline-flex; align-items: center; gap: 6px; background: var(--t-raise); border: none; border-radius: 999px; padding: 6px 12px; font-family: var(--t-display); font-weight: 800; font-size: 18px; line-height: 1; letter-spacing: 0.02em; text-transform: uppercase; }
+.chip-dot { width: 14px; height: 14px; border-radius: 50%; box-sizing: border-box; border: 3px dashed #F2F2EE; background: var(--t-accent); box-shadow: none; }
+.streak-pill { display: inline-flex; align-items: center; gap: 4px; padding: 6px 10px; border-radius: 999px; background: var(--t-panel); border: none; font-family: var(--t-display); font-weight: 800; font-size: 18px; line-height: 1; color: var(--t-text); margin-bottom: 4px; }
+.streak-pill svg { color: #FF8A4C; }
+
+.panel { background: var(--t-panel) !important; border: none !important; border-radius: 18px; box-shadow: none !important; padding: 16px; }
+.list { gap: 8px; }
+.row { background: var(--t-raise); border: none; border-radius: 14px; padding: 12px 14px; min-height: 64px; }
+button.row:hover:not(:disabled) { background: #2A2C31; }
+button.row:active:not(:disabled) { background: #2F3238; }
+.row-title { font-family: var(--t-display); font-weight: 900; font-size: 22px; line-height: 1; text-transform: uppercase; letter-spacing: 0.02em; }
+.row-sub { font-size: 12.5px; color: var(--t-mid); margin-top: 3px; }
+.stat, .comp-row, .ach-row, .best-row, .title-row, .friend-row, .chal { background: var(--t-panel); border: none; }
+.bar { height: 8px; border-radius: 4px; background: var(--t-track); }
+.bar > div { border-radius: 4px; }
+.empty { color: var(--t-mid); }
+.input { background: #111214; border: 2px solid var(--t-track); border-radius: 12px; padding: 12px 14px; font-size: 16px; color: var(--t-text); min-height: 48px; }
+.input:focus { border-color: var(--t-accent); }
+.seg { gap: 4px; background: var(--t-panel); border-radius: 12px; padding: 4px; }
+.sheet .seg { background: #111214; }
+.segbtn { font-family: var(--t-display); font-weight: 800; font-size: 16px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--t-mid); border-radius: 9px; padding: 10px 6px; min-height: 40px; }
+.segbtn.on { background: #F2F2EE; color: #111214; font-weight: 900; }
+.kv-list { border-top-color: var(--rule); }
+.kv { border-bottom-color: var(--rule); color: var(--t-mid); font-size: 13.5px; }
+.kv b { color: var(--t-text); }
+.sheet-body { color: var(--t-mid); font-size: 13.5px; }
+.panel-label { font-family: var(--t-display); font-weight: 800; font-size: 20px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--t-text); }
+.sec-ic, .mode-ic, .turbo-ic, .spin-ic { display: none !important; }
+.badge-dot { background: var(--t-accent); color: #111214; }
+.linkbtn { color: var(--t-text); font-weight: 700; }
+
+/* buttons: solid blocks of display caps */
+.btn { font-family: var(--t-display); font-weight: 900; text-transform: uppercase; letter-spacing: 0.04em; font-size: 20px; line-height: 1; border: none; background: var(--t-panel2); color: var(--t-text); border-radius: 12px; padding: 15px 16px; min-height: 52px; box-shadow: none; }
+.btn:hover:not(:disabled) { background: #33363C; border: none; }
+.btn-sm { font-size: 16px; min-height: 40px; padding: 10px 14px; border-radius: 10px; }
+.btn-raise, .btn-raise:hover:not(:disabled) { background: var(--t-accent); color: #111214; box-shadow: none; }
+.btn-raise:hover:not(:disabled) { filter: brightness(1.06); }
+.btn-go, .btn-go:hover:not(:disabled) { background: #F2F2EE; color: #111214; border: none; }
+.btn-fold, .btn-fold:hover:not(:disabled) { background: var(--t-panel2); color: var(--t-text); border: none; }
+.btn:disabled { opacity: 0.38; }
+.shine::after { display: none !important; }
+.iconbtn { width: 44px; height: 44px; border-radius: 12px; border: none; background: var(--t-panel); color: var(--t-text); }
+.iconbtn:hover { background: #2A2C31; }
+.sheet .iconbtn { background: var(--t-panel2); }
+.cos-tag { font-family: var(--t-display); font-weight: 800; font-size: 14px; letter-spacing: 0.06em; text-transform: uppercase; border-radius: 6px; padding: 3px 7px; background: var(--t-panel2); color: var(--t-text); }
+.cos-tag.eq { background: none; color: var(--t-accent); padding: 3px 0; }
+.cos-tag.buy { background: var(--t-accent); color: #111214; }
+.cos-tag.locked { background: none; color: var(--t-mid); padding: 3px 0; }
+
+/* bottom sheets with a chip stripe on top */
+.scrim { align-items: flex-end; padding: 0; background: rgba(5,5,6,0.68); }
+.sheet { position: relative; background: var(--t-panel); border: none; border-radius: 26px 26px 0 0; padding: 0 18px calc(26px + env(safe-area-inset-bottom)); max-height: 92vh; max-height: 92dvh; box-shadow: 0 -10px 40px rgba(0,0,0,0.5); animation: sheetUp .26s cubic-bezier(.2,.9,.3,1); }
+.sheet::before { content: ""; display: block; height: 10px; margin: 0 -18px 18px; background: repeating-linear-gradient(90deg, var(--sheet-c, var(--t-accent)) 0 18px, #F2F2EE 18px 28px); }
+@keyframes sheetUp { from { transform: translateY(40px); opacity: 0; } to { transform: none; opacity: 1; } }
+@media (min-width: 620px) { .scrim { align-items: center; padding: 16px; } .sheet { border-radius: 24px; overflow-x: hidden; } }
+.sheet-head { align-items: flex-start; gap: 12px; margin-bottom: 16px; }
+.sheet-title { font-family: var(--t-display); font-weight: 900; font-size: 34px; line-height: 0.92; text-transform: uppercase; letter-spacing: 0.02em; padding-top: 4px; }
+.toast { background: var(--t-panel); border: none; border-radius: 14px; overflow: hidden; padding: 14px 16px 10px; box-shadow: 0 16px 40px rgba(0,0,0,0.55); }
+.toast::before { content: ""; position: absolute; top: 0; left: 0; right: 0; height: 5px; background: repeating-linear-gradient(90deg, var(--t-accent) 0 12px, #F2F2EE 12px 18px); }
+.toast div:first-child { font-family: var(--t-display); font-size: 17px !important; font-weight: 900 !important; letter-spacing: 0.04em; text-transform: uppercase; }
+
+/* bottom nav: words, not icons, with a gold bar over the tab you're on */
+.bottom-nav { background: #0B0C0E; border-top: none; padding: 0 10px env(safe-area-inset-bottom); display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); align-items: stretch; height: calc(62px + env(safe-area-inset-bottom)); }
+.navbtn { font-family: var(--t-display); font-weight: 800; font-size: 15px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--t-mid); background: none; border: none; border-top: 4px solid transparent; padding: 0; display: flex; align-items: center; justify-content: center; position: relative; }
+.navbtn[aria-current="page"] { color: var(--t-text); font-weight: 900; font-size: 17px; border-top-color: var(--t-accent); }
+.navbtn .badge-dot { position: absolute; top: 8px; right: 8px; min-width: 16px; height: 16px; font-size: 10px; }
+
+/* loading */
+.loading-word { font-family: var(--t-display); font-weight: 900; font-size: 96px; line-height: 0.8; letter-spacing: 0.02em; text-transform: uppercase; }
+.loading-suits { gap: 10px; }
+.loading-bar { height: 8px; width: 150px; border-radius: 4px; background: var(--t-track); }
+.loading-bar div { background: repeating-linear-gradient(90deg, var(--t-accent) 0 16px, #F2F2EE 16px 24px); }
+.spinner { border-color: var(--t-track); border-top-color: var(--t-accent); }
+
+/* ---------- home ---------- */
+.home-chips { text-align: right; }
+.home-chips b { display: block; font-family: var(--t-display); font-weight: 800; font-size: 34px; line-height: 0.9; }
+.home-chips span { font-size: 11px; font-weight: 700; letter-spacing: 0.16em; color: var(--t-mid); }
+.home-stack { display: flex; flex-direction: column; gap: 12px; }
+.streak-card { padding: 14px 16px 16px; border-radius: 16px; background: var(--t-panel); }
+.streak-days { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; margin-top: 12px; }
+.sday { display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 11px; color: var(--t-mid); }
+.sday i { width: 36px; height: 36px; border-radius: 50%; box-sizing: border-box; display: flex; align-items: center; justify-content: center; font-style: normal; font-family: var(--t-display); font-weight: 800; font-size: 15px; background: var(--t-track); color: var(--t-mid); }
+.sday.got i { border: 4px dashed #F2F2EE; background: var(--t-accent); color: #111214; }
+.sday.today i { border: 3px solid var(--t-accent); background: var(--t-panel2); color: var(--t-text); font-weight: 900; }
+.sday.today { color: var(--t-text); font-weight: 700; }
+.sday.big:not(.got) i { border: 2px dashed var(--t-accent); color: var(--t-accent); }
+.spin-row { width: 100%; display: flex; align-items: center; gap: 14px; padding: 12px 14px; border-radius: 16px; background: var(--t-panel); border: none; color: var(--t-text); text-align: left; cursor: pointer; }
+.spin-row:active { transform: scale(0.985); }
+.spin-wheel { width: 48px; height: 48px; flex-shrink: 0; border-radius: 50%; box-sizing: border-box; border: 4px dashed #F2F2EE; background: conic-gradient(#2F6FDE 0 45deg, #16A06A 45deg 90deg, #8B5CF6 90deg 135deg, #E0861E 135deg 180deg, #D9468F 180deg 225deg, #0EA5B7 225deg 270deg, #1F2430 270deg 315deg, #C9A24D 315deg 360deg); }
+.spin-row.used .spin-wheel { filter: grayscale(1) brightness(0.6); }
+.spin-go { padding: 10px 14px; border-radius: 10px; background: var(--t-panel2); font-family: var(--t-display); font-weight: 900; font-size: 18px; letter-spacing: 0.04em; }
+.spin-row.ready .spin-go { background: var(--t-accent); color: #111214; }
+.rk-card { border-radius: 18px; background: var(--t-panel); overflow: hidden; }
+.rk-body { padding: 14px 18px 18px; }
+.rk-top { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.rk-link { background: none; border: none; padding: 4px 0; color: var(--t-text); font-size: 12px; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.rk-main { display: flex; align-items: flex-end; gap: 12px; margin-top: 6px; }
+.rk-rp { font-family: var(--t-display); font-weight: 900; font-size: 84px; line-height: 0.8; font-variant-numeric: tabular-nums; }
+.rk-tier { font-family: var(--t-display); font-weight: 800; font-size: 22px; line-height: 1; text-transform: uppercase; display: flex; align-items: center; gap: 6px; }
+.rk-segs { display: grid; grid-template-columns: repeat(10, minmax(0, 1fr)); gap: 4px; margin-top: 14px; }
+.rk-segs span { height: 8px; border-radius: 2px; background: var(--t-track); }
+.rk-wl { display: flex; gap: 16px; margin-top: 12px; font-size: 12.5px; color: var(--t-mid); }
+.rk-wl b { color: var(--t-text); }
+.big-cta { margin-top: 14px; width: 100%; min-height: 56px; font-size: 24px; }
+.mode-chips { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; padding: 4px 0; }
+.mode-chip { display: flex; flex-direction: column; align-items: center; gap: 8px; background: none; border: none; color: var(--t-text); padding: 0; cursor: pointer; }
+.mode-chip .mc-disc { width: 96px; height: 96px; border-radius: 50%; box-sizing: border-box; border: 9px dashed #F2F2EE; background: var(--cc); display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 18px rgba(0,0,0,0.4); transition: transform .15s ease; }
+.mode-chip .mc-core { width: 52px; height: 52px; border-radius: 50%; background: rgba(0,0,0,0.16); display: flex; align-items: center; justify-content: center; color: #F2F2EE; font-family: var(--t-display); font-weight: 900; font-size: 22px; }
+.mode-chip:active .mc-disc { transform: scale(0.94) rotate(-12deg); }
+@media (max-width: 360px) { .mode-chip .mc-disc { width: 84px; height: 84px; border-width: 8px; } }
+.mode-chip .mc-name { font-family: var(--t-display); font-weight: 800; font-size: 20px; letter-spacing: 0.04em; }
+.mode-chip .mc-sub { font-size: 11.5px; color: var(--t-mid); margin-top: -6px; }
+.edge-card { position: relative; overflow: hidden; width: 100%; display: flex; align-items: center; gap: 12px; padding: 14px 16px 14px 22px; border-radius: 14px; background: var(--t-panel); border: none; color: var(--t-text); text-align: left; cursor: pointer; }
+.edge-card::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 8px; background: repeating-linear-gradient(180deg, var(--sc, var(--c-green)) 0 10px, #F2F2EE 10px 16px); }
+.edge-card:active { transform: scale(0.985); }
+.ec-title { display: block; font-family: var(--t-display); font-weight: 800; font-size: 22px; line-height: 1; letter-spacing: 0.02em; text-transform: uppercase; }
+.ec-sub { display: block; font-size: 12.5px; color: var(--t-mid); margin-top: 3px; }
+.hr-card { width: 100%; display: block; padding: 0; border-radius: 18px; background: #0A0A0B; overflow: hidden; border: none; color: #F2F2EE; text-align: left; cursor: pointer; box-shadow: inset 0 0 0 1px rgba(232,178,58,0.4); }
+.hr-card:active { transform: scale(0.985); }
+.hr-card .hr-stripe { display: block; height: 8px; background: repeating-linear-gradient(90deg, #E8B23A 0 14px, #0A0A0B 14px 20px); }
+.hr-card .hr-body { display: flex; align-items: center; gap: 14px; padding: 14px 16px 16px; }
+.hr-crest { width: 58px; height: 58px; flex-shrink: 0; border-radius: 50%; box-sizing: border-box; border: 5px dashed #E8B23A; background: #17181B; display: flex; align-items: center; justify-content: center; color: #E8B23A; }
+.hr-kicker { display: block; font-size: 11px; font-weight: 700; letter-spacing: 0.16em; color: #E8B23A; }
+.hr-title { display: block; font-family: var(--t-display); font-weight: 900; font-size: 26px; line-height: 1; letter-spacing: 0.02em; margin-top: 2px; }
+.hr-sub { display: block; font-size: 12.5px; color: #B9B3A6; margin-top: 3px; }
+.hr-enter { padding: 9px 12px; border-radius: 10px; border: 1.5px solid #E8B23A; color: #E8B23A; font-family: var(--t-display); font-weight: 900; font-size: 17px; letter-spacing: 0.06em; line-height: 1; }
+.hr-card .hr-body { width: 100%; box-sizing: border-box; }
+.hr-bar { display: block; height: 6px; border-radius: 3px; background: #24221C; margin: 0 16px 16px; overflow: hidden; }
+.hr-bar > span { display: block; height: 100%; background: repeating-linear-gradient(90deg, #E8B23A 0 10px, #F5D27A 10px 13px); }
+.pass-card { border-radius: 18px; background: var(--t-panel); padding: 14px 0 16px; overflow: hidden; }
+.pass-top { display: flex; justify-content: space-between; align-items: center; padding: 0 16px; }
+.pass-lvl { padding: 2px 7px; border-radius: 6px; background: var(--t-accent); color: #111214; font-family: var(--t-display); font-weight: 900; font-size: 15px; }
+.pass-xp { display: flex; align-items: center; gap: 10px; padding: 0 16px; margin-top: 10px; }
+.pass-xp .bar { flex: 1; }
+.pass-xp span { font-size: 12px; font-weight: 600; color: var(--t-mid); }
+.pass-strip { display: flex; gap: 8px; overflow-x: auto; margin-top: 14px; padding: 0 16px 2px; scroll-snap-type: x proximity; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+.pass-strip::-webkit-scrollbar { display: none; }
+.pass-mini { flex: 0 0 88px; border-radius: 12px; background: var(--t-raise); overflow: hidden; border: none; color: var(--t-text); padding: 0 0 8px; display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; scroll-snap-align: start; }
+.pass-mini::before { content: ""; align-self: stretch; height: 5px; background: var(--rc, #A3A6AD); }
+.pass-mini.next { box-shadow: inset 0 0 0 2px var(--t-accent); }
+.pass-mini.got { opacity: 0.6; }
+.pass-mini .pm-l { font-size: 11px; font-weight: 700; letter-spacing: 0.1em; color: var(--t-mid); }
+.pass-mini.next .pm-l { color: var(--t-accent); }
+.pass-mini .pm-art { height: 44px; display: flex; align-items: center; justify-content: center; }
+.pass-mini .pm-name { font-size: 12px; font-weight: 600; text-align: center; padding: 0 4px; line-height: 1.15; }
+.pass-mini .pm-r { font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--rt, var(--t-mid)); }
+.r-common { --rc: #A3A6AD; --rt: #A3A6AD; } .r-rare { --rc: #3B7BEB; --rt: #6FA0FF; } .r-epic { --rc: #A855F7; --rt: #C08BFF; } .r-legendary { --rc: #E8B23A; --rt: #E8B23A; }
+.chal-card { padding: 14px 16px 8px; border-radius: 18px; background: var(--t-panel); }
+.chal-row { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--rule); }
+.chal-row:last-child { border-bottom: none; }
+.chal-row.claimed { opacity: 0.5; }
+.chal-text { display: flex; justify-content: space-between; gap: 8px; font-size: 14.5px; font-weight: 600; }
+.chal-reward { width: 58px; text-align: center; font-family: var(--t-display); font-weight: 800; font-size: 17px; color: var(--t-mid); }
+.mini-seg { display: flex; padding: 3px; border-radius: 10px; background: #111214; }
+.mini-seg button { min-height: 32px; padding: 0 12px; border: none; border-radius: 8px; background: transparent; color: var(--t-mid); font-family: var(--t-display); font-weight: 800; font-size: 15px; letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer; }
+.mini-seg button.on { background: var(--t-panel2); color: var(--t-text); }
+.app-card { background: var(--t-panel); border: none; border-radius: 16px; }
+.app-card.notify { background: var(--t-panel); box-shadow: inset 0 0 0 1.5px rgba(232,178,58,0.5); }
+.app-card-ic.bell { background: rgba(232,178,58,0.16); color: var(--t-accent); }
+.invite-banner { background: var(--t-panel); border: none; box-shadow: 0 12px 30px rgba(0,0,0,0.5), inset 0 0 0 2px var(--c-green); }
+
+/* sheet pieces */
+.turbo-row { background: var(--t-raise); border: none; border-radius: 12px; }
+.turbo-row > div > div > div:first-child { font-family: var(--t-display); font-weight: 800; font-size: 19px; letter-spacing: 0.04em; text-transform: uppercase; }
+.stake-row { display: flex; align-items: center; gap: 14px; width: 100%; padding: 12px 14px; border-radius: 14px; background: var(--t-raise); border: none; color: var(--t-text); text-align: left; cursor: pointer; }
+.stake-row:disabled { opacity: 0.4; cursor: default; }
+.stake-row:active:not(:disabled) { background: #2F3238; }
+.spec-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 14px 0 0; }
+.spec { padding: 10px 12px; border-radius: 12px; background: var(--t-raise); }
+.spec b { display: block; font-family: var(--t-display); font-weight: 900; font-size: 22px; line-height: 1.1; text-transform: uppercase; }
+.pro-note { display: flex; gap: 12px; align-items: flex-start; padding: 12px 14px; border-radius: 12px; background: #111214; margin-top: 12px; }
+.prize-box { padding: 14px; border-radius: 14px; background: var(--t-raise); margin-top: 14px; }
+.prize-bars { display: flex; align-items: flex-end; gap: 8px; margin-top: 12px; }
+.prize-bars > div { flex: 1; display: flex; flex-direction: column; gap: 4px; }
+.prize-bars i { display: block; border-radius: 6px 6px 2px 2px; }
+.prize-bars span { font-family: var(--t-display); font-weight: 800; font-size: 16px; }
+.var-tile { background: var(--t-raise); border: 2px solid transparent; border-radius: 12px; }
+.var-tile.on.v-holdem, .var-tile.on.v-omaha, .var-tile.on.v-short { border-color: var(--t-accent); background: var(--t-raise); }
+.var-name { font-family: var(--t-display); font-weight: 800; font-size: 18px; text-transform: uppercase; letter-spacing: 0.02em; }
+
+/* ---------- the table ---------- */
+.table-wrap { background: var(--t-bg); padding: 10px 16px 12px; }
+.table-top { gap: 10px; }
+.table-top .iconbtn { width: 42px; height: 42px; border-radius: 10px; }
+.tt-title { font-family: var(--t-display); font-weight: 900; font-size: 26px; line-height: 0.9; letter-spacing: 0.04em; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.table-sub { font-size: 10.5px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--t-mid); margin-top: 3px; }
+.status { font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--t-mid); margin: 8px 0 4px; min-height: 16px; }
+.seats { display: grid; gap: 8px; justify-content: stretch; margin-top: 2px; }
+.seats.grid4 { gap: 6px; }
+.seat { position: relative; border-radius: 12px; background: var(--t-panel); padding: 11px 8px 6px; display: flex; flex-direction: column; align-items: stretch; gap: 3px; min-width: 0; transition: opacity .3s ease, box-shadow .2s ease; }
+.seat::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 5px; border-radius: 12px 12px 0 0; background: repeating-linear-gradient(90deg, var(--seat-c) 0 10px, #F2F2EE 10px 15px); }
+.seat.active { box-shadow: 0 0 0 3px var(--t-accent); }
+.seat-top { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.seat-av { position: relative; flex-shrink: 0; }
+.seat .bot-av { position: static; width: 24px !important; height: 24px !important; font-size: 12px !important; }
+.seat-name { font-size: 13px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; align-items: center; gap: 4px; min-width: 0; }
+.seat-stack { font-family: var(--t-display); font-weight: 800; font-size: 21px; line-height: 1; font-variant-numeric: tabular-nums; }
+.seat-tag { font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
+.seat-cards { height: 32px; display: flex; align-items: center; justify-content: center; gap: 3px; }
+.seat-bet { height: 20px; display: flex; align-items: center; justify-content: center; }
+.seat-timer { position: absolute; left: 8px; right: 8px; bottom: 4px; height: 3px; border-radius: 2px; background: var(--t-track); overflow: hidden; }
+.seat-timer > div { height: 100%; transition: width .25s linear; }
+.seat .dealer-chip { position: absolute; top: 9px; right: 6px; bottom: auto; }
+.seat .peek-badge { top: -6px; left: -6px; }
+.seat .think-dots { top: -4px; right: -8px; }
+.seats.compact .seat { padding: 10px 6px 5px; }
+.seats.compact .seat-name { font-size: 12px; }
+.seats.compact .seat-stack { font-size: 18px; }
+.seats.compact .seat .bot-av { width: 20px !important; height: 20px !important; font-size: 10.5px !important; }
+.seats.grid4 .seat-cards { height: 28px; }
+.bot-av { font-family: var(--t-display); font-weight: 900; }
+.felt-center { gap: 10px; }
+.felt-oval { border: 11px solid transparent !important; border-radius: 999px; padding: 26px 14px 20px; background: var(--felt-tex, linear-gradient(transparent, transparent)) padding-box, radial-gradient(ellipse at 50% 35%, var(--felt1, #22A866) 0%, var(--felt2, #138048) 55%, var(--felt3, #0B5C33) 100%) padding-box, repeating-linear-gradient(90deg, var(--rail-c, #E2483D) 0 22px, #F2F2EE 22px 32px) border-box !important; background-size: var(--felt-tex-size, auto), auto, auto !important; box-shadow: inset 0 0 0 3px #111214, inset 0 8px 24px rgba(0,0,0,0.3), 0 20px 40px rgba(0,0,0,0.5) !important; }
+.felt-oval::before { top: 6px; right: 6px; bottom: 6px; left: 6px; }
+.felt-oval.drama { box-shadow: inset 0 0 0 3px #111214, 0 0 0 3px var(--t-accent), 0 0 50px rgba(232,178,58,0.35) !important; }
+.felt-logo { font-family: var(--t-display); font-weight: 900; text-transform: uppercase; letter-spacing: 0.06em; color: rgba(255,255,255,0.05); }
+.card { background: #F2F2EE; font-family: var(--t-display); font-weight: 900; border-radius: 7px; box-shadow: 0 3px 0 rgba(0,0,0,0.35); line-height: 0.95; }
+.card > div:last-child { font-family: -apple-system, system-ui, sans-serif; }
+.card.big { font-size: clamp(24px,7vw,32px); border-radius: 9px; box-shadow: 0 4px 0 rgba(0,0,0,0.4); }
+.card.big:not(.o4):first-child { transform: rotate(-4deg); }
+.card.big:not(.o4):nth-child(2) { transform: rotate(4deg); }
+.card.mini { font-size: 11px; box-shadow: 0 2px 0 rgba(0,0,0,0.35); }
+.card.win { box-shadow: 0 0 0 3px var(--t-accent), 0 0 18px rgba(232,178,58,0.55); }
+.card-slot { border: none; background: rgba(0,0,0,0.18); }
+.card-slot.next { border: 2px solid var(--t-accent); }
+.pot-row { align-items: center; }
+.pot-num { background: none; padding: 0; font-family: var(--t-display); font-weight: 900; font-size: 28px; line-height: 1; color: #FFFFFF; display: inline-flex; align-items: baseline; gap: 8px; }
+.pot-l { font-family: var(--t-body); font-size: 11px; font-weight: 700; letter-spacing: 0.16em; color: rgba(255,255,255,0.8); }
+.chip-badge { background: #111214; border: none; color: var(--t-text); font-family: var(--t-display); font-weight: 800; font-size: 14px; padding: 2px 8px; border-radius: 999px; }
+.dealer-chip { background: #F2F2EE; color: #111214; font-family: var(--t-display); font-weight: 900; font-size: 10px; width: 17px; height: 17px; }
+.odds-badge { background: #111214; border: none; font-family: var(--t-display); font-size: 14px; }
+.banner { background: var(--t-panel) !important; border: none !important; border-radius: 14px; box-shadow: inset 0 0 0 2px var(--banner-c, transparent); }
+.banner > div:first-child > div:first-child > div:first-child { font-family: var(--t-display); font-weight: 900; font-size: 20px !important; letter-spacing: 0.02em; text-transform: uppercase; }
+.hero-seat { position: relative; overflow: visible; background: var(--t-panel); border: none !important; border-radius: 16px; padding: 12px 14px; box-shadow: none !important; }
+.hero-seat.turn { box-shadow: inset 0 0 0 2px var(--t-accent) !important; }
+.hero-timer { position: absolute; left: 0; right: 0; top: 0; height: 5px; background: var(--t-track); border-radius: 16px 16px 0 0; overflow: hidden; }
+.hero-seat .sq-hint { bottom: -14px; }
+.hero-timer > div { height: 100%; transition: width .25s linear; }
+.hero-name { font-size: 15px; font-weight: 700; display: flex; align-items: center; gap: 6px; white-space: nowrap; min-width: 0; }
+.hero-name > span:first-child { min-width: 24px; }
+.turn-tag { flex-shrink: 0; }
+.turn-tag { font-size: 10.5px; font-weight: 700; letter-spacing: 0.12em; color: #111214; background: var(--t-accent); padding: 2px 6px; border-radius: 4px; }
+.hero-stack { font-family: var(--t-display); font-weight: 900; font-size: 32px; line-height: 0.95; font-variant-numeric: tabular-nums; margin-top: 2px; }
+.hero-hand { font-size: 12.5px; font-weight: 600; color: var(--t-mid); min-height: 17px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hero-av { position: relative; width: 36px; height: 36px; flex-shrink: 0; }
+.hero-av-in { width: 36px; height: 36px; border-radius: 50%; background: var(--t-panel2); display: flex; align-items: center; justify-content: center; font-size: 17px; overflow: hidden; }
+.standing { background: none; color: var(--t-text); font-family: var(--t-display); font-weight: 900; font-size: 14px; padding: 0; margin-left: 6px; }
+.controls { gap: 8px; padding-top: 10px; }
+.controls .btn { min-height: 58px; font-size: 22px; }
+.act-row { display: grid; grid-template-columns: 1fr 1.25fr 1.25fr; gap: 8px; width: 100%; }
+.act-row.two { grid-template-columns: 1fr 1fr; }
+.raise-box { width: 100%; padding: 12px 14px 14px; border-radius: 16px; background: var(--t-panel); }
+.preset-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)) 44px; gap: 6px; }
+.preset-btn { min-height: 48px !important; padding: 6px 4px !important; background: var(--t-panel2) !important; color: var(--t-text) !important; flex-direction: column; gap: 2px; }
+.preset-btn > div:first-child { font-family: var(--t-display); font-size: 16px !important; font-weight: 900 !important; }
+.preset-btn > div:last-child { font-family: var(--t-body); font-size: 11.5px !important; opacity: 0.75; text-transform: none; letter-spacing: 0; }
+.slider-row { background: var(--t-panel); border-radius: 14px; padding: 10px 10px 10px 14px; }
+.slider-row .num { font-family: var(--t-display); font-weight: 900; font-size: 24px !important; }
+input[type=range] { accent-color: var(--t-accent); height: 28px; }
+.pre-row { gap: 8px; }
+.pre-btn { border: 2px solid var(--t-track); background: transparent; color: var(--t-text); border-radius: 12px; font-family: var(--t-display); font-weight: 800; font-size: 17px; letter-spacing: 0.04em; text-transform: uppercase; min-height: 52px; }
+.pre-btn.on { border-color: var(--t-accent); color: var(--t-text); background: rgba(232,178,58,0.12); }
+.pre-box { display: none; }
+.peek-badge { background: var(--t-accent); color: #111214; }
+.coach-panel { background: var(--t-panel) !important; border: none !important; border-radius: 16px; padding: 13px 14px 10px !important; height: 82px; }
+.coach-panel::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 5px; background: repeating-linear-gradient(90deg, var(--c-green) 0 14px, #F2F2EE 14px 20px); z-index: 1; }
+.coach-badge { font-family: var(--t-display); font-weight: 900; font-size: 16px; letter-spacing: 0.06em; color: var(--t-good) !important; }
+.coach-act { font-family: var(--t-display); font-weight: 900; font-size: 17px; letter-spacing: 0.02em; text-transform: uppercase; }
+.coach-why { font-size: 13px; color: var(--t-text2); }
+.coach-panel.note.good, .coach-panel.note.bad { background: var(--t-panel) !important; }
+.coach-panel .cp-meter { display: none; }
+.cp-hand b { font-family: var(--t-display); font-size: 18px; }
+.tip { border: none !important; background: var(--t-panel) !important; color: var(--t-text2) !important; border-radius: 12px; box-shadow: inset 0 0 0 1.5px rgba(232,178,58,0.5); }
+.bigwin-label { font-family: var(--t-display); font-weight: 900; font-size: 26px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--t-accent); }
+.bigwin-amt { font-family: var(--t-display); font-weight: 900; font-size: 88px; line-height: 0.9; color: #FFFFFF; text-shadow: 0 6px 30px rgba(0,0,0,0.6); }
+.fchip { border: 3px dashed #F2F2EE; }
+.fchip.c0 { background: var(--t-accent); } .fchip.c1 { background: var(--c-red); } .fchip.c2 { background: var(--c-blue); }
+.float-amt { font-family: var(--t-display); font-weight: 900; font-size: 24px; color: var(--t-good); }
+.mm-title { font-family: var(--t-display); font-weight: 900; font-size: 40px; text-transform: uppercase; letter-spacing: 0.02em; }
+.mm-sub { font-size: 12px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--t-mid); }
+.shown-tag { background: var(--t-accent); color: #111214; font-family: var(--t-display); font-size: 12px; letter-spacing: 0.08em; }
+.show-choice { width: 100%; padding: 14px; border-radius: 16px; background: var(--t-panel); }
+.show-choice .disp { font-size: 24px; }
+.emote-bubble { background: #F2F2EE; color: #111214; font-family: var(--t-display); font-weight: 900; font-size: 15px; letter-spacing: 0.04em; text-transform: uppercase; border-radius: 10px; }
+.emote-bubble::after { border-top-color: #F2F2EE; }
+.emote-btn { background: var(--t-panel2); border: none; border-radius: 999px; font-family: var(--t-display); font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; }
+.ot-sit { border: 2px dashed #3A3D44; background: transparent; color: var(--t-mid); }
+.code-big { font-family: var(--t-display); font-weight: 900; font-size: 52px; letter-spacing: 0.2em; }
+.code-card { background: #111214; border: 2px dashed #3A3D44; }
+.code-input { font-family: var(--t-display) !important; font-weight: 900 !important; font-size: 40px !important; letter-spacing: 0.3em; }
+.stake-grid { gap: 6px; }
+.stake-btn { border: none; background: #111214; color: var(--t-text); font-family: var(--t-display); font-weight: 800; font-size: 16px; border-radius: 9px; min-height: 40px; }
+.stake-btn.on { background: #F2F2EE; color: #111214; }
+
+/* ---------- High Roller: black and gold ---------- */
+.table-wrap.vip { --t-bg: #070708; --t-panel: #121316; --t-raise: #17181B; --t-panel2: #1E1F23; --t-accent: #E8B23A; --rail-c: #E8B23A; background: #070708 !important; }
+.table-wrap.vip .seat { box-shadow: inset 0 0 0 1px rgba(232,178,58,0.3); }
+.table-wrap.vip .seat::before { background: repeating-linear-gradient(90deg, #E8B23A 0 10px, #070708 10px 14px); }
+.table-wrap.vip .seat.active { box-shadow: 0 0 0 3px #E8B23A; }
+.table-wrap.vip .felt-oval { background: radial-gradient(ellipse at 50% 35%, #2C313B, #181B21 60%, #0C0E12) padding-box, repeating-linear-gradient(90deg, #E8B23A 0 20px, #121316 20px 30px) border-box !important; box-shadow: inset 0 0 0 3px #070708, inset 0 0 0 4px rgba(232,178,58,0.35), 0 24px 50px rgba(0,0,0,0.7) !important; }
+.table-wrap.vip .hero-seat { box-shadow: inset 0 0 0 1px rgba(232,178,58,0.5) !important; }
+.table-wrap.vip .hero-seat.turn { box-shadow: inset 0 0 0 2px #E8B23A !important; }
+.table-wrap.vip .iconbtn { background: transparent; box-shadow: inset 0 0 0 1px rgba(232,178,58,0.4); color: #E8B23A; }
+.table-wrap.vip .btn-fold { background: transparent; box-shadow: inset 0 0 0 1.5px rgba(232,178,58,0.5); }
+.table-wrap.vip .pot-num { color: #E8B23A; }
+.table-wrap.vip .card.back, .table-wrap.vip .sq-cover { background-color: #121316 !important; background-image: repeating-linear-gradient(45deg, rgba(232,178,58,0.25) 0 2px, transparent 2px 6px) !important; box-shadow: inset 0 0 0 2px #121316, inset 0 0 0 3px #E8B23A, 0 3px 0 rgba(0,0,0,0.4) !important; }
+.table-wrap.vip .fchip.c0 { background: #E8B23A; } .table-wrap.vip .fchip.c1 { background: #121316; } .table-wrap.vip .fchip.c2 { background: #8A6A20; }
+.vip-logo { display: flex; flex-direction: column; align-items: center; color: transparent !important; font-size: 0 !important; }
+.vip-logo .vl-word { font-family: var(--t-display); font-weight: 900; font-size: 60px; letter-spacing: 0.06em; color: rgba(232,178,58,0.1); text-transform: uppercase; }
+.vip-intro { position: fixed; top: 0; right: 0; bottom: 0; left: 0; z-index: 40; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; background: #070708; animation: viFade 2.4s ease forwards; cursor: pointer; }
+.vi-crest { width: 92px; height: 92px; border-radius: 50%; box-sizing: border-box; border: 8px dashed #E8B23A; background: #121316; display: flex; align-items: center; justify-content: center; color: #E8B23A; animation: viUp .8s cubic-bezier(.2,.8,.2,1) .1s both; }
+.vi-kicker { margin-top: 22px; font-size: 11px; font-weight: 700; letter-spacing: 0.3em; color: #E8B23A; text-transform: uppercase; animation: viUp .8s cubic-bezier(.2,.8,.2,1) .2s both; }
+.vi-title { font-family: var(--t-display); font-weight: 900; font-size: 56px; line-height: 0.9; text-transform: uppercase; margin: 8px 0 14px; color: #F2F2EE; animation: viUp .9s cubic-bezier(.2,.8,.2,1) .3s both; }
+.vi-rule { width: 150px; height: 8px; border-radius: 4px; background: repeating-linear-gradient(90deg, #E8B23A 0 14px, #070708 14px 20px); animation: viRule 1s cubic-bezier(.2,.8,.2,1) .5s both; }
+.vi-sub { margin-top: 14px; font-size: 12px; font-weight: 700; letter-spacing: 0.16em; color: #B9B3A6; animation: viUp .8s cubic-bezier(.2,.8,.2,1) .6s both; }
+@keyframes viUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+@keyframes viRule { from { transform: scaleX(0); opacity: 0; } to { transform: scaleX(1); opacity: 1; } }
+@keyframes viFade { 0%, 80% { opacity: 1; } 100% { opacity: 0; visibility: hidden; } }
+.hr-sheet-scrim { background: rgba(0,0,0,0.85); }
+.sheet.hr-sheet { background: #070708; color: #F2F2EE; --sheet-c: #E8B23A; }
+.sheet.hr-sheet::before { background: repeating-linear-gradient(90deg, #E8B23A 0 18px, #070708 18px 26px); }
+.sheet.hr-sheet .iconbtn { background: transparent; box-shadow: inset 0 0 0 1px rgba(232,178,58,0.4); color: #E8B23A; }
+.sheet.hr-sheet .seg { background: transparent; box-shadow: inset 0 0 0 1px rgba(232,178,58,0.3); }
+.sheet.hr-sheet .segbtn { color: #F2F2EE; }
+.sheet.hr-sheet .segbtn.on { background: #E8B23A; color: #111214; }
+.hr-head { text-align: center; display: flex; flex-direction: column; align-items: center; }
+.hr-head .hr-crest { width: 86px; height: 86px; border-width: 8px; box-shadow: 0 0 0 4px #070708, 0 0 0 5px rgba(232,178,58,0.35); }
+.hr-big { font-family: var(--t-display); font-weight: 900; font-size: 50px; line-height: 0.88; text-transform: uppercase; margin-top: 8px; }
+.hr-body-txt { font-size: 14px; line-height: 1.5; color: #B9B3A6; margin: 12px 4px 0; }
+.hr-row { display: flex; align-items: center; gap: 14px; width: 100%; padding: 14px 16px; border-radius: 16px; background: #121316; border: none; box-shadow: inset 0 0 0 1px rgba(232,178,58,0.5); color: #F2F2EE; text-align: left; cursor: pointer; }
+.hr-row:disabled { background: #0D0E10; box-shadow: inset 0 0 0 1px rgba(232,178,58,0.18); cursor: default; }
+.hr-row:active:not(:disabled) { transform: scale(0.985); }
+.hr-no { width: 30px; font-family: var(--t-display); font-weight: 900; font-size: 34px; line-height: 1; color: #E8B23A; }
+.hr-row:disabled .hr-no { color: #6E6858; }
+.hr-name { display: block; font-family: var(--t-display); font-weight: 900; font-size: 24px; line-height: 1; text-transform: uppercase; }
+.hr-row:disabled .hr-name { color: #B9B3A6; }
+.hr-meta { display: block; font-size: 12.5px; color: #B9B3A6; margin-top: 4px; }
+.hr-sit { padding: 9px 12px; border-radius: 10px; background: #E8B23A; color: #111214; font-family: var(--t-display); font-weight: 900; font-size: 17px; letter-spacing: 0.06em; }
+
+/* ---------- results, pass, spin, ladder ---------- */
+.results-kicker { font-size: 11px; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; color: var(--t-mid); }
+.results-head { font-family: var(--t-display); font-weight: 900; font-size: 76px; line-height: 0.85; text-transform: uppercase; letter-spacing: 0; }
+.results-sub { color: var(--t-mid); }
+.results-delta { font-family: var(--t-display); font-weight: 900; font-size: 72px; line-height: 0.9; letter-spacing: 0; }
+.results-delta span { font-family: var(--t-body); font-size: 12px; font-weight: 700; letter-spacing: 0.16em; }
+.results-tier { position: relative; overflow: hidden; background: var(--t-panel); border: none; border-radius: 16px; padding: 18px 16px 14px; }
+.results-tier::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 8px; background: repeating-linear-gradient(90deg, var(--tc, var(--t-accent)) 0 16px, #F2F2EE 16px 24px); }
+.results-note { border: none; background: var(--t-panel); border-radius: 12px; box-shadow: inset 0 0 0 1.5px var(--note-c, rgba(232,178,58,0.5)); }
+.results-lines > div { border-bottom-color: var(--rule); }
+.results-stats > div { background: var(--t-panel); border-radius: 12px; }
+.results-stats b { font-family: var(--t-display); font-weight: 900; font-size: 24px; }
+.results-stats span { font-size: 10.5px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; }
+.pass-sheet { --sheet-c: #A855F7; }
+.ps-head { display: flex; align-items: flex-end; gap: 14px; margin-bottom: 14px; }
+.ps-big { font-family: var(--t-display); font-weight: 900; font-size: 84px; line-height: 0.78; }
+.ps-preview { display: flex; gap: 14px; padding: 14px; border-radius: 16px; background: var(--t-raise); position: relative; overflow: hidden; }
+.ps-preview::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 6px; background: repeating-linear-gradient(90deg, var(--rc, #A3A6AD) 0 14px, #F2F2EE 14px 20px); }
+.ps-art { width: 104px; height: 104px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; border-radius: 14px; background: #111214; }
+.ps-meta { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
+.ps-rarity { font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; }
+.ps-name { font-family: var(--t-display); font-weight: 900; font-size: 28px; line-height: 0.95; text-transform: uppercase; }
+.ps-sub { font-size: 12.5px; color: var(--t-mid); }
+.ps-got { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 700; color: var(--t-good); }
+.ps-lock { display: inline-flex; align-items: center; gap: 5px; font-family: var(--t-display); font-size: 16px; font-weight: 800; color: var(--t-accent); }
+.ps-track { position: relative; display: flex; gap: 10px; overflow-x: auto; margin: 16px -18px 0; padding: 4px 18px 8px; scroll-snap-type: x proximity; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+.ps-track::-webkit-scrollbar { display: none; }
+.ps-line { position: absolute; left: 18px; bottom: 23px; height: 4px; width: calc(30 * 96px); background: var(--t-track); }
+.ps-line > div { height: 100%; background: var(--t-accent); }
+.ps-tile { flex: 0 0 86px; display: flex; flex-direction: column; align-items: center; gap: 8px; background: none; border: none; padding: 0; color: var(--t-text); cursor: pointer; scroll-snap-align: center; }
+.ps-card { align-self: stretch; height: 112px; border-radius: 12px; background: var(--t-raise); overflow: hidden; display: flex; flex-direction: column; align-items: center; gap: 6px; padding-bottom: 8px; }
+.ps-card::before { content: ""; align-self: stretch; height: 5px; background: var(--rc, #A3A6AD); }
+.ps-tile.got .ps-card { opacity: 0.6; }
+.ps-tile.sel .ps-card { box-shadow: inset 0 0 0 2px #F2F2EE; }
+.ps-tile.next .ps-card { box-shadow: inset 0 0 0 2px var(--t-accent); }
+.ps-tile-art { flex: 1; display: flex; align-items: center; justify-content: center; }
+.ps-tile-name { font-size: 11.5px; font-weight: 600; color: var(--t-text2); white-space: nowrap; }
+.ps-node { position: relative; z-index: 1; width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: var(--t-display); font-weight: 900; font-size: 14px; background: var(--t-track); color: var(--t-mid); }
+.ps-tile.got .ps-node { box-sizing: border-box; border: 4px dashed #111214; background: var(--t-accent); color: #111214; }
+.ps-tile.next .ps-node { box-sizing: border-box; border: 3px solid var(--t-accent); background: #111214; color: var(--t-text); }
+.pa-chips { background: none; box-shadow: none; color: var(--t-text); }
+.pa-chips > svg { display: none; }
+.pa-chips::before { content: ""; width: 60%; height: 60%; border-radius: 50%; box-sizing: border-box; border: 4px dashed #F2F2EE; background: var(--c-red); margin-bottom: 3px; }
+.pa-chips b { font-family: var(--t-display); font-weight: 900; }
+.pa-emote { background: #F2F2EE; color: #111214; font-family: var(--t-display); font-weight: 900; text-transform: uppercase; }
+.pa-emote::after { border-top-color: #F2F2EE; }
+.pa-av { background: var(--t-panel2); box-shadow: none; }
+.wheel-wrap { width: 300px; height: 300px; margin: 24px auto 0; }
+.wheel-pointer { top: -16px; margin-left: -14px; border-left-width: 14px; border-right-width: 14px; border-top: 26px solid #F2F2EE; }
+.wheel { filter: drop-shadow(0 20px 40px rgba(0,0,0,0.55)); }
+.spin-result .disp { font-size: 44px; color: var(--t-accent); }
+.ladder-me { border: none; background: var(--t-raise); border-radius: 14px; box-shadow: inset 0 0 0 2px var(--lc, var(--t-accent)); }
+.ladder-tier { border: none !important; background: var(--t-raise); border-radius: 14px; }
+.ladder-tier.here { box-shadow: inset 0 0 0 2px var(--lc, var(--t-accent)); }
+.ladder-div { background: #111214; border: none; border-radius: 8px; }
+.ladder-div.here { box-shadow: inset 0 0 0 1.5px var(--lc, var(--t-accent)); }
+.ladder-h { font-family: var(--t-display); font-weight: 900; font-size: 22px; text-transform: uppercase; letter-spacing: 0.02em; }
+.prestige-box { border: none; background: var(--t-raise); border-radius: 14px; position: relative; overflow: hidden; padding-top: 18px; }
+.prestige-box::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 6px; background: repeating-linear-gradient(90deg, #E8B23A 0 14px, #111214 14px 20px); }
+.perk { background: #111214; }
+.perk.got { background: rgba(232,178,58,0.12); color: var(--t-text); }
+.season-end .se-title { font-family: var(--t-display); font-weight: 900; font-size: 54px; line-height: 0.88; text-transform: uppercase; }
+.se-kicker { letter-spacing: 0.3em; }
+
+/* ---------- shop, ranks, coach, profile ---------- */
+.sec-label { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin: 0 4px 10px; }
+.sec-label h2 { margin: 0; font-family: var(--t-display); font-weight: 800; font-size: 22px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--t-text); }
+.sec-label span { font-size: 12px; color: var(--t-mid); }
+.cos-grid { gap: 8px; }
+.cos-tile { background: var(--t-panel); border: none; border-radius: 14px; padding: 12px 8px 10px; }
+.cos-tile.on { box-shadow: inset 0 0 0 2px var(--t-accent); border: none; }
+.cos-name { font-size: 13px; font-weight: 600; }
+.felt-sw { border-width: 5px; }
+.avatar-tile { background: var(--t-panel); border: none; border-radius: 14px; }
+.title-row { border-radius: 14px; }
+.title-row.on { box-shadow: inset 0 0 0 2px var(--t-accent); border: none; }
+.title-tag { font-family: var(--t-display); font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; }
+.lb-row { background: var(--t-panel); border: none; border-radius: 12px; min-height: 54px; }
+.lb-row.lb-pinned, .lb-dock .lb-row { background: var(--t-raise); box-shadow: inset 0 0 0 2px var(--t-accent); }
+.lb-dock { background: linear-gradient(180deg, rgba(17,18,20,0) 0%, var(--t-bg) 30%); }
+.scope-toggle { background: var(--t-panel); border-radius: 10px; padding: 3px; }
+.scope-toggle button { font-family: var(--t-display); font-weight: 800; font-size: 14px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--t-mid); min-height: 32px; }
+.scope-toggle button.on { background: var(--t-panel2); color: var(--t-text); }
+.report { background: var(--t-panel); border: none; border-radius: 18px; }
+.report-head { font-family: var(--t-display); font-weight: 800; font-size: 20px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--t-text); }
+.spark > div { border-radius: 3px 3px 0 0; }
+.profile-av { width: 84px; height: 84px; }
+.name-btn { font-family: var(--t-display); font-weight: 900; font-size: 34px; text-transform: uppercase; letter-spacing: 0.02em; }
+.frame-swatch { font-family: var(--t-display); font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; font-size: 14px; }
+.title-btn { background: var(--t-panel2); border: none; }
+.friend-row { background: var(--t-panel); border-radius: 14px; }
+.friend-sub { font-size: 11px; font-weight: 700; letter-spacing: 0.16em; color: var(--t-mid); }
+.fp-name { font-family: var(--t-display); font-weight: 900; font-size: 40px; line-height: 0.9; text-transform: uppercase; }
+.fp-rank { background: var(--t-raise); border: none; }
+.fp-stats > div { background: var(--t-raise); border: none; }
+.fp-stats b { font-family: var(--t-display); font-weight: 900; font-size: 22px; }
+.live-dot { background: var(--c-green); box-shadow: 0 0 0 2px var(--t-panel); }
+.auth-field > span { font-size: 11px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: var(--t-mid); }
+.auth-err { background: rgba(255,107,94,0.1); border: none; box-shadow: inset 0 0 0 1.5px rgba(255,107,94,0.4); }
+.auth-switch button { color: var(--t-accent); }
+.ft-card { background: var(--t-panel); border: none; }
+.chal { border: none; }
+
+/* ranks podium */
+.podium { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: end; gap: 8px; padding: 8px 0 0; margin-bottom: 6px; }
+.pod { display: flex; flex-direction: column; align-items: center; gap: 0; background: none; border: none; padding: 0; color: var(--t-text); cursor: pointer; min-width: 0; }
+.pod:disabled { cursor: default; opacity: 1; }
+.pod-av { border-radius: 50%; display: block; margin-top: 4px; }
+.pod-av > * { display: block; }
+.pod-letter { border-radius: 50%; display: flex !important; align-items: center; justify-content: center; font-family: var(--t-display); font-weight: 900; font-size: 26px; color: #F2F2EE; }
+.pod-name { max-width: 100%; font-weight: 700; font-size: 14px; margin-top: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pod-val { font-family: var(--t-display); font-weight: 800; font-size: 19px; line-height: 1.1; }
+.pod-block { align-self: stretch; position: relative; margin-top: 6px; border-radius: 10px 10px 0 0; background: var(--t-panel); overflow: hidden; display: flex; justify-content: center; }
+.pod.first .pod-block { background: var(--t-raise); }
+.pod-block::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 6px; background: repeating-linear-gradient(90deg, var(--sc) 0 10px, #F2F2EE 10px 15px); }
+.pod-block b { font-family: var(--t-display); font-weight: 900; font-size: 34px; line-height: 1; padding-top: 14px; color: var(--t-mid); }
+.pod.first .pod-block b { font-size: 46px; color: var(--t-accent); }
+/* profile identity card */
+.id-card { border-radius: 20px; background: var(--t-panel); overflow: hidden; margin-bottom: 22px; }
+.id-top { display: flex; align-items: center; gap: 18px; padding: 20px 18px 12px; }
+.id-top .profile-av { margin: 6px; flex-shrink: 0; }
+.id-top .name-btn { padding: 0; text-align: left; justify-content: flex-start; color: var(--t-text); max-width: 100%; }
+.id-top .name-btn > span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.id-top .title-btn { margin-top: 8px; }
+.id-pills { display: flex; flex-wrap: wrap; gap: 8px; padding: 4px 18px 18px; }
+.seat-open { min-height: 92px; border: 2px dashed #3A3D44; background: transparent; align-items: center; justify-content: center; color: var(--t-mid); gap: 4px; cursor: pointer; font-family: inherit; }
+.seat-open::before { display: none; }
+.seat-open .disp { color: var(--t-text); }
+.seat .emote-bubble { z-index: 6; }
+.ot-watch { padding: 14px 16px !important; }
+.ot-last { background: #111214; color: var(--t-text); font-family: var(--t-display); font-weight: 800; font-size: 13px; letter-spacing: 0.06em; text-transform: uppercase; }
+`;
 const GLOBAL_STYLE = `
 :root { --t-bg: #0B1426; --t-panel: #14223D; --t-panel2: #25395F; --t-text: #F4F7FC; --t-text2: #C8D3E6; --t-sub: #A9B8D0; --t-mid: #8FA1BE; --t-mut: #7587A6; --t-faint: #5E7196; --t-accent: #F5B83D; --t-good: #34D399; --t-bad: #FF6B6B; --t-display: 'Fraunces', Georgia, serif; --t-body: 'Inter', -apple-system, sans-serif; }
 * { box-sizing: border-box; }
@@ -5642,14 +6111,7 @@ input[type=range] { accent-color: var(--t-accent); }
 .streak-day.today { border-color: #FF8A4C; background: rgba(255,138,76,0.16); box-shadow: 0 0 0 2px rgba(255,138,76,0.25); animation: hintPulse 1.8s ease-in-out infinite; }
 .streak-day.big:not(.got) { background: linear-gradient(180deg, rgba(245,184,61,0.22), rgba(245,184,61,0.06)); border-color: rgba(245,184,61,0.45); }
 
-.mode-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 14px; }
-.mode-ic { width: 34px; height: 34px; border-radius: 11px; background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; margin-bottom: 10px; }
-.mode-title { font-size: 14px; font-weight: 700; }
-.mode-sub { font-size: 11px; opacity: 0.82; margin-top: 1px; }
 
-.pass-card { width: 100%; border: 1px solid rgba(196,160,255,0.35); border-radius: 20px; padding: 14px 16px; cursor: pointer; color: #FFFFFF; background: linear-gradient(135deg, #5B2BC9 0%, #8E2DB8 55%, #C2307E 100%); box-shadow: 0 12px 30px rgba(120,50,200,0.32); text-align: left; transition: transform .14s ease; }
-.pass-card:active { transform: scale(0.98); }
-.pass-lvl { width: 48px; height: 48px; border-radius: 14px; background: rgba(255,255,255,0.16); display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 19px; font-weight: 800; line-height: 1; flex-shrink: 0; }
 .pr-ic { border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .pass-row { display: flex; align-items: center; gap: 10px; padding: 9px 8px; border-radius: 12px; border: 1px solid transparent; }
 .pass-row + .pass-row { margin-top: 2px; }
@@ -5783,249 +6245,6 @@ input[type=range] { accent-color: var(--t-accent); }
 /* ---- rank emblems ---- */
 .tb-champ .tb-sparkle { animation: tbTwinkle 2.4s ease-in-out infinite; transform-origin: 32px 32px; }
 @keyframes tbTwinkle { 0%, 100% { opacity: 1; } 50% { opacity: 0.25; } }
-/* ---- theme shop ---- */
-.theme-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-.theme-card { display: flex; flex-direction: column; gap: 4px; padding: 10px; border-radius: 16px; background: var(--t-panel); border: 1px solid rgba(244,247,252,0.08); min-height: 228px; }
-.theme-card.on { box-shadow: inset 0 0 0 1.5px var(--t-good); }
-.theme-card.viewing { box-shadow: inset 0 0 0 1.5px var(--t-accent); }
-.theme-mock { border-radius: 10px; padding: 10px; display: flex; flex-direction: column; gap: 7px; height: 108px; margin-bottom: 6px; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.06); overflow: hidden; }
-.tm-panel { padding: 8px; }
-.theme-name { font-size: 14.5px; font-weight: 700; }
-.theme-sub { font-size: 11.5px; line-height: 1.35; color: var(--t-mut); margin-bottom: 8px; }
-.preview-bar { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(86px + env(safe-area-inset-bottom)); width: calc(100% - 24px); max-width: 436px; z-index: 35; display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-radius: 14px; background: var(--t-panel); color: var(--t-text); border: 1px solid var(--t-accent); box-shadow: 0 12px 30px rgba(0,0,0,0.45); animation: sheetIn .2s ease; }
-.preview-bar .btn { flex: none; }
-/* ---- theme packs: each one is scoped to a class on <body> ---- */
-body.theme-afterhours { --t-bg: #120F0D; --t-panel: #1C1814; --t-panel2: #2A241E; --t-text: #EDE6D8; --t-text2: #DDD5C7; --t-sub: #C3BAAB; --t-mid: #A69D8F; --t-mut: #8F8678; --t-faint: #6E665B; --t-accent: #C9A66B; --t-good: #8CC5A0; --t-bad: #D0756D; --t-display: 'Instrument Serif', Georgia, serif; --t-body: 'Hanken Grotesk Variable', 'Hanken Grotesk', -apple-system, sans-serif; background: var(--t-bg); }
-body.theme-afterhours { --bg: #120F0D; --raise: #1C1814; --raise2: #241F1A; --rule: rgba(237,230,216,0.10); --rule2: rgba(237,230,216,0.18); --ivory: #EDE6D8; --muted: #A69D8F; --faint: #6E665B; --brass: #C9A66B; --brass-dim: rgba(201,166,107,0.16); --win: #8CC5A0; --loss: #D0756D; --serif: 'Instrument Serif', Georgia, serif; --sans: 'Hanken Grotesk Variable', 'Hanken Grotesk', -apple-system, sans-serif; }
-body.theme-afterhours { background: var(--bg); }
-body.theme-afterhours .app, body.theme-afterhours .app-table, body.theme-afterhours .table-wrap, body.theme-afterhours .sheet, body.theme-afterhours .loading, body.theme-afterhours button, body.theme-afterhours input, body.theme-afterhours textarea { font-family: var(--sans); }
-body.theme-afterhours .app, body.theme-afterhours .app-table, body.theme-afterhours .loading { background: var(--bg); }
-body.theme-afterhours .app::before, body.theme-afterhours .table-wrap::before { display: none; }
-body.theme-afterhours .app-main { padding-top: 10px; }
-body.theme-afterhours .screen-fade { animation: none; }
-body.theme-afterhours .wordmark, body.theme-afterhours .wordmark-sm, body.theme-afterhours .loading-word { font-family: var(--serif) !important; font-weight: 400 !important; letter-spacing: -0.01em; color: var(--ivory); }
-body.theme-afterhours .wordmark { font-size: 30px; font-style: italic; }
-body.theme-afterhours .wordmark-sm { font-size: 20px; font-style: italic; }
-body.theme-afterhours .loading-word { font-style: italic; font-size: 56px; }
-body.theme-afterhours .sheet-title, body.theme-afterhours .results-head, body.theme-afterhours .bigwin-label, body.theme-afterhours .bigwin-amt { font-family: var(--serif) !important; font-weight: 400 !important; letter-spacing: 0; }
-body.theme-afterhours .sheet-title { font-size: 26px; }
-body.theme-afterhours .results-head { font-size: 54px !important; }
-body.theme-afterhours .row-title { font-weight: 600; letter-spacing: -0.005em; }
-body.theme-afterhours [style*="Instrument Serif"] { font-weight: 400 !important; }
-body.theme-afterhours .panel, body.theme-afterhours .stat, body.theme-afterhours .avatar-tile, body.theme-afterhours .cos-tile, body.theme-afterhours .ladder-tier, body.theme-afterhours .hero-seat, body.theme-afterhours .var-tile, body.theme-afterhours .spin-card, body.theme-afterhours .pass-card, body.theme-afterhours .streak-banner, body.theme-afterhours .chal-panel, body.theme-afterhours .streak-panel { background: var(--raise) !important; border: 1px solid var(--rule) !important; border-radius: 12px !important; box-shadow: none !important; color: var(--ivory); }
-body.theme-afterhours .row, body.theme-afterhours .chal, body.theme-afterhours .best-row, body.theme-afterhours .title-row, body.theme-afterhours .ach-row, body.theme-afterhours .lb-row, body.theme-afterhours .turbo-row, body.theme-afterhours .ladder-div { background: transparent !important; border: none !important; border-bottom: 1px solid var(--rule) !important; border-radius: 0 !important; box-shadow: none !important; padding-left: 2px; padding-right: 2px; }
-body.theme-afterhours .list { gap: 0 !important; }
-body.theme-afterhours .lb-row[style*="140, body.theme-afterhours 197, body.theme-afterhours 160"], body.theme-afterhours .lb-row[style*="52, body.theme-afterhours 211, body.theme-afterhours 153"] { background: var(--brass-dim) !important; border-radius: 8px !important; }
-body.theme-afterhours .ladder-div.here { background: var(--brass-dim) !important; border-radius: 8px !important; }
-body.theme-afterhours button.row:active:not(:disabled) { background: var(--raise) !important; }
-body.theme-afterhours .sheet { background: var(--raise) !important; border: 1px solid var(--rule2) !important; border-radius: 16px; box-shadow: 0 30px 80px rgba(0,0,0,0.6); animation: sheetIn .2s ease; }
-body.theme-afterhours .scrim { background: rgba(8,6,5,0.78); }
-body.theme-afterhours .kv, body.theme-afterhours .kv-list { border-color: var(--rule) !important; }
-body.theme-afterhours .bar { background: var(--rule); height: 3px; border-radius: 2px; }
-body.theme-afterhours .bar > div { border-radius: 2px; }
-body.theme-afterhours .sec-ic, body.theme-afterhours .mode-ic, body.theme-afterhours .turbo-ic, body.theme-afterhours .streak-flame, body.theme-afterhours .spin-ic { display: none !important; }
-body.theme-afterhours .btn { background: transparent; border: 1px solid var(--rule2); color: var(--ivory); border-radius: 10px; font-weight: 600; letter-spacing: 0; box-shadow: none; }
-body.theme-afterhours .btn:hover:not(:disabled) { border-color: var(--muted); }
-body.theme-afterhours .btn-raise, body.theme-afterhours .btn-raise:hover:not(:disabled), body.theme-afterhours .btn-go, body.theme-afterhours .btn-go:hover:not(:disabled) { background: var(--ivory); color: #1A1612; border-color: var(--ivory); box-shadow: none; }
-body.theme-afterhours .btn-fold, body.theme-afterhours .btn-fold:hover:not(:disabled) { background: transparent; color: var(--loss); border-color: rgba(208,117,109,0.4); }
-body.theme-afterhours .btn:disabled { opacity: 0.35; }
-body.theme-afterhours .shine::after { display: none !important; }
-body.theme-afterhours .iconbtn { background: transparent; border: 1px solid var(--rule2); color: var(--muted); }
-body.theme-afterhours .preset-btn { background: var(--raise2); }
-body.theme-afterhours .seg { background: transparent; border: 1px solid var(--rule2); border-radius: 10px; }
-body.theme-afterhours .segbtn { color: var(--muted); font-weight: 600; }
-body.theme-afterhours .segbtn.on { background: var(--ivory); color: #1A1612; }
-body.theme-afterhours .chip-pill { background: transparent; border: 1px solid var(--rule2); color: var(--ivory); }
-body.theme-afterhours .chip-dot { background: var(--brass); box-shadow: inset 0 0 0 2.5px var(--bg), inset 0 0 0 4px var(--brass); }
-body.theme-afterhours .input { background: transparent; border: 1px solid var(--rule2); color: var(--ivory); }
-body.theme-afterhours .toast { background: var(--ivory); border: none; box-shadow: 0 16px 40px rgba(0,0,0,0.5); }
-body.theme-afterhours .toast div:first-child { color: #8A6A30 !important; }
-body.theme-afterhours .toast div:last-child { color: #1A1612 !important; }
-body.theme-afterhours .badge-dot { background: var(--brass); color: #1A1612; }
-body.theme-afterhours .cos-tile.on, body.theme-afterhours .title-row.on { box-shadow: inset 0 0 0 1px var(--brass) !important; }
-body.theme-afterhours .bottom-nav { background: var(--bg); border-top: 1px solid var(--rule); }
-body.theme-afterhours .navbtn { color: var(--faint) !important; }
-body.theme-afterhours .navbtn[aria-current="page"] { color: var(--ivory) !important; }
-body.theme-afterhours .play-fab { color: var(--ivory); }
-body.theme-afterhours .play-fab-disc { width: 46px; height: 46px; background: transparent; color: var(--brass); border: 1px solid var(--brass); box-shadow: none !important; animation: none; }
-body.theme-afterhours .play-fab.on .play-fab-disc { background: var(--brass); color: var(--bg); }
-body.theme-afterhours .play-fab:not(.on) .play-fab-disc { filter: none; }
-body.theme-afterhours .home3 { padding-bottom: 48px; }
-body.theme-afterhours .h3-top { display: flex; justify-content: space-between; align-items: baseline; margin: 0 2px 26px; }
-body.theme-afterhours .h3-bank { display: flex; align-items: center; gap: 7px; font-size: 15px; font-weight: 600; color: var(--ivory); }
-body.theme-afterhours .h3-hello { margin: 0 2px 26px; }
-body.theme-afterhours .h3-hello h1 { font-family: var(--serif); font-weight: 400; font-size: 40px; line-height: 1.02; letter-spacing: -0.01em; margin: 0; color: var(--ivory); }
-body.theme-afterhours .h3-hello p { margin: 8px 0 0; font-size: 13.5px; color: var(--muted); }
-body.theme-afterhours .h3-today { border-top: 1px solid var(--rule); margin-bottom: 30px; }
-body.theme-afterhours .h3-line { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 2px; border-bottom: 1px solid var(--rule); }
-body.theme-afterhours .h3-line b { display: block; font-size: 15px; font-weight: 600; }
-body.theme-afterhours .h3-line span { display: block; font-size: 12.5px; color: var(--muted); margin-top: 2px; }
-body.theme-afterhours .h3-sec-head { display: flex; justify-content: space-between; align-items: baseline; margin: 0 2px 12px; }
-body.theme-afterhours .h3-sec-head h2 { font-family: var(--serif); font-weight: 400; font-size: 26px; margin: 0; color: var(--ivory); }
-body.theme-afterhours .h3-link { background: none; border: none; padding: 0; color: var(--brass); font-size: 13px; font-weight: 600; cursor: pointer; }
-body.theme-afterhours .h3-ranked { margin-bottom: 34px; }
-body.theme-afterhours .h3-rank-row { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; }
-body.theme-afterhours .h3-rank-name { display: flex; align-items: center; gap: 8px; font-family: var(--serif); font-size: 32px; line-height: 1; color: var(--ivory); }
-body.theme-afterhours .h3-rank-sub { font-size: 13px; color: var(--muted); margin-top: 6px; }
-body.theme-afterhours .h3-rank-note { font-size: 12.5px; color: var(--brass); margin-top: 4px; }
-body.theme-afterhours .h3-record { font-family: var(--serif); font-size: 26px; color: var(--ivory); white-space: nowrap; }
-body.theme-afterhours .h3-record small { font-family: var(--sans); font-size: 11px; color: var(--faint); margin: 0 4px 0 1px; }
-body.theme-afterhours .h3-track { height: 2px; background: var(--rule2); border-radius: 1px; overflow: hidden; }
-body.theme-afterhours .h3-track > div { height: 100%; background: var(--brass); }
-body.theme-afterhours .h3-tables { margin-bottom: 34px; }
-body.theme-afterhours .h3-table { display: grid; grid-template-columns: 1fr auto; width: 100%; text-align: left; background: none; border: none; border-top: 1px solid var(--rule); padding: 16px 2px; color: var(--ivory); cursor: pointer; }
-body.theme-afterhours .h3-table:last-child { border-bottom: 1px solid var(--rule); }
-body.theme-afterhours .h3-table:active:not(:disabled) .h3-table-name { color: var(--brass); }
-body.theme-afterhours .h3-table:disabled { cursor: default; }
-body.theme-afterhours .h3-table:disabled .h3-table-name { color: var(--faint); }
-body.theme-afterhours .h3-table-name { font-family: var(--serif); font-size: 25px; line-height: 1.05; }
-body.theme-afterhours .h3-table-sub { font-size: 12.5px; color: var(--muted); margin-top: 3px; }
-body.theme-afterhours .h3-table.vip .h3-table-name { color: var(--brass); font-style: italic; }
-body.theme-afterhours .h3-pass { margin-bottom: 30px; }
-body.theme-afterhours .h3-pass-btn { width: 100%; background: none; border: none; padding: 0; color: var(--ivory); text-align: left; cursor: pointer; }
-body.theme-afterhours .h3-pass-sub { display: flex; justify-content: space-between; font-size: 12.5px; color: var(--muted); margin-top: 8px; }
-body.theme-afterhours .home3 .chal-panel { background: transparent !important; border: none !important; padding: 0 !important; }
-body.theme-afterhours .home3 .chal-panel > div:first-child > div > div:nth-child(2) { font-family: var(--serif); font-weight: 400 !important; font-size: 26px !important; }
-body.theme-afterhours .home3 .chal { padding: 12px 2px; }
-body.theme-afterhours .home3 .chal:first-child { border-top: 1px solid var(--rule) !important; }
-body.theme-afterhours .table-wrap[data-felt="green"] { --felt1: #2A5B47 !important; --felt2: #1D4636 !important; --felt3: #133227 !important; --rail: #2B2018 !important; }
-body.theme-afterhours .felt-oval { box-shadow: inset 0 0 0 1px rgba(0,0,0,0.3), inset 0 12px 30px rgba(0,0,0,0.4), 0 20px 40px rgba(0,0,0,0.45); }
-body.theme-afterhours .felt-logo { font-family: var(--serif) !important; font-style: italic; font-weight: 400 !important; }
-body.theme-afterhours .pot-num { background: rgba(0,0,0,0.35); font-weight: 600; }
-body.theme-afterhours .hand-strip { background: var(--raise) !important; border-color: var(--rule) !important; }
-body.theme-afterhours .eq-meter { opacity: 0.6; }
-body.theme-afterhours .status { color: var(--muted); }
-body.theme-afterhours .coach { background: var(--raise) !important; border: 1px solid var(--brass-dim) !important; border-left: 2px solid var(--brass) !important; border-radius: 10px; }
-body.theme-afterhours .coach-badge { color: var(--brass) !important; }
-body.theme-afterhours .chip-badge { background: var(--bg); border-color: rgba(201,166,107,0.5); color: var(--brass); }
-body.theme-afterhours .bot-av { font-family: var(--serif) !important; font-weight: 400 !important; font-size: 17px !important; }
-body.theme-afterhours .lb-dock { background: linear-gradient(180deg, rgba(18,15,13,0) 0%, var(--bg) 35%) !important; }
-body.theme-afterhours .streak-day { background: transparent !important; border-color: var(--rule) !important; color: var(--muted) !important; box-shadow: none !important; animation: none !important; }
-body.theme-afterhours .streak-day.got { color: var(--win) !important; }
-body.theme-afterhours .streak-day.today { border-color: var(--brass) !important; color: var(--ivory) !important; }
-body.theme-afterhours .streak-day.big:not(.got) { border-color: rgba(201,166,107,0.4) !important; }
-body.theme-afterhours .cos-tag.buy { background: var(--brass-dim); color: var(--brass); }
-body.theme-afterhours .cos-tag.eq { background: rgba(140,197,160,0.12); color: var(--win); }
-body.theme-afterhours .felt-sw { box-shadow: inset 0 4px 10px rgba(0,0,0,0.3) !important; }
-body.theme-afterhours .table-wrap[data-back="blue"] { --back-a: #7A2730 !important; --back-b: #5C1A22 !important; --back-ring: #EDE6D8 !important; }
-body.theme-afterhours .bot-av { filter: saturate(0.55) brightness(0.9); }
-body.theme-cardroom { --t-bg: #0C3528; --t-panel: #134A39; --t-panel2: #1B5A45; --t-text: #F2F7F4; --t-text2: #E3EEE8; --t-sub: #C3D9CF; --t-mid: #A9C7BA; --t-mut: #93B5A6; --t-faint: #6F9584; --t-accent: #E9B949; --t-good: #8FE0B0; --t-bad: #FF9A9E; --t-display: 'Archivo Variable', 'Archivo', -apple-system, sans-serif; --t-body: 'Archivo Variable', 'Archivo', -apple-system, sans-serif; background: var(--t-bg); }
-body.theme-cardroom { --felt-bg: #0C3528; --felt-up: #124636; --felt-up2: #175641; --felt-line: rgba(232,245,238,0.09); --card: #F6F7F4; --card-edge: #DADDD6; --ink: #121417; --red: #D8343B; --red-dark: #B02028; --gold: #E9B949; --muted: #93B5A6; }
-body.theme-cardroom { background: var(--felt-bg); }
-body.theme-cardroom .app, body.theme-cardroom .app-table, body.theme-cardroom .table-wrap, body.theme-cardroom .sheet, body.theme-cardroom .loading, body.theme-cardroom button, body.theme-cardroom input, body.theme-cardroom textarea { font-family: 'Archivo Variable', 'Archivo', -apple-system, sans-serif; }
-body.theme-cardroom .app, body.theme-cardroom .app-table, body.theme-cardroom .loading { background-color: var(--felt-bg); background-image: radial-gradient(120% 70% at 50% 0%, rgba(255,255,255,0.07), transparent 60%), repeating-radial-gradient(circle at 20% 30%, rgba(255,255,255,0.018) 0 1px, transparent 1px 3px); }
-body.theme-cardroom .app::before, body.theme-cardroom .table-wrap::before { display: none; }
-body.theme-cardroom .screen { padding-top: 6px; }
-body.theme-cardroom .wordmark, body.theme-cardroom .sheet-title, body.theme-cardroom .results-head, body.theme-cardroom .loading-word, body.theme-cardroom .wordmark-sm, body.theme-cardroom .mode-title, body.theme-cardroom .bigwin-label, body.theme-cardroom .pass-lvl, body.theme-cardroom .bigwin-amt { font-family: 'Archivo Variable', 'Archivo', -apple-system, sans-serif !important; }
-body.theme-cardroom .wordmark, body.theme-cardroom .sheet-title, body.theme-cardroom .results-head, body.theme-cardroom .loading-word, body.theme-cardroom .wordmark-sm, body.theme-cardroom .mode-title, body.theme-cardroom .bigwin-label, body.theme-cardroom .pass-lvl, body.theme-cardroom [style*="Archivo"] { font-stretch: 125%; font-weight: 800 !important; letter-spacing: -0.015em; }
-body.theme-cardroom .wordmark { font-size: 32px; letter-spacing: -0.03em; }
-body.theme-cardroom .wordmark::after, body.theme-cardroom .wordmark-sm::after { content: "♦"; color: var(--red); font-size: 0.42em; margin-left: 3px; vertical-align: 0.9em; }
-body.theme-cardroom .sheet-title { font-size: 20px; }
-body.theme-cardroom .row-title { font-weight: 700; }
-body.theme-cardroom .panel, body.theme-cardroom .row, body.theme-cardroom .stat, body.theme-cardroom .avatar-tile, body.theme-cardroom .cos-tile, body.theme-cardroom .title-row, body.theme-cardroom .chal, body.theme-cardroom .best-row, body.theme-cardroom .ladder-tier, body.theme-cardroom .lb-row, body.theme-cardroom .hero-seat, body.theme-cardroom .turbo-row, body.theme-cardroom .var-tile, body.theme-cardroom .ach-row, body.theme-cardroom .spin-card, body.theme-cardroom .pass-card, body.theme-cardroom .streak-banner { background: var(--felt-up) !important; border: 1px solid var(--felt-line) !important; box-shadow: 0 1px 0 rgba(255,255,255,0.05) inset, 0 6px 18px rgba(0,0,0,0.18); color: #F2F7F4; }
-body.theme-cardroom .row, body.theme-cardroom .chal, body.theme-cardroom .best-row, body.theme-cardroom .title-row, body.theme-cardroom .ach-row, body.theme-cardroom .lb-row, body.theme-cardroom .turbo-row { background: var(--felt-up2) !important; box-shadow: none; }
-body.theme-cardroom .panel { border-radius: 18px; }
-body.theme-cardroom .sheet { background: #0F3F30 !important; border: 1px solid var(--felt-line) !important; border-radius: 20px; }
-body.theme-cardroom .scrim { background: rgba(4,20,14,0.72); }
-body.theme-cardroom button.row:active:not(:disabled) { background: #1B6049 !important; }
-body.theme-cardroom .chal-panel, body.theme-cardroom .streak-panel { border-color: var(--felt-line) !important; }
-body.theme-cardroom .bar { background: rgba(0,0,0,0.28); height: 6px; }
-body.theme-cardroom .btn { border: 1.5px solid rgba(232,245,238,0.22); background: transparent; color: #F2F7F4; border-radius: 12px; font-weight: 700; box-shadow: none; }
-body.theme-cardroom .btn:hover:not(:disabled) { border-color: rgba(232,245,238,0.4); }
-body.theme-cardroom .btn-raise, body.theme-cardroom .btn-raise:hover:not(:disabled) { background: var(--red); color: #FFFFFF; border-color: var(--red); box-shadow: 0 2px 0 var(--red-dark), 0 8px 18px rgba(216,52,59,0.25); }
-body.theme-cardroom .btn-raise:active:not(:disabled) { box-shadow: 0 0 0 var(--red-dark); transform: translateY(2px); }
-body.theme-cardroom .btn-go, body.theme-cardroom .btn-go:hover:not(:disabled) { background: var(--card); color: var(--ink); border-color: var(--card); box-shadow: 0 2px 0 var(--card-edge); }
-body.theme-cardroom .btn-fold, body.theme-cardroom .btn-fold:hover:not(:disabled) { background: transparent; color: #FF9A9E; border-color: rgba(255,120,125,0.45); }
-body.theme-cardroom .shine::after { display: none; }
-body.theme-cardroom .iconbtn { background: rgba(232,245,238,0.07); border: 1px solid var(--felt-line); color: #E3EEE8; }
-body.theme-cardroom .preset-btn { background: var(--felt-up2); }
-body.theme-cardroom .segbtn.on { background: var(--card); color: var(--ink); }
-body.theme-cardroom .seg { background: rgba(0,0,0,0.22); }
-body.theme-cardroom .chip-pill { background: rgba(0,0,0,0.22); border: 1px solid var(--felt-line); }
-body.theme-cardroom .chip-dot { background: var(--gold); box-shadow: inset 0 0 0 2.5px var(--felt-bg), inset 0 0 0 4px var(--gold); }
-body.theme-cardroom .input { background: rgba(0,0,0,0.22); border: 1px solid var(--felt-line); color: #fff; }
-body.theme-cardroom .toast { background: var(--card); border: none; box-shadow: 0 12px 30px rgba(0,0,0,0.4); }
-body.theme-cardroom .toast div:first-child { color: var(--red) !important; }
-body.theme-cardroom .toast div:last-child { color: var(--ink) !important; }
-body.theme-cardroom .streak-banner .btn-raise, body.theme-cardroom .spin-card .btn-raise, body.theme-cardroom .chal .btn-go, body.theme-cardroom .streak-panel .btn-raise { background: var(--card); color: var(--ink); border-color: var(--card); box-shadow: 0 2px 0 var(--card-edge); }
-body.theme-cardroom .streak-banner { animation: none; }
-body.theme-cardroom .streak-flame, body.theme-cardroom .spin-ic, body.theme-cardroom .sec-ic, body.theme-cardroom .turbo-ic, body.theme-cardroom .mode-ic { background: rgba(232,245,238,0.08) !important; color: var(--gold) !important; border: none; }
-body.theme-cardroom .streak-banner > div:nth-child(2) > div:last-child, body.theme-cardroom .spin-card > div:nth-child(2) > div:last-child { color: var(--muted) !important; }
-body.theme-cardroom .spin-card.ready { box-shadow: 0 0 0 1px rgba(233,185,73,0.35) inset, 0 6px 18px rgba(0,0,0,0.18); }
-body.theme-cardroom .spin-card.ready .spin-ic { animation: none; }
-body.theme-cardroom .pass-card { color: #F2F7F4; }
-body.theme-cardroom .pass-card .pass-lvl { background: var(--card); color: var(--ink); }
-body.theme-cardroom .pass-card .pass-lvl div { color: #5B6359; }
-body.theme-cardroom .pass-card [style*="#D6C7FF"], body.theme-cardroom .pass-card [style*="#C9B8F5"] { color: var(--muted) !important; }
-body.theme-cardroom .pass-card .bar > div { background: var(--gold) !important; }
-body.theme-cardroom .mode-tile:focus-visible { outline: 2px solid var(--gold); }
-body.theme-cardroom .bottom-nav { background: #0A2E22; border-top: 1px solid var(--felt-line); }
-body.theme-cardroom .navbtn[aria-current="page"] { color: #FFFFFF !important; }
-body.theme-cardroom .navbtn[aria-current="page"]::after { content: ""; width: 5px; height: 5px; border-radius: 50%; background: var(--red); margin-top: 4px; }
-body.theme-cardroom .navbtn { color: #6F9584 !important; }
-body.theme-cardroom .play-fab-disc { position: relative; width: 52px; height: 52px; background: var(--card); color: var(--ink); border: none; box-shadow: 0 3px 0 var(--card-edge), 0 8px 18px rgba(0,0,0,0.35) !important; animation: none; }
-body.theme-cardroom .puck-ring { position: absolute; top: 5px; left: 5px; right: 5px; bottom: 5px; border-radius: 50%; border: 1.5px solid var(--ink); opacity: 0.85; }
-body.theme-cardroom .puck-text { font-weight: 800; font-stretch: 125%; font-size: 10.5px; letter-spacing: 0.08em; }
-body.theme-cardroom .play-fab:not(.on) .play-fab-disc { filter: none; opacity: 0.85; }
-body.theme-cardroom .felt-oval { box-shadow: inset 0 0 0 2px rgba(0,0,0,0.25), inset 0 10px 30px rgba(0,0,0,0.35), 0 14px 34px rgba(0,0,0,0.4); }
-body.theme-cardroom .hand-strip { background: rgba(0,0,0,0.2) !important; }
-body.theme-cardroom .coach { border-color: rgba(233,185,73,0.35) !important; background: rgba(0,0,0,0.22) !important; }
-body.theme-cardroom .coach-badge { color: var(--gold) !important; }
-body.theme-cardroom .lb-dock { background: linear-gradient(180deg, rgba(12,53,40,0) 0%, var(--felt-bg) 35%) !important; }
-body.theme-cardroom .table-wrap[data-back="blue"] { --back-a: #B02028 !important; --back-b: #7E151C !important; --back-ring: #F6F7F4 !important; }
-body.theme-montecarlo { --t-bg: #0C0C0F; --t-panel: #16161C; --t-panel2: #22222A; --t-text: #F1E9D8; --t-text2: #E2D8C3; --t-sub: #CFC3A8; --t-mid: #B3A688; --t-mut: #988B6E; --t-faint: #6F6650; --t-accent: #D4AF5A; --t-good: #9CCB9F; --t-bad: #D9776F; --t-display: 'Limelight', Georgia, serif; --t-body: 'Josefin Sans Variable', 'Josefin Sans', -apple-system, sans-serif; background: var(--t-bg); }
-body.theme-montecarlo .app, body.theme-montecarlo .app-table, body.theme-montecarlo .loading { background-color: var(--t-bg); background-image: repeating-conic-gradient(from 0deg at 50% -8%, rgba(212,175,90,0.05) 0deg 2.5deg, transparent 2.5deg 9deg); }
-body.theme-montecarlo .app::before, body.theme-montecarlo .table-wrap::before { display: none; }
-body.theme-montecarlo .app, body.theme-montecarlo .app-table, body.theme-montecarlo .table-wrap, body.theme-montecarlo .sheet, body.theme-montecarlo .loading, body.theme-montecarlo button, body.theme-montecarlo input, body.theme-montecarlo textarea { font-family: var(--t-body); }
-body.theme-montecarlo .wordmark, body.theme-montecarlo .wordmark-sm, body.theme-montecarlo .loading-word { font-family: var(--t-display) !important; font-weight: 400 !important; color: var(--t-accent); letter-spacing: 0.08em; }
-body.theme-montecarlo .sheet-title, body.theme-montecarlo .results-head, body.theme-montecarlo .mode-title, body.theme-montecarlo .bigwin-label, body.theme-montecarlo .bigwin-amt, body.theme-montecarlo .pass-lvl, body.theme-montecarlo .row-title { font-family: var(--t-display) !important; font-weight: 400 !important; letter-spacing: 0.05em; }
-body.theme-montecarlo .panel, body.theme-montecarlo .stat, body.theme-montecarlo .avatar-tile, body.theme-montecarlo .cos-tile, body.theme-montecarlo .ladder-tier, body.theme-montecarlo .hero-seat, body.theme-montecarlo .var-tile, body.theme-montecarlo .row, body.theme-montecarlo .chal, body.theme-montecarlo .title-row, body.theme-montecarlo .ach-row, body.theme-montecarlo .lb-row, body.theme-montecarlo .turbo-row, body.theme-montecarlo .best-row, body.theme-montecarlo .streak-banner, body.theme-montecarlo .spin-card, body.theme-montecarlo .pass-card { background: var(--t-panel) !important; color: var(--t-text); border: 1px solid rgba(212,175,90,0.42) !important; border-radius: 4px !important;
-  box-shadow: inset 0 0 0 3px var(--t-panel), inset 0 0 0 4px rgba(212,175,90,0.18) !important; animation: none; }
-body.theme-montecarlo .sheet { background: var(--t-panel) !important; border: 1px solid rgba(212,175,90,0.5) !important; border-radius: 6px; box-shadow: inset 0 0 0 4px var(--t-panel), inset 0 0 0 5px rgba(212,175,90,0.2), 0 30px 80px rgba(0,0,0,0.6); }
-body.theme-montecarlo .scrim { background: rgba(5,5,7,0.8); }
-body.theme-montecarlo .mode-ic, body.theme-montecarlo .streak-flame, body.theme-montecarlo .spin-ic, body.theme-montecarlo .sec-ic, body.theme-montecarlo .turbo-ic, body.theme-montecarlo .vip-ic { background: transparent !important; border: 1px solid rgba(212,175,90,0.55) !important; color: var(--t-accent) !important; border-radius: 2px !important; animation: none !important; }
-body.theme-montecarlo .streak-banner > div:nth-child(2) > div:last-child, body.theme-montecarlo .spin-card > div:nth-child(2) > div:last-child, body.theme-montecarlo .pass-card [style*="#D6C7FF"], body.theme-montecarlo .pass-card [style*="#C9B8F5"] { color: var(--t-mid) !important; }
-body.theme-montecarlo .pass-card .pass-lvl { background: transparent; border: 1px solid rgba(212,175,90,0.5); border-radius: 2px; color: var(--t-accent); }
-body.theme-montecarlo .pass-card .bar > div, body.theme-montecarlo .bar > div { background: linear-gradient(90deg, #B88E35, #E6C877) !important; }
-body.theme-montecarlo .bar { background: rgba(212,175,90,0.14); height: 4px; border-radius: 0; }
-body.theme-montecarlo .bar > div { border-radius: 0; }
-body.theme-montecarlo .btn { border: 1px solid rgba(212,175,90,0.5); background: transparent; color: var(--t-text); border-radius: 2px; letter-spacing: 0.06em; font-weight: 600; box-shadow: none; }
-body.theme-montecarlo .btn:hover:not(:disabled) { border-color: var(--t-accent); }
-body.theme-montecarlo .btn-raise, body.theme-montecarlo .btn-raise:hover:not(:disabled), body.theme-montecarlo .btn-go, body.theme-montecarlo .btn-go:hover:not(:disabled) { background: linear-gradient(180deg, #EBCF84, #B88E35); color: #141416; border-color: #EBCF84; box-shadow: inset 0 0 0 2px rgba(20,20,22,0.22); }
-body.theme-montecarlo .btn-fold, body.theme-montecarlo .btn-fold:hover:not(:disabled) { background: transparent; color: var(--t-bad); border-color: rgba(217,119,111,0.5); }
-body.theme-montecarlo .shine::after { display: none !important; }
-body.theme-montecarlo .iconbtn { background: transparent; border: 1px solid rgba(212,175,90,0.45); color: var(--t-accent); border-radius: 3px; }
-body.theme-montecarlo .preset-btn { background: var(--t-panel2); }
-body.theme-montecarlo .seg { background: transparent; border: 1px solid rgba(212,175,90,0.4); border-radius: 3px; }
-body.theme-montecarlo .segbtn { color: var(--t-mid); border-radius: 2px; letter-spacing: 0.04em; }
-body.theme-montecarlo .segbtn.on { background: linear-gradient(180deg, #EBCF84, #B88E35); color: #141416; }
-body.theme-montecarlo .chip-pill { background: transparent; border: 1px solid rgba(212,175,90,0.4); border-radius: 3px; color: var(--t-text); }
-body.theme-montecarlo .chip-dot { background: var(--t-accent); box-shadow: inset 0 0 0 2.5px var(--t-bg), inset 0 0 0 4px var(--t-accent); }
-body.theme-montecarlo .input { background: transparent; border: 1px solid rgba(212,175,90,0.4); color: var(--t-text); border-radius: 3px; }
-body.theme-montecarlo .toast { background: var(--t-panel); border: 1px solid var(--t-accent); border-radius: 4px; }
-body.theme-montecarlo .badge-dot { background: var(--t-accent); color: #141416; }
-body.theme-montecarlo .bottom-nav { background: #0C0C0F; border-top: 1px solid rgba(212,175,90,0.3); }
-body.theme-montecarlo .navbtn { color: var(--t-faint) !important; }
-body.theme-montecarlo .navbtn[aria-current="page"] { color: var(--t-accent) !important; }
-body.theme-montecarlo .play-fab-disc { width: 42px; height: 42px; border-radius: 3px; transform: rotate(45deg); background: linear-gradient(135deg, #EBCF84, #B88E35); color: #141416; box-shadow: 0 0 0 4px #0C0C0F, 0 0 0 5px rgba(212,175,90,0.5) !important; animation: none; }
-body.theme-montecarlo .play-fab-disc > span { transform: rotate(-45deg); }
-body.theme-montecarlo .play-fab:not(.on) .play-fab-disc { filter: none; opacity: 0.85; }
-body.theme-montecarlo .play-fab:active .play-fab-disc { transform: rotate(45deg) scale(0.93); }
-body.theme-montecarlo .table-wrap[data-felt="green"] { --felt1: #176048 !important; --felt2: #0F4836 !important; --felt3: #082B20 !important; --rail: #B88E35 !important; }
-body.theme-montecarlo .table-wrap[data-back="blue"] { --back-a: #16161C !important; --back-b: #0C0C0F !important; --back-ring: #D4AF5A !important; }
-body.theme-montecarlo .felt-oval { box-shadow: inset 0 0 0 2px rgba(0,0,0,0.3), inset 0 10px 30px rgba(0,0,0,0.45), 0 0 0 1px rgba(212,175,90,0.6), 0 14px 34px rgba(0,0,0,0.5); }
-body.theme-montecarlo .felt-logo { font-family: var(--t-display) !important; color: rgba(212,175,90,0.12); letter-spacing: 0.1em; }
-body.theme-montecarlo .pot-num { background: rgba(0,0,0,0.45); border: 1px solid rgba(212,175,90,0.45); border-radius: 3px; }
-body.theme-montecarlo .hand-strip { background: var(--t-panel) !important; }
-body.theme-montecarlo .chip-badge { background: #0C0C0F; border-color: rgba(212,175,90,0.6); color: var(--t-accent); }
-body.theme-montecarlo .coach { background: var(--t-panel) !important; border: 1px solid rgba(212,175,90,0.45) !important; border-radius: 4px; }
-body.theme-montecarlo .coach-badge { color: var(--t-accent) !important; }
-body.theme-montecarlo .lb-dock { background: linear-gradient(180deg, rgba(12,12,15,0) 0%, var(--t-bg) 35%) !important; }
-body.theme-montecarlo .streak-day { background: transparent !important; border: 1px solid rgba(212,175,90,0.25) !important; border-radius: 3px !important; color: var(--t-mid) !important; box-shadow: none !important; animation: none !important; }
-body.theme-montecarlo .streak-day.got { color: var(--t-good) !important; }
-body.theme-montecarlo .streak-day.today { border-color: var(--t-accent) !important; color: var(--t-text) !important; }
-body.theme-montecarlo .play-fab-disc { width: 36px; height: 36px; margin-top: 4px; margin-bottom: 6px; }
-body.theme-montecarlo .play-fab span:last-child { margin-top: 2px !important; }
 /* ---- hold to peek ---- */
 .peek { display: flex; gap: 6px; position: relative; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; cursor: pointer; }
 .peek .card.peek-open { transform: translateY(-6px) rotate(-1deg); transition: transform .12s ease; }
@@ -6036,34 +6255,6 @@ body.theme-montecarlo .play-fab span:last-child { margin-top: 2px !important; }
 @keyframes peekGlow { 0%, 100% { box-shadow: 0 0 0 3px rgba(245,184,61,0.25), 0 2px 6px rgba(0,0,0,0.4); } 50% { box-shadow: 0 0 0 6px rgba(245,184,61,0.12), 0 2px 6px rgba(0,0,0,0.4); } }
 .backs .card.mini { transition: transform .2s ease; }
 .backs.peeking .card.mini { transform: rotate(var(--r, 0deg)) translateY(-5px) scaleY(0.8); }
-/* ---------- mode tiles are playing cards in every theme; each theme just picks the card stock ---------- */
-.mode-grid { --pc-face: #F7F8FB; --pc-edge: #D3DAE6; --pc-ink: #0B1426; --pc-red: #E0475B; --pc-sub: #5E6B82; --pc-shadow: rgba(0,0,0,0.35); --pc-font: var(--t-display); --pc-weight: 700; --pc-size: 17px; --pc-line: transparent; gap: 10px !important; padding: 4px 2px 6px; }
-.mode-tile { position: relative; background: var(--pc-face) !important; color: var(--pc-ink) !important; border: none !important; border-radius: 14px !important; min-height: 150px; padding: 12px 10px !important; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center !important; cursor: pointer; box-shadow: 0 1px 0 rgba(255,255,255,0.7) inset, inset 0 0 0 4px var(--pc-face), inset 0 0 0 5px var(--pc-line), 0 3px 0 var(--pc-edge), 0 12px 22px var(--pc-shadow) !important; transition: transform .18s cubic-bezier(.3,1.4,.5,1); overflow: visible !important; }
-.mode-tile::after { display: none !important; }
-.mode-tile:nth-child(1) { transform: rotate(-3deg) translateY(4px); }
-.mode-tile:nth-child(3) { transform: rotate(3deg) translateY(4px); }
-.mode-tile:active { transform: translateY(-6px) rotate(0deg) scale(1.02); }
-.mode-tile:focus-visible { outline: 2px solid var(--t-accent); }
-.mode-tile .mode-ic { display: none !important; }
-.mode-tile .mode-title { font-family: var(--pc-font) !important; font-weight: var(--pc-weight) !important; font-size: var(--pc-size) !important; color: var(--pc-ink) !important; margin-top: 6px; line-height: 1.05; }
-.mode-tile .mode-sub { font-size: 11px !important; color: var(--pc-sub) !important; opacity: 1 !important; font-weight: 600; margin-top: 3px; }
-.pc-index { position: absolute; top: 8px; left: 9px; display: flex; flex-direction: column; align-items: center; line-height: 0.95; }
-.pc-index b { font-family: var(--pc-font); font-weight: 800; font-size: 17px; }
-.pc-index i { font-style: normal; font-size: 14px; }
-.pc-index.flip { top: auto; left: auto; bottom: 8px; right: 9px; transform: rotate(180deg); }
-.pc-pip { display: block; font-size: 34px; line-height: 1; }
-.mode-tile.suit-h .pc-index, .mode-tile.suit-h .pc-pip, .mode-tile.suit-d .pc-index, .mode-tile.suit-d .pc-pip { color: var(--pc-red); }
-.mode-tile.suit-s .pc-index, .mode-tile.suit-s .pc-pip, .mode-tile.suit-c .pc-index, .mode-tile.suit-c .pc-pip { color: var(--pc-ink); }
-body.theme-cardroom .mode-grid { --pc-face: #F6F7F4; --pc-edge: #DADDD6; --pc-ink: #121417; --pc-red: #D8343B; --pc-sub: #5B6359; --pc-font: 'Archivo Variable', 'Archivo', sans-serif; --pc-weight: 800; --pc-size: 15px; }
-body.theme-cardroom .pc-index b { font-stretch: 100%; }
-body.theme-afterhours .mode-grid { --pc-face: #EDE6D8; --pc-edge: #C9BEA9; --pc-ink: #1C1814; --pc-red: #A8463C; --pc-sub: #6E665B; --pc-font: 'Instrument Serif', Georgia, serif; --pc-weight: 400; --pc-size: 20px; --pc-line: rgba(28,24,20,0.12); }
-body.theme-afterhours .pc-index b { font-weight: 400; font-size: 20px; }
-body.theme-montecarlo .mode-grid { --pc-face: #15151B; --pc-edge: #060608; --pc-ink: #D4AF5A; --pc-red: #C9584E; --pc-sub: #9A927E; --pc-font: var(--t-display); --pc-weight: 400; --pc-size: 15px; --pc-line: rgba(212,175,90,0.45); --pc-shadow: rgba(0,0,0,0.55); }
-body.theme-montecarlo .mode-tile { box-shadow: inset 0 0 0 1px rgba(212,175,90,0.6), inset 0 0 0 4px var(--pc-face), inset 0 0 0 5px var(--pc-line), 0 3px 0 var(--pc-edge), 0 12px 22px var(--pc-shadow) !important; }
-body.theme-montecarlo .mode-tile .mode-title { letter-spacing: 0.04em; }
-body.theme-montecarlo .pc-index b { font-weight: 400; }
-body.theme-montecarlo .pc-index { top: 11px; left: 11px; } body.theme-montecarlo .pc-index.flip { top: auto; left: auto; bottom: 11px; right: 11px; }
-.mode-tile .mode-sub { padding: 0 3px; }
 /* practice: the coach and your odds share one fixed-height panel */
 .coach-panel { position: relative; overflow: hidden; width: 100%; max-width: 460px; flex-shrink: 0; margin-bottom: 8px; border-radius: 14px; padding: 8px 12px 9px; height: 70px; border: 1px solid rgba(111,168,255,0.3); background: linear-gradient(135deg, rgba(47,111,222,0.13), rgba(139,92,246,0.09)); transition: border-color .25s ease, background .25s ease; }
 .coach-panel > * { position: relative; }
@@ -6179,44 +6370,6 @@ body.theme-montecarlo .pc-index { top: 11px; left: 11px; } body.theme-montecarlo
 .se-kicker { font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--t-mut); margin-top: 14px; }
 .se-title { font-family: var(--t-display); font-size: 28px; font-weight: 700; margin-top: 4px; }
 .se-body { font-size: 13px; line-height: 1.5; color: var(--t-mid); margin-top: 8px; }
-/* ---------- season pass: a swipeable track ---------- */
-.pass-card { cursor: default !important; }
-.pass-card:active { transform: none !important; }
-.pass-head { width: 100%; display: flex; align-items: center; gap: 12px; background: none; border: none; padding: 0; color: inherit; cursor: pointer; text-align: left; }
-.pass-strip { display: flex; gap: 8px; overflow-x: auto; margin: 12px -16px -2px; padding: 4px 16px 6px; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
-.pass-strip::-webkit-scrollbar { display: none; }
-.pass-mini { flex: 0 0 auto; width: 62px; height: 74px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.16); background: rgba(10,6,30,0.32); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; cursor: pointer; scroll-snap-align: start; color: #fff; padding: 0; position: relative; overflow: hidden; }
-.pass-mini .pm-art { height: 46px; display: flex; align-items: center; justify-content: center; }
-.pass-mini .pm-l { font-size: 10px; font-weight: 800; opacity: 0.75; }
-.pass-mini.next { border-color: rgba(255,214,102,0.9); box-shadow: 0 0 0 2px rgba(255,214,102,0.25); }
-.pass-mini.r-rare { border-color: rgba(78,168,255,0.5); } .pass-mini.r-epic { border-color: rgba(176,114,255,0.6); background: rgba(60,20,110,0.4); } .pass-mini.r-legendary { border-color: rgba(245,184,61,0.7); background: rgba(90,55,10,0.35); }
-.pass-mini.next.r-rare, .pass-mini.next.r-epic, .pass-mini.next.r-legendary { border-color: rgba(255,214,102,0.95); }
-.pass-sheet { padding: 16px !important; background: linear-gradient(180deg, #241048 0%, #120A2A 45%, var(--t-panel) 100%) !important; border-color: rgba(196,160,255,0.3) !important; overflow-x: hidden; }
-.ps-head { display: flex; align-items: center; gap: 12px; color: #fff; margin-bottom: 12px; }
-.ps-preview { display: flex; align-items: center; gap: 14px; padding: 14px; border-radius: 18px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); min-height: 132px; position: relative; overflow: hidden; }
-.ps-preview::before { content: ""; position: absolute; left: -30px; top: -30px; width: 170px; height: 170px; border-radius: 50%; background: radial-gradient(circle, var(--rc, rgba(154,164,178,0.25)), transparent 70%); pointer-events: none; }
-.ps-preview.r-rare { --rc: rgba(78,168,255,0.35); border-color: rgba(78,168,255,0.35); } .ps-preview.r-epic { --rc: rgba(176,114,255,0.45); border-color: rgba(176,114,255,0.45); } .ps-preview.r-legendary { --rc: rgba(245,184,61,0.45); border-color: rgba(245,184,61,0.55); }
-.ps-art { width: 110px; height: 110px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; position: relative; }
-.ps-meta { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 4px; position: relative; }
-.ps-rarity { font-size: 10.5px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; }
-.ps-name { font-family: var(--t-display); font-size: 21px; font-weight: 700; color: #fff; line-height: 1.1; }
-.ps-sub { font-size: 12px; color: var(--t-mid); margin-bottom: 4px; }
-.ps-got { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 700; color: var(--t-good); }
-.ps-lock { display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 600; color: var(--t-mut); }
-.ps-track { position: relative; display: flex; gap: 8px; overflow-x: auto; margin: 14px -16px 0; padding: 26px 16px 8px; scroll-snap-type: x proximity; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
-.ps-track::-webkit-scrollbar { display: none; }
-.ps-line { position: absolute; left: 46px; top: 36px; height: 3px; width: calc(30 * 88px - 88px); background: rgba(255,255,255,0.12); border-radius: 3px; }
-.ps-line > div { height: 100%; border-radius: 3px; background: linear-gradient(90deg, #F5B83D, #FF7AB8); }
-.ps-tile { flex: 0 0 80px; height: 118px; position: relative; border-radius: 14px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.04); color: #fff; cursor: pointer; padding: 22px 4px 6px; display: flex; flex-direction: column; align-items: center; justify-content: space-between; scroll-snap-align: center; transition: transform .15s ease, border-color .15s ease; }
-.ps-tile:active { transform: scale(0.96); }
-.ps-tile.r-rare { background: rgba(78,168,255,0.08); border-color: rgba(78,168,255,0.3); } .ps-tile.r-epic { background: rgba(176,114,255,0.12); border-color: rgba(176,114,255,0.4); } .ps-tile.r-legendary { background: linear-gradient(180deg, rgba(245,184,61,0.18), rgba(245,184,61,0.05)); border-color: rgba(245,184,61,0.55); }
-.ps-tile.got { opacity: 0.6; }
-.ps-tile.sel { opacity: 1; border-color: #fff; box-shadow: 0 0 0 2px rgba(255,255,255,0.35), 0 8px 20px rgba(0,0,0,0.35); }
-.ps-tile.next .ps-node { background: #F5B83D; color: #241048; border-color: #FFE08A; }
-.ps-node { position: absolute; top: -12px; left: 50%; transform: translateX(-50%); width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10.5px; font-weight: 800; background: #2A1A52; border: 2px solid rgba(255,255,255,0.25); color: #fff; }
-.ps-tile.got .ps-node { background: #34D399; border-color: #8CF0C6; color: #062A1D; }
-.ps-tile-art { flex: 1; display: flex; align-items: center; justify-content: center; }
-.ps-tile-name { font-size: 10px; font-weight: 700; color: rgba(255,255,255,0.75); white-space: nowrap; }
 .pr-ic { display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .pa-av { border-radius: 50%; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.1); box-shadow: inset 0 0 0 2px rgba(255,255,255,0.15); }
 .pa-emote { background: #F4F7FC; color: #0B1426; font-weight: 800; padding: 0.25em 0.5em; border-radius: 0.7em; position: relative; white-space: nowrap; line-height: 1.1; }
@@ -6255,95 +6408,10 @@ body.theme-montecarlo .pc-index { top: 11px; left: 11px; } body.theme-montecarlo
 .app-card-ic { width: 42px; height: 42px; border-radius: 11px; flex-shrink: 0; object-fit: cover; box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
 .app-card-ic.bell { display: flex; align-items: center; justify-content: center; background: rgba(245,184,61,0.16); color: var(--t-accent); box-shadow: none; }
 .share-ic { display: inline-flex; vertical-align: -2px; padding: 1px 3px; border-radius: 4px; background: rgba(111,168,255,0.18); color: #8CB8FF; }
-/* ---------- High Roller Room: black lacquer, emerald baize, champagne gold ---------- */
-.vip-card { width: 100%; display: flex; flex-direction: column; align-items: stretch; gap: 0; padding: 16px 18px 15px; border-radius: 18px; cursor: pointer; text-align: left; color: #F3EDE0; background-color: #0C0B09; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4' height='4'%3E%3Cpath d='M0 4L4 0' stroke='%23FFFFFF' stroke-opacity='0.025'/%3E%3C/svg%3E"), radial-gradient(120% 90% at 85% 0%, rgba(217,180,106,0.16), transparent 55%), linear-gradient(160deg, #1A1713 0%, #0B0A08 60%, #121009 100%); border: 1px solid rgba(217,180,106,0.32); position: relative; overflow: hidden; transition: transform .14s ease, box-shadow .3s ease; box-shadow: inset 0 1px 0 rgba(255,240,210,0.08), 0 10px 26px rgba(0,0,0,0.35); }
-.vip-card::before { content: ""; position: absolute; top: 5px; right: 5px; bottom: 5px; left: 5px; border-radius: 14px; border: 1px solid rgba(217,180,106,0.14); pointer-events: none; }
-.vip-card:active { transform: scale(0.985); }
-.vip-card.open { border-color: rgba(217,180,106,0.6); box-shadow: inset 0 1px 0 rgba(255,240,210,0.1), 0 12px 32px rgba(0,0,0,0.4), 0 0 34px rgba(217,180,106,0.12); }
-.vip-card.open::after { content: ""; position: absolute; top: 0; bottom: 0; left: -60%; width: 34%; background: linear-gradient(100deg, transparent, rgba(241,220,166,0.13), transparent); transform: skewX(-20deg); animation: shimmer 7s ease-in-out infinite; pointer-events: none; }
-.vc-top { display: flex; justify-content: space-between; align-items: center; width: 100%; gap: 10px; }
-.vc-kicker, .vs-kicker, .vi-kicker { font-family: 'Josefin Sans Variable', 'Josefin Sans', var(--t-body); text-transform: uppercase; letter-spacing: 0.24em; font-size: 9.5px; font-weight: 600; color: #A7905F; }
-.vc-crest { color: #D9B46A; display: flex; }
-.vc-title { font-family: 'Instrument Serif', Georgia, serif; font-style: italic; font-size: 27px; line-height: 1.1; margin: 10px 0 12px; background: linear-gradient(180deg, #F6E6BC 10%, #D9B46A 60%, #B48B45 100%); -webkit-background-clip: text; background-clip: text; color: transparent; letter-spacing: -0.005em; }
-.vc-foot { display: flex; justify-content: space-between; align-items: center; width: 100%; gap: 10px; font-size: 11.5px; color: #B9AC92; }
-.vc-enter { display: inline-flex; align-items: center; gap: 3px; line-height: 1; color: #E9CF95; font-family: 'Josefin Sans Variable', 'Josefin Sans', var(--t-body); text-transform: uppercase; letter-spacing: 0.18em; font-size: 10px; font-weight: 700; }
-.vc-enter-t { display: inline-block; line-height: 1; padding-top: 0.32em; margin-right: -0.18em; } /* Josefin caps ride high, and letter spacing leaves a gap after the last letter */
-.vc-bar { width: 100%; height: 3px; border-radius: 3px; background: rgba(217,180,106,0.14); margin-top: 9px; overflow: hidden; }
-.vc-bar > div { height: 100%; background: linear-gradient(90deg, #A7823F, #F1DCA6); }
-
-.vip-sheet-scrim { background: rgba(4,3,2,0.82) !important; backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px); }
-.sheet.vip-sheet { background: radial-gradient(120% 60% at 50% 0%, rgba(217,180,106,0.12), transparent 60%), linear-gradient(180deg, #15120E, #0C0A08) !important; border: 1px solid rgba(217,180,106,0.32) !important; border-radius: 20px !important; color: #F3EDE0; box-shadow: 0 30px 80px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,240,210,0.07) !important; position: relative; }
-.vs-head { text-align: center; position: relative; padding-top: 6px; margin-bottom: 14px; }
-.vs-close { position: absolute; top: -4px; right: -4px; background: transparent !important; border-color: rgba(217,180,106,0.3) !important; color: #D9B46A !important; }
-.vs-crest { color: #D9B46A; display: flex; justify-content: center; margin-bottom: 8px; }
-.vs-title { font-family: 'Instrument Serif', Georgia, serif; font-style: italic; font-size: 30px; line-height: 1.1; margin-top: 6px; color: #F1DCA6; }
-.vs-body { font-size: 12.5px; line-height: 1.55; color: #B9AC92; margin: 10px 8px 0; }
-.vip-sheet .seg { background: rgba(217,180,106,0.07) !important; border: 1px solid rgba(217,180,106,0.16) !important; border-radius: 12px !important; }
-.vip-sheet .segbtn { color: #B9AC92 !important; background: transparent !important; border: none !important; border-radius: 9px !important; }
-.vip-sheet .segbtn.on { background: linear-gradient(180deg, #F1DCA6, #C9A050) !important; color: #15110A !important; }
-.vip-row { display: flex; align-items: center; gap: 14px; width: 100%; text-align: left; cursor: pointer; padding: 15px 16px; border-radius: 14px; color: #D9B46A; background: linear-gradient(135deg, #1B1712, #0F0D0A); border: 1px solid rgba(217,180,106,0.28); transition: border-color .15s ease, transform .12s ease; position: relative; overflow: hidden; }
-.vip-row:active:not(:disabled) { transform: scale(0.985); }
-.vip-row:hover:not(:disabled) { border-color: rgba(217,180,106,0.55); }
-.vip-row:disabled { opacity: 0.45; cursor: not-allowed; }
-.vip-row.t-whale { background: linear-gradient(135deg, #17181B, #0A0A0C); border-color: rgba(214,220,230,0.28); color: #D6DCE6; }
-.vr-no { width: 34px; height: 34px; border-radius: 50%; border: 1px solid currentColor; display: flex; align-items: center; justify-content: center; font-family: 'Instrument Serif', Georgia, serif; font-size: 15px; flex-shrink: 0; opacity: 0.85; }
-.vr-title { font-family: 'Instrument Serif', Georgia, serif; font-style: italic; font-size: 21px; line-height: 1.1; color: #F1DCA6; }
-.vip-row.t-whale .vr-title { color: #EEF1F6; }
-.vr-sub { font-size: 12px; color: #C8BDA6; margin-top: 3px; }
-.vip-row.t-whale .vr-sub { color: #B8BFCB; }
-.vr-min { font-family: 'Josefin Sans Variable', 'Josefin Sans', var(--t-body); text-transform: uppercase; letter-spacing: 0.16em; font-size: 9px; font-weight: 600; color: #8C7B57; margin-top: 5px; }
-.vip-row.t-whale .vr-min { color: #7E8694; }
-
-.table-wrap.vip { --t-bg: #0A0907; --t-panel: #15120E; --t-panel2: #221D16; --t-text: #F3EDE0; --t-text2: #E2D9C6; --t-sub: #C8BDA6; --t-mid: #A89C85; --t-mut: #8C806B; --t-faint: #665C4C; --t-accent: #D9B46A; --t-good: #8FD0A6; --t-bad: #E08E80; --t-display: 'Instrument Serif', Georgia, serif;
-  background-color: #090807 !important; background-image: radial-gradient(60% 34% at 50% -4%, rgba(241,220,166,0.17), transparent 72%), radial-gradient(80% 50% at 50% 50%, rgba(18,72,56,0.22), transparent 72%), radial-gradient(140% 90% at 50% 50%, transparent 55%, rgba(0,0,0,0.6) 100%) !important; }
-.table-wrap.vip::before { opacity: 0.1; }
-.table-wrap.vip .wordmark-sm { font-family: 'Instrument Serif', Georgia, serif !important; font-style: italic; font-weight: 400 !important; font-size: 22px !important; background: linear-gradient(180deg, #F6E6BC 10%, #D9B46A 60%, #B48B45 100%); -webkit-background-clip: text; background-clip: text; color: transparent !important; }
-.table-wrap.vip .table-sub { font-family: 'Josefin Sans Variable', 'Josefin Sans', var(--t-body) !important; text-transform: uppercase; letter-spacing: 0.2em; font-size: 9.5px !important; font-weight: 600; color: #A7905F !important; margin-top: 2px; }
-.table-wrap.vip .iconbtn { background: transparent !important; border: 1px solid rgba(217,180,106,0.28) !important; color: #D9B46A !important; border-radius: 50% !important; }
-.table-wrap.vip .status { color: #C8BDA6; font-style: italic; font-family: 'Instrument Serif', Georgia, serif; font-size: 15px; letter-spacing: 0.01em; }
-.table-wrap.vip .bot-av { background: radial-gradient(circle at 35% 30%, #2A241C, #0E0C09 75%) !important; color: #E9CF95 !important; font-family: 'Instrument Serif', Georgia, serif !important; font-weight: 400 !important; font-size: 17px !important; box-shadow: inset 0 0 0 1px rgba(217,180,106,0.6), 0 3px 10px rgba(0,0,0,0.5) !important; border: none !important; }
-.table-wrap.vip .felt-oval { border: 10px solid #1A130C !important; background-color: #0B3328 !important; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='26' height='26'%3E%3Cpath d='M13 0L26 13L13 26L0 13Z' fill='none' stroke='%23E2C27E' stroke-opacity='0.07'/%3E%3Ccircle cx='13' cy='13' r='0.9' fill='%23E2C27E' fill-opacity='0.12'/%3E%3C/svg%3E"), radial-gradient(ellipse at 50% 35%, #17594A 0%, #0D3A2E 50%, #062019 100%) !important; box-shadow: inset 0 0 0 1px rgba(0,0,0,0.5), inset 0 14px 34px rgba(0,0,0,0.55), 0 0 0 1px rgba(217,180,106,0.55), 0 0 0 3px #0D0A07, 0 0 0 4px rgba(217,180,106,0.25), 0 18px 40px rgba(0,0,0,0.6), 0 0 80px rgba(217,180,106,0.08) !important; }
-.table-wrap.vip .felt-oval::after { content: ""; position: absolute; top: 7px; right: 7px; bottom: 7px; left: 7px; border-radius: 999px; border: 1px solid rgba(217,180,106,0.32); pointer-events: none; }
-.table-wrap.vip .felt-oval.drama { box-shadow: inset 0 0 0 1px rgba(0,0,0,0.5), inset 0 14px 34px rgba(0,0,0,0.55), 0 0 0 2px rgba(241,220,166,0.7), 0 0 60px rgba(217,180,106,0.4) !important; }
-.vip-logo { display: flex; flex-direction: column; align-items: center; gap: 2px; color: transparent !important; font-size: 0 !important; }
-.vip-logo .vl-word { font-family: 'Instrument Serif', Georgia, serif; font-style: italic; font-size: 58px; line-height: 0.95; color: rgba(241,220,166,0.1); letter-spacing: -0.01em; }
-.vip-logo .vl-sub { font-family: 'Josefin Sans Variable', 'Josefin Sans', sans-serif; text-transform: uppercase; letter-spacing: 0.42em; font-size: 8.5px; font-weight: 600; color: rgba(241,220,166,0.16); padding-left: 0.42em; }
-.table-wrap.vip .fchip.c0 { background: #C9A050; } .table-wrap.vip .fchip.c1 { background: #7A1E2C; } .table-wrap.vip .fchip.c2 { background: #1E1A15; }
-.table-wrap.vip .fchip { border-color: rgba(241,220,166,0.85); }
-.table-wrap.vip .card { background: #FBF6EA; }
-.table-wrap.vip .card.back, .table-wrap.vip .sq-cover { background-color: #0E0C09 !important; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='7' height='7'%3E%3Cpath d='M3.5 0L7 3.5L3.5 7L0 3.5Z' fill='none' stroke='%23D9B46A' stroke-opacity='0.55' stroke-width='0.7'/%3E%3C/svg%3E") !important; background-size: 7px 7px !important; box-shadow: inset 0 0 0 1.5px #D9B46A, inset 0 0 0 3.5px #0E0C09, inset 0 0 0 4.2px rgba(217,180,106,0.55), 0 3px 9px rgba(0,0,0,0.5) !important; }
-.table-wrap.vip .card.mini.back { box-shadow: inset 0 0 0 1px #D9B46A, inset 0 0 0 2.2px #0E0C09, 0 2px 5px rgba(0,0,0,0.5) !important; }
-.table-wrap.vip .card-slot { border: 1px solid rgba(217,180,106,0.2); background: rgba(0,0,0,0.12); }
-.table-wrap.vip .pot-num { background: rgba(6,5,4,0.62); border: 1px solid rgba(217,180,106,0.38); color: #F1DCA6; letter-spacing: 0.02em; }
-.table-wrap.vip .chip-badge { background: #0E0C09; border-color: rgba(217,180,106,0.5); color: #E9CF95; }
-.table-wrap.vip .dealer-chip { background: linear-gradient(180deg, #F1DCA6, #C9A050); color: #15110A; }
-.table-wrap.vip .hero-seat { background: linear-gradient(180deg, #17130F, #0D0B08) !important; border-radius: 18px !important; box-shadow: inset 0 1px 0 rgba(255,240,210,0.06), 0 10px 30px rgba(0,0,0,0.45); }
-.table-wrap.vip .btn { background: rgba(243,237,224,0.025) !important; border: 1px solid rgba(217,180,106,0.22) !important; color: #E2D9C6 !important; border-radius: 13px !important; font-family: var(--t-body); box-shadow: none !important; }
-.table-wrap.vip .btn-fold { color: #E08E80 !important; border-color: rgba(224,142,128,0.3) !important; }
-.table-wrap.vip .btn-go { color: #F1DCA6 !important; border-color: rgba(217,180,106,0.55) !important; background: rgba(217,180,106,0.07) !important; }
-.table-wrap.vip .btn-raise, .table-wrap.vip .preset-btn { background: linear-gradient(180deg, #F3DFAA, #C9A050) !important; color: #15110A !important; border-color: transparent !important; box-shadow: inset 0 1px 0 rgba(255,255,255,0.45), 0 8px 22px rgba(201,160,80,0.25) !important; }
-.table-wrap.vip .pre-btn { background: transparent !important; border-color: rgba(217,180,106,0.2) !important; color: #B9AC92 !important; }
-.table-wrap.vip .pre-btn.on { border-color: rgba(217,180,106,0.7) !important; color: #F1DCA6 !important; background: rgba(217,180,106,0.08) !important; }
-.table-wrap.vip .banner { background: rgba(10,9,7,0.75) !important; border-color: rgba(217,180,106,0.35) !important; }
-.table-wrap.vip .peek-badge { background: #F1DCA6; color: #15110A; box-shadow: 0 0 0 3px rgba(217,180,106,0.25), 0 2px 6px rgba(0,0,0,0.5); }
-.table-wrap.vip .sq-hint { color: #A7905F; }
-.table-wrap.vip input[type=range] { accent-color: #D9B46A; }
-.table-wrap.vip .bigwin-label { font-family: 'Instrument Serif', Georgia, serif; font-style: italic; font-weight: 400; color: #F1DCA6; }
-.table-wrap.vip .bigwin-amt { text-shadow: 0 6px 30px rgba(217,180,106,0.6); color: #FBF2DC; }
-
-.vip-intro { position: fixed; top: 0; right: 0; bottom: 0; left: 0; z-index: 40; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; background: radial-gradient(70% 45% at 50% 45%, #1B1610 0%, #070605 70%); animation: viFade 2.6s ease forwards; cursor: pointer; }
-.vi-crest { color: #D9B46A; margin-bottom: 14px; animation: viUp .9s cubic-bezier(.2,.8,.2,1) .1s both; }
-.vi-kicker { animation: viUp .9s cubic-bezier(.2,.8,.2,1) .25s both; }
-.vi-title { font-family: 'Instrument Serif', Georgia, serif; font-style: italic; font-size: 46px; line-height: 1.05; margin: 10px 0 14px; background: linear-gradient(180deg, #F6E6BC 10%, #D9B46A 60%, #B48B45 100%); -webkit-background-clip: text; background-clip: text; color: transparent; animation: viUp 1s cubic-bezier(.2,.8,.2,1) .35s both; padding: 0 0.1em; }
-.vi-rule { width: 120px; height: 1px; background: linear-gradient(90deg, transparent, #D9B46A, transparent); animation: viRule 1.1s cubic-bezier(.2,.8,.2,1) .55s both; }
-.vi-sub { margin-top: 14px; font-size: 12px; letter-spacing: 0.14em; color: #B9AC92; animation: viUp .9s cubic-bezier(.2,.8,.2,1) .7s both; }
-@keyframes viUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
-@keyframes viRule { from { transform: scaleX(0); opacity: 0; } to { transform: scaleX(1); opacity: 1; } }
-@keyframes viFade { 0%, 78% { opacity: 1; } 100% { opacity: 0; visibility: hidden; } }
-
 /* show or muck */
 .show-btn { display: inline-flex; align-items: center; justify-content: center; gap: 7px; }
 .shown-tag { position: absolute; top: -9px; left: 50%; transform: translateX(-50%); z-index: 2; font-size: 9px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; padding: 2px 8px; border-radius: 20px; background: var(--t-accent); color: var(--t-bg); white-space: nowrap; animation: peekPop .22s cubic-bezier(.3,1.5,.5,1) both; }
+${CHIP_STACK_CSS}
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; transition-duration: 0.01ms !important; }
 }
