@@ -3584,23 +3584,22 @@ function LeaderboardScreen({ data, account, online = {}, onOpenAuth }) {
     return () => { on = false; };
   }, [tab, scope]); // eslint-disable-line react-hooks/exhaustive-deps
   const pickScope = (v) => { setScope(v); try { localStorage.setItem("felt-lb-scope", v); } catch (e) { /* private mode */ } };
-  useEffect(() => { if (tab !== "friends" || !account) return; cloud.friends(account).then((r) => setFl(r.friends)).catch(() => setFl([])); }, [tab, account]);
+  useEffect(() => { if (!account) return; cloud.friends(account).then((r) => setFl(r.friends)).catch(() => setFl([])); }, [account]);
   const placed = isPlaced(data.ranked);
   const month = new Date().toLocaleString("en-US", { month: "long" });
   const myIndex = tournamentIndex((data.skill || {}).tourneys);
-  // sample players stand in until online play exists, so the boards have company
+  const friendIds = new Set((fl || []).map((f) => f.id));
   const realList = real[realKey];
   const live = Array.isArray(realList);
-  const others = live ? realList.filter((p) => !account || p.id !== account.id).map((p) => ({ id: p.id, name: p.display_name, profile: p, isYou: false, prestige: p.prestige || 0, title: p.title, rating: p.placed ? p.rating : null, index: (p.stats || {}).tIndex || 0 })).filter((p) => (tab === "ranked" ? p.rating != null : true)) : MOCK_PLAYERS.map((m) => ({ name: m.name, isYou: false, title: hashStr(m.name) % 5 < 2 ? TITLES[1 + (hashStr(m.name + "t") % (TITLES.length - 1))].key : null, rating: Math.round(Math.min(1680, m.wins * 9 + m.chips / 80)), index: Math.round(m.wins * 7 + m.chips / 150) }));
-  const you = { name: data.name, isYou: true, profile: { ...publicProfile(data), id: account ? account.id : "me" }, prestige: data.ranked.prestige || 0, title: (data.titles || defaultTitles()).equipped, rating: placed ? Math.round(data.ranked.rating) : null, index: myIndex };
+  const others = live ? realList.filter((p) => !account || p.id !== account.id).map((p) => ({ id: p.id, name: p.display_name, profile: p, isYou: false, prestige: p.prestige || 0, rating: p.placed ? p.rating : null, index: (p.stats || {}).tIndex || 0 })).filter((p) => (tab === "ranked" ? p.rating != null : true)) : MOCK_PLAYERS.map((m) => ({ name: m.name, isYou: false, rating: Math.round(Math.min(1680, m.wins * 9 + m.chips / 80)), index: Math.round(m.wins * 7 + m.chips / 150) }));
+  const you = { name: data.name, isYou: true, profile: { ...publicProfile(data), id: account ? account.id : "me" }, prestige: data.ranked.prestige || 0, rating: placed ? Math.round(data.ranked.rating) : null, index: myIndex };
   const isRanked = tab === "ranked";
   const key = isRanked ? "rating" : "index";
   const pool = [...others, ...(you[key] != null ? [you] : [])].sort((a, b) => b[key] - a[key]);
   const myPos = pool.findIndex((p) => p.isYou);
-  const SHOW = 50;
-  const visible = pool.slice(0, SHOW);
-  const value = (p) => (isRanked ? `${p.rating.toLocaleString()} RP` : `${p.index.toLocaleString()} pts`);
-  const medal = ["var(--t-accent)", "#C9D4E2", "#D9894E"];
+  const visible = pool.slice(0, 50);
+  const usePodium = visible.length >= 3;
+  const rest = usePodium ? visible.slice(3) : visible;
   // only dock your row at the bottom when your spot in the list is scrolled out of view
   const scrollRef = useRef(null); const meRef = useRef(null);
   const [meVisible, setMeVisible] = useState(true);
@@ -3608,22 +3607,25 @@ function LeaderboardScreen({ data, account, online = {}, onOpenAuth }) {
     const el = meRef.current;
     if (!el) { setMeVisible(false); return; }
     if (!("IntersectionObserver" in window)) { setMeVisible(true); return; }
-    const io = new IntersectionObserver(([e]) => setMeVisible(e.isIntersecting), { root: scrollRef.current, threshold: 0.6 });
+    const io = new IntersectionObserver(([e]) => setMeVisible(e.isIntersecting), { threshold: 0.6 });
     io.observe(el);
     return () => io.disconnect();
-  }, [tab, myPos]);
-  const renderRow = (p, i, pinned = false) => {
+  }, [tab, myPos, live]);
+  const tierLine = (p, i) => (isRanked ? (live && scope === "world" && p.rating >= 1500 ? `Legend #${i + 1}` : rankName(p.rating)) : `${p.index.toLocaleString()} pts`);
+  const avatar = (p, size) => <ChipAvatar p={live || p.isYou ? p.profile : null} letter={p.name} size={size} tier={isRanked ? tierForRating(p.rating) : null} live={!p.isYou && !!online[p.id]} />;
+  const row = (p, i, pinned = false) => {
     const tier = isRanked ? tierForRating(p.rating) : null;
+    const tap = !!p.profile && !p.isYou;
     return (
-      <div key={(pinned ? "pin-" : "") + (p.id || p.name) + (p.isYou ? "-you" : "")} ref={p.isYou && !pinned ? meRef : null} className={`lb-row${pinned ? " lb-pinned" : ""}${p.profile && !p.isYou ? " tap" : ""}`} onClick={p.profile && !p.isYou ? () => setOpenF(p.id) : undefined} style={{ background: p.isYou ? "var(--t-raise)" : "var(--t-panel)", boxShadow: p.isYou ? "inset 0 0 0 2px var(--t-accent)" : "none" }}>
-        <div className="num" style={{ minWidth: 26, fontFamily: "var(--t-display)", fontSize: 20, fontWeight: 900, color: p.isYou ? "var(--t-accent)" : i < 3 ? medal[i] : "var(--t-mid)" }}>{p.isYou && pinned ? `#${i + 1}` : i + 1}</div>
-        {live && p.profile ? <PlayerAvatar p={p.profile} size={38} live={!p.isYou && !!online[p.id]} tier={tier} /> : tier ? <TierBadge tier={tier} size={36} /> : <span className="pod-letter" style={{ width: 36, height: 36, fontSize: 16, background: AVATAR_COLORS[hashStr(p.name || "?") % AVATAR_COLORS.length] }}>{(p.name || "?")[0]}</span>}
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 14.5, fontWeight: 700, color: "var(--t-text)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}><span className={pnameCls(p.prestige)}>{p.isYou && p.name !== "You" ? `${p.name} (you)` : p.name}</span>{p.prestige ? <PrestigeBadge n={p.prestige} size={15} /> : null}</div>
-          {(tier || (p.title && p.title !== "rookie")) && <div style={{ fontSize: 11, display: "flex", gap: 8, alignItems: "baseline", whiteSpace: "nowrap", overflow: "hidden" }}>{tier && <span style={{ color: tier.color }}>{live && scope === "world" && p.rating >= 1500 ? `Legend #${i + 1}` : rankName(p.rating)}</span>}{p.title && p.title !== "rookie" && <TitleTag k={p.title} size={10.5} />}</div>}
-        </div>
-        <div className="num" style={{ fontFamily: "var(--t-display)", fontSize: 20, fontWeight: 800 }}>{isRanked ? p.rating.toLocaleString() : p.index.toLocaleString()}<span style={{ fontFamily: "var(--t-body)", fontSize: 10.5, fontWeight: 700, letterSpacing: "0.1em", color: "var(--t-mid)", marginLeft: 4 }}>{isRanked ? "RP" : "PTS"}</span></div>
-      </div>
+      <button key={(pinned ? "pin-" : "") + (p.id || p.name) + (p.isYou ? "-you" : "")} ref={p.isYou && !pinned ? meRef : null} className={`lb-item${p.isYou ? " you" : ""}${tap ? " tap" : ""}`} disabled={!tap} onClick={tap ? () => setOpenF(p.id) : undefined}>
+        <span className="lb-pl num">{pinned ? `#${i + 1}` : i + 1}</span>
+        {avatar(p, 38)}
+        <span style={{ flex: 1, minWidth: 0 }}>
+          <span className="lb-nm"><span className={pnameCls(p.prestige)} style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{p.isYou ? (pinned ? "You" : p.name) : p.name}</span>{p.prestige ? <PrestigeBadge n={p.prestige} size={15} /> : null}{p.isYou && !pinned && <span className="lb-tag">You</span>}{!p.isYou && friendIds.has(p.id) && <span className="lb-tag friend">Friend</span>}</span>
+          <span className="lb-tier" style={{ color: tier ? tier.color : "var(--t-mid)" }}>{isRanked ? tierLine(p, i) : "Tournament index"}</span>
+        </span>
+        <span className="lb-val num">{isRanked ? p.rating.toLocaleString() : p.index.toLocaleString()}</span>
+      </button>
     );
   };
   // the top three stand on a podium
@@ -3638,7 +3640,7 @@ function LeaderboardScreen({ data, account, online = {}, onOpenAuth }) {
         return (
           <button key={k} ref={p.isYou ? meRef : null} className={`pod${big ? " first" : ""}`} disabled={!p.profile || p.isYou} onClick={() => setOpenF(p.id)}>
             {big && <Icon name="crown" size={22} stroke={1.8} style={{ color: "#E8B23A" }} />}
-            <span className="pod-av" style={{ boxShadow: `0 0 0 3px var(--t-bg), 0 0 0 6px ${ring}` }}>{live && p.profile ? <PlayerAvatar p={p.profile} size={big ? 64 : 52} live={!p.isYou && !!online[p.id]} /> : <span className="pod-letter" style={{ width: big ? 64 : 52, height: big ? 64 : 52, background: AVATAR_COLORS[hashStr(p.name) % AVATAR_COLORS.length] }}>{(p.name || "?")[0]}</span>}</span>
+            <span className="pod-av">{avatar(p, big ? 62 : 50)}</span>
             <span className="pod-name"><span className={pnameCls(p.prestige)}>{p.isYou ? "You" : p.name}</span></span>
             <span className="pod-val num">{isRanked ? p.rating.toLocaleString() : p.index.toLocaleString()}</span>
             <span className="pod-block" style={{ height: big ? 92 : k === 1 ? 64 : 48, "--sc": big ? "#E8B23A" : ring }}><b>{k + 1}</b></span>
@@ -3647,54 +3649,52 @@ function LeaderboardScreen({ data, account, online = {}, onOpenAuth }) {
       })}
     </section>
   );
+  const head = (
+    <header className="home-head lb-head">
+      <div className="wordmark">Ranks</div>
+      {tab !== "friends" && cloudEnabled() && (
+        <div className="mini-seg" role="radiogroup" aria-label="Leaderboard scope">
+          <button role="radio" aria-checked={scope === "world"} className={scope === "world" ? "on" : ""} onClick={() => pickScope("world")}>World</button>
+          <button role="radio" aria-checked={scope === "local"} className={scope === "local" ? "on" : ""} onClick={() => pickScope("local")}>Local</button>
+        </div>
+      )}
+    </header>
+  );
+  const seg = (
+    <div className="seg lb-seg">
+      <button onClick={() => setTab("ranked")} className={`segbtn${tab === "ranked" ? " on" : ""}`}>Ranked</button>
+      <button onClick={() => setTab("index")} className={`segbtn${tab === "index" ? " on" : ""}`}>Tourney</button>
+      {cloudEnabled() && <button onClick={() => setTab("friends")} className={`segbtn${tab === "friends" ? " on" : ""}`}>Friends</button>}
+    </div>
+  );
   if (tab === "friends") {
-    const me = { id: "me", ...publicProfile(data), username: account ? account.username : null, isYou: true };
-    const rows = [...(fl || []), me].sort((a, b) => (b.placed ? b.rating : -1) - (a.placed ? a.rating : -1));
     return (
       <div className="screen screen-fade">
-        <header className="home-head" style={{ marginBottom: 14 }}><div className="wordmark">Ranks</div></header>
-        <div className="seg" style={{ marginBottom: 12 }}>
-          <button onClick={() => setTab("ranked")} className="segbtn">Ranked</button>
-          <button onClick={() => setTab("index")} className="segbtn">Tourney</button>
-          <button onClick={() => setTab("friends")} className="segbtn on">Friends</button>
-        </div>
+        {head}
+        {seg}
         <FriendsSection account={account} online={online} onOpenAuth={onOpenAuth} bare />
-        {openF && <FriendProfileModal friendId={openF} online={online} onClose={() => setOpenF(null)} />}
       </div>
     );
   }
+  const note = live ? (pool.length <= 1 ? (scope === "local" ? `No one else in ${tzLabel(tz)} time yet. Get your friends on felt.` : "No one else is on the board yet. Get your friends on felt.") : scope === "local" ? `Everyone in ${tzLabel(tz)} time. Tap a player to see their profile.` : "Everyone with a felt account. Tap a player to see their profile.")
+    : realList === undefined && cloudEnabled() ? "Loading players…" : "Other players are samples until online play is added.";
   return (
-    <div ref={scrollRef} className="screen screen-fade" style={{ paddingBottom: 0, display: "flex", flexDirection: "column" }}>
-      <header className="home-head" style={{ marginBottom: 14 }}><div className="wordmark">Ranks</div></header>
-      <div className="seg" style={{ marginBottom: 12 }}>
-        <button onClick={() => setTab("ranked")} className={`segbtn${isRanked ? " on" : ""}`}>Ranked</button>
-        <button onClick={() => setTab("index")} className={`segbtn${!isRanked ? " on" : ""}`}>Tourney</button>
-        {cloudEnabled() && <button onClick={() => setTab("friends")} className="segbtn">Friends</button>}
-      </div>
-      <div style={{ display: "flex", alignItems: "center", gap: 10, margin: "0 2px 12px" }}>
-        <div style={{ flex: 1, fontSize: 12, color: "var(--t-mut)" }}>{scope === "local" && cloudEnabled() ? `Players in ${tzLabel(tz)} time. ` : ""}{isRanked ? `${month} season, ends in ${daysLeftInSeason()} days.` : "Best 8 tournament cashes, fading over 90 days."}</div>
-        {cloudEnabled() && (
-          <div className="scope-toggle" role="radiogroup" aria-label="Leaderboard scope">
-            <button role="radio" aria-checked={scope === "world"} className={scope === "world" ? "on" : ""} onClick={() => pickScope("world")}><Icon name="wheel" size={11} stroke={2.2} />World</button>
-            <button role="radio" aria-checked={scope === "local"} className={scope === "local" ? "on" : ""} onClick={() => pickScope("local")}><Icon name="home" size={11} stroke={2.2} />Local</button>
+    <div ref={scrollRef} className="screen screen-fade" style={{ display: "flex", flexDirection: "column" }}>
+      {head}
+      {seg}
+      <div className="lb-note">{isRanked ? `${month} season, ends in ${daysLeftInSeason()} days.` : "Best 8 tournament cashes, fading over 90 days."}{scope === "local" && cloudEnabled() ? ` Players in ${tzLabel(tz)} time.` : ""}</div>
+      {usePodium && podium}
+      {rest.length > 0 && <section className="lb-list">{rest.map((p, j) => row(p, usePodium ? j + 3 : j))}</section>}
+      <div className="lb-empty">{note}</div>
+      {isRanked && !placed ? (
+        <div className="lb-me lb-dock">
+          <div className="lb-item">
+            <TierBadge tier={UNRANKED} size={34} />
+            <span style={{ flex: 1, fontSize: 13, color: "var(--t-sub)" }}>Finish {PLACEMENT_MATCHES - (data.ranked.placementGames || []).length} more placement {PLACEMENT_MATCHES - (data.ranked.placementGames || []).length === 1 ? "match" : "matches"} to get on the board</span>
           </div>
-        )}
-      </div>
-      <div className="list" style={{ gap: 6, flex: 1 }}>
-        {visible.length >= 3 && podium}
-        {(visible.length >= 3 ? visible.slice(3) : visible).map((p, j) => renderRow(p, visible.length >= 3 ? j + 3 : j))}
-        <div style={{ fontSize: 11, color: "var(--t-faint)", textAlign: "center", padding: "8px 0 4px" }}>{live ? (pool.length <= 1 ? (scope === "local" ? `No one else in ${tzLabel(tz)} time yet. Get your friends on felt.` : "No one else is on the board yet. Get your friends on felt.") : scope === "local" ? `Everyone in ${tzLabel(tz)} time. Tap a player to see their profile.` : "Everyone with a felt account. Tap a player to see their profile.") : realList === undefined && cloudEnabled() ? "Loading players…" : "Other players are samples until online play is added."}</div>
-      </div>
-      {/* your spot stays visible at the bottom, even when you're off the list */}
-      <div className="lb-dock">
-        {isRanked && !placed ? (
-          <div className="lb-row" style={{ background: "var(--t-panel)", borderColor: "rgba(244,247,252,0.1)" }}>
-            <TierBadge tier={UNRANKED} size={26} />
-            <div style={{ flex: 1, fontSize: 13, color: "var(--t-sub)" }}>Finish {PLACEMENT_MATCHES - (data.ranked.placementGames || []).length} more placement {PLACEMENT_MATCHES - (data.ranked.placementGames || []).length === 1 ? "match" : "matches"} to get on the board</div>
-          </div>
-        ) : myPos >= 0 && !meVisible ? renderRow(pool[myPos], myPos, true) : null}
-      </div>
-      {openF && tab !== "friends" && <FriendProfileModal friendId={openF} online={online} account={account} onClose={() => setOpenF(null)} />}
+        </div>
+      ) : myPos >= 0 && !meVisible ? <div className="lb-me lb-dock">{row(pool[myPos], myPos, true)}</div> : null}
+      {openF && <FriendProfileModal friendId={openF} online={online} account={account} onClose={() => setOpenF(null)} />}
     </div>
   );
 }
@@ -4237,6 +4237,20 @@ function FriendsTableModal({ account, data, onClose, onOpenTable, onOpenAuth, on
 /* =========================================================================
    ACCOUNTS AND FRIENDS
    ========================================================================= */
+// An avatar sitting inside a poker chip the color of the player's rank
+function ChipAvatar({ p, letter, size = 40, tier, live = false }) {
+  const rim = Math.max(4, Math.round(size * 0.13));
+  const S = size + rim * 2, rw = (rim / S) * 100, r = 50 - rw / 2, c = 2 * Math.PI * r, seg = c / 8;
+  return (
+    <span className="chip-av" style={{ width: S, height: S, padding: rim }}>
+      <svg className="chip-av-ring" viewBox="0 0 100 100" aria-hidden="true">
+        <circle cx="50" cy="50" r={r} fill="none" stroke={tier ? tier.color : "#3A3D44"} strokeWidth={rw} />
+        <circle cx="50" cy="50" r={r} fill="none" stroke="#F2F2EE" strokeWidth={rw} strokeDasharray={`${seg * 0.42} ${seg * 0.58}`} strokeDashoffset={seg * 0.21} transform="rotate(-90 50 50)" />
+      </svg>
+      {p ? <PlayerAvatar p={p} size={size} live={live} /> : <span className="pod-letter" style={{ width: size, height: size, fontSize: Math.round(size * 0.42), background: AVATAR_COLORS[hashStr(letter || "?") % AVATAR_COLORS.length] }}>{(letter || "?")[0]}</span>}
+    </span>
+  );
+}
 function PlayerAvatar({ p, size = 40, live = false, tier = null }) {
   const style = { width: size, height: size, borderRadius: "50%", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--t-panel2)", fontSize: size * 0.48 };
   return (
@@ -4379,7 +4393,7 @@ function FriendsSection({ account, online = {}, onOpenAuth, sound, bare = false 
   const shortRank = (p) => (p.placed ? rankName(p.rating).replace("Platinum", "Plat").replace("Diamond", "Dia") : "Unranked");
   const row = (p, live) => (
     <button key={p.id} className="fr-row" onClick={() => setOpen(p.id)}>
-      <PlayerAvatar p={p} size={40} live={live} tier={p.placed ? tierForRating(p.rating) : null} />
+      <ChipAvatar p={p} size={36} live={live} tier={p.placed ? tierForRating(p.rating) : null} />
       <span style={{ flex: 1, minWidth: 0, textAlign: "left" }}>
         <span className="fr-name"><span className={pnameCls(p.prestige)}>{p.display_name}</span><PrestigeBadge n={p.prestige} size={15} /></span>
         <span className="fr-sub" style={{ color: live ? "var(--t-good)" : "var(--t-mid)" }}>{presenceLine(p, online)}</span>
@@ -4401,7 +4415,7 @@ function FriendsSection({ account, online = {}, onOpenAuth, sound, bare = false 
       <section key={p.id} className="fr-req">
         <div className="stripe thin" />
         <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 14px 12px" }}>
-          <PlayerAvatar p={p} size={40} tier={p.placed ? tierForRating(p.rating) : null} />
+          <ChipAvatar p={p} size={36} tier={p.placed ? tierForRating(p.rating) : null} />
           <span style={{ flex: 1, minWidth: 0 }}><span className="fr-name">{p.display_name}</span><span className="fr-sub">Wants to be friends</span></span>
           <button className="iconbtn" style={{ background: "var(--t-panel2)" }} aria-label={`Decline ${p.display_name}`} onClick={() => act(() => cloud.remove(account, p.id))}><Icon name="close" size={14} stroke={2.6} /></button>
           <button className="btn btn-sm btn-raise" style={{ minHeight: 44 }} onClick={() => act(() => cloud.accept(account, p.id))}>Accept</button>
@@ -6153,6 +6167,32 @@ input[type=range] { accent-color: var(--t-accent); height: 28px; }
 .ft-friendly { display: flex; align-items: center; gap: 12px; margin-top: 12px; padding: 12px 14px; border-radius: 12px; background: #111214; }
 .ft-note { font-size: 12px; color: var(--t-mid); margin-top: 12px; line-height: 1.4; }
 .ft-sheet .big-cta { margin-top: 4px; }
+/* ranks board: every avatar sits in a chip the color of that player's rank */
+.chip-av { position: relative; display: inline-flex; flex-shrink: 0; box-sizing: border-box; border-radius: 50%; }
+.chip-av-ring { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none; }
+.chip-av .live-dot { z-index: 2; }
+.lb-head { align-items: center; }
+.lb-seg { margin-bottom: 10px; }
+.lb-seg .segbtn.on { background: var(--t-accent); color: #111214; }
+.lb-note { font-size: 12px; color: var(--t-mid); margin: 0 4px 12px; }
+.lb-list { border-radius: 18px; background: var(--t-panel); padding: 0 14px; }
+.lb-item { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 66px; padding: 8px 0; background: none; border: none; border-bottom: 1px solid var(--rule); color: var(--t-text); text-align: left; font-family: inherit; }
+.lb-item:last-child { border-bottom: none; }
+.lb-item:disabled { opacity: 1; cursor: default; }
+.lb-item.tap { cursor: pointer; }
+.lb-item.tap:active { opacity: 0.8; }
+.lb-pl { min-width: 28px; flex-shrink: 0; font-family: var(--t-display); font-weight: 900; font-size: 22px; color: var(--t-mid); }
+.lb-item.you .lb-pl { color: var(--t-accent); }
+.lb-nm { display: flex; align-items: center; gap: 6px; font-size: 15px; font-weight: 700; white-space: nowrap; overflow: hidden; }
+.lb-tag { font-family: var(--t-display); font-weight: 800; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--t-accent); flex-shrink: 0; }
+.lb-tag.friend { color: var(--t-good); }
+.lb-tier { display: block; font-size: 12.5px; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lb-val { font-family: var(--t-display); font-weight: 900; font-size: 22px; flex-shrink: 0; }
+.lb-empty { font-size: 12px; color: var(--t-faint); text-align: center; padding: 12px 0 8px; }
+.lb-me { border-radius: 16px; background: var(--t-panel); box-shadow: inset 0 0 0 2px var(--t-accent); padding: 0 14px; margin-top: auto; }
+.lb-me .lb-item { border-bottom: none; }
+.lb-me .lb-pl { color: var(--t-accent); }
+.pod-av { box-shadow: none !important; }
 `;
 const GLOBAL_STYLE = `
 :root { --t-bg: #0B1426; --t-panel: #14223D; --t-panel2: #25395F; --t-text: #F4F7FC; --t-text2: #C8D3E6; --t-sub: #A9B8D0; --t-mid: #8FA1BE; --t-mut: #7587A6; --t-faint: #5E7196; --t-accent: #F5B83D; --t-good: #34D399; --t-bad: #FF6B6B; --t-display: 'Fraunces', Georgia, serif; --t-body: 'Inter', -apple-system, sans-serif; }
