@@ -605,12 +605,12 @@ function coachVerdict(adv, type, eq, toCall, pot) {
 const SPIN_PRIZES = [
   { label: "150", sub: "chips", type: "chips", amount: 150, w: 22, color: "#2F6FDE" },
   { label: "300", sub: "chips", type: "chips", amount: 300, w: 20, color: "#16A06A" },
-  { label: "150", sub: "XP", type: "xp", amount: 150, w: 16, color: "#8B5CF6" },
-  { label: "600", sub: "chips", type: "chips", amount: 600, w: 14, color: "#E0861E" },
-  { label: "300", sub: "XP", type: "xp", amount: 300, w: 10, color: "#D9468F" },
-  { label: "1.2k", sub: "chips", type: "chips", amount: 1200, w: 9, color: "#0EA5B7" },
-  { label: "?", sub: "mystery", type: "mystery", w: 6, color: "#1F2430" },
-  { label: "5k", sub: "jackpot", type: "chips", amount: 5000, w: 3, color: "#C9A24D" },
+  { label: "150", sub: "XP", type: "xp", amount: 150, w: 16, color: "#7C4DE8" },
+  { label: "600", sub: "chips", type: "chips", amount: 600, w: 14, color: "#C26F12" },
+  { label: "300", sub: "XP", type: "xp", amount: 300, w: 10, color: "#C83A7E" },
+  { label: "1.2k", sub: "chips", type: "chips", amount: 1200, w: 9, color: "#0B8C9C" },
+  { label: "?", sub: "mystery", type: "mystery", w: 6, color: "#24282F" },
+  { label: "5k", sub: "jackpot", type: "chips", amount: 5000, w: 3, color: "#E8B23A" },
 ];
 function pickSpinIndex() {
   const total = SPIN_PRIZES.reduce((a, p) => a + p.w, 0);
@@ -653,23 +653,15 @@ const BURST = (() => { const pts = []; for (let i = 0; i < 24; i++) { const r = 
 function CrownMark({ size = 14, top = -9 }) {
   return <span className="crown-mark" style={{ top, width: size + 6, height: size + 2 }} aria-label="Prestige crown"><Icon name="crown" size={size} stroke={2} /></span>;
 }
+// Prestige is a gold chip with the count on it
 function PrestigeBadge({ n, size = 18 }) {
   if (!n) return null;
-  let pal = PRESTIGE_COLORS[0]; for (const c of PRESTIGE_COLORS) if (n >= c[0]) pal = c;
-  const [, hi, mid, lo] = pal;
-  const id = `pb${pal[0]}`;
   return (
     <svg className="prestige-badge" width={size} height={size} viewBox="0 0 48 48" role="img" aria-label={`Prestige ${n}`}>
       <title>{`Prestige ${n}`}</title>
-      <defs>
-        <linearGradient id={`${id}-gold`} x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#FFF3C4" /><stop offset="0.5" stopColor="#F5C451" /><stop offset="1" stopColor="#A86A0C" /></linearGradient>
-        <radialGradient id={`${id}-gem`} cx="38%" cy="30%" r="75%"><stop offset="0" stopColor={hi} /><stop offset="0.55" stopColor={mid} /><stop offset="1" stopColor={lo} /></radialGradient>
-      </defs>
-      <polygon points={BURST} fill={`url(#${id}-gold)`} stroke="#7A4A06" strokeWidth="0.8" strokeLinejoin="round" />
-      <circle cx="24" cy="24" r="14" fill={`url(#${id}-gem)`} stroke="#FFE7A3" strokeWidth="2" />
-      <circle cx="24" cy="24" r="10.5" fill="none" stroke="#FFFFFF" strokeOpacity="0.28" strokeWidth="1" />
-      <path d="M13.5 19.5 C16 13 32 13 34.5 19.5 C29 16.5 19 16.5 13.5 19.5 Z" fill="#FFFFFF" opacity="0.28" />
-      <text x="24" y="24" dy="0.36em" textAnchor="middle" fontSize={n >= 10 ? 13 : 16} fontWeight="900" fill="#FFFFFF" stroke={lo} strokeWidth="0.6" paintOrder="stroke" fontFamily="Inter, -apple-system, sans-serif">{n}</text>
+      <circle cx="24" cy="24" r="23" fill="#E8B23A" />
+      <circle cx="24" cy="24" r="19.5" fill="none" stroke="#F2F2EE" strokeWidth="6" strokeDasharray="7.65 7.65" />
+      <text x="24" y="24" dy="0.36em" textAnchor="middle" fontSize={n >= 10 ? 17 : 21} fontWeight="900" fill="#111214" fontFamily="'Big Shoulders Display', Impact, sans-serif">{`P${n}`}</text>
     </svg>
   );
 }
@@ -1147,6 +1139,7 @@ const ICON_PATHS = {
   chart: ["M3 3v18h18", "m7 14 4-4 3 3 5-6"],
   camera: ["M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z", "M12 17a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"],
   chat: ["M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"],
+  search: ["M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14z", "m20 20-3.5-3.5"],
   coach: ["M9 18h6", "M10 22h4", "M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.2 1 2V17h6v-.3c0-.8.4-1.5 1-2A7 7 0 0 0 12 2z"],
 };
 function Icon({ name, size = 16, stroke = 1.8, style }) {
@@ -1156,15 +1149,19 @@ function Icon({ name, size = 16, stroke = 1.8, style }) {
     </svg>
   );
 }
-function SkillDial({ sr, size = 64 }) {
-  const r = size / 2 - 4, c = 2 * Math.PI * r;
-  const color = sr >= 70 ? "var(--t-good)" : sr >= 45 ? "var(--t-accent)" : "var(--t-bad)";
+// A chip-style dial: progress ring outside, dashed rim inside, the score in the middle
+function SkillDial({ sr, size = 64, max = 100, color: col }) {
+  const color = col || (sr >= 70 ? "var(--t-good)" : sr >= 45 ? "var(--t-accent)" : "var(--t-bad)");
+  const s = size, c0 = s / 2, ringW = s * 0.093, r = c0 - ringW / 2, circ = 2 * Math.PI * r;
+  const inner = s * 0.386;
+  const showOf = s >= 80;
   return (
-    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ flexShrink: 0, display: "block" }} role="img" aria-label={`Skill Rating ${sr}`}>
-      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="#2C2F35" strokeWidth={size * 0.1} />
-      <circle cx={size / 2} cy={size / 2} r={r} fill="none" style={{ stroke: color }} strokeWidth={size * 0.1} strokeDasharray={c} strokeDashoffset={c * (1 - sr / 100)} transform={`rotate(-90 ${size / 2} ${size / 2})`} />
-      <circle cx={size / 2} cy={size / 2} r={r - size * 0.11} fill="#111214" stroke="#2C2F35" strokeWidth={size * 0.04} strokeDasharray={`${size * 0.07} ${size * 0.05}`} />
-      <text x={size / 2} y={size / 2 + size * 0.15} textAnchor="middle" fill="#F2F2EE" fontWeight="900" fontSize={size * 0.44} fontFamily="'Big Shoulders Display', Impact, sans-serif">{sr}</text>
+    <svg width={s} height={s} viewBox={`0 0 ${s} ${s}`} style={{ flexShrink: 0, display: "block" }} role="img" aria-label={`Skill Rating ${sr} of ${max}`}>
+      <circle cx={c0} cy={c0} r={r} fill="none" stroke="#2C2F35" strokeWidth={ringW} />
+      <circle cx={c0} cy={c0} r={r} fill="none" style={{ stroke: color }} strokeWidth={ringW} strokeDasharray={circ} strokeDashoffset={circ * (1 - Math.max(0, Math.min(1, sr / max)))} transform={`rotate(-90 ${c0} ${c0})`} />
+      <circle cx={c0} cy={c0} r={inner} fill="#111214" stroke="#2C2F35" strokeWidth={s * 0.042} strokeDasharray={`${s * 0.06} ${s * 0.045}`} />
+      <text x={c0} y={showOf ? c0 + s * 0.1 : c0 + s * 0.15} textAnchor="middle" fill="#F2F2EE" fontWeight="900" fontSize={s * (showOf ? 0.42 : 0.44)} fontFamily="'Big Shoulders Display', Impact, sans-serif">{sr}</text>
+      {showOf && <text x={c0} y={c0 + s * 0.26} textAnchor="middle" fill="#A3A6AD" fontWeight="700" fontSize={s * 0.093} letterSpacing={s * 0.011} fontFamily="'Familjen Grotesk Variable', -apple-system, sans-serif">{`OF ${max}`}</text>}
     </svg>
   );
 }
@@ -1186,83 +1183,77 @@ const CRYSTAL_IN = "M32 11.5 L42.5 19.5 L42.5 35.5 L32 49.5 L21.5 35.5 L21.5 19.
 const WING_1 = "M16 22 C9 20.5 3.5 24.5 2.5 31 C6.5 28.5 11 28.2 16 29.5 Z";
 const WING_2 = "M16 30 C10 30.5 5.5 35 5.2 41 C8.6 37.6 12.2 36.6 16.5 37 Z";
 const WING_3 = "M17.5 38 C13 39.5 10 43.5 10.3 48.5 C13 45.5 16 44.3 19.5 44 Z";
+// A rank is a poker chip in the tier's color. The middle shows your division.
 function TierBadge({ tier, size = 28, div = null }) {
   const k = tier.key in BADGE_PAL ? tier.key : "unranked";
-  const [hi, mid, lo] = BADGE_PAL[k];
-  const g = `tb-${k}`;
-  const lvl = ["unranked", "bronze", "silver", "gold", "platinum", "diamond", "champion"].indexOf(k);
-  const wings = lvl >= 3 ? (lvl >= 6 ? 3 : lvl >= 4 ? 2 : 1) : 0;
-  const body = lvl >= 5 ? CRYSTAL : lvl >= 2 || lvl === 0 ? SHIELD : null;
-  const inner = lvl >= 5 ? CRYSTAL_IN : SHIELD_IN;
-  const wingFill = lvl >= 6 ? "url(#tb-champion-wing)" : `url(#${g}-v)`;
-  const Wing = ({ flip }) => (
-    <g transform={flip ? "translate(64 0) scale(-1 1)" : undefined}>
-      {wings >= 1 && <path d={WING_1} fill={wingFill} stroke={lo} strokeWidth="1" />}
-      {wings >= 2 && <path d={WING_2} fill={wingFill} stroke={lo} strokeWidth="1" />}
-      {wings >= 3 && <path d={WING_3} fill={wingFill} stroke={lo} strokeWidth="1" />}
-    </g>
-  );
+  const col = k === "unranked" ? "#7A7E86" : tier.color;
+  const label = k === "champion" ? null : div ? ROMAN[div] : k === "unranked" ? "?" : null;
+  const showText = size >= 22;
   return (
-    <svg width={size} height={size} viewBox="0 0 64 64" role="img" aria-label={`${tier.label}${div ? ` ${ROMAN[div]}` : ""}`} style={{ flexShrink: 0, display: "block", overflow: "visible" }} className={lvl === 6 ? "tb-champ" : undefined}>
-      <defs>
-        <linearGradient id={`${g}-v`} x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor={hi} /><stop offset="0.55" stopColor={mid} /><stop offset="1" stopColor={lo} /></linearGradient>
-        <linearGradient id={`${g}-d`} x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor={lo} /><stop offset="1" stopColor={mid} /></linearGradient>
-        <radialGradient id={`${g}-glow`} cx="50%" cy="50%" r="50%"><stop offset="0" stopColor={mid} stopOpacity="0.75" /><stop offset="1" stopColor={mid} stopOpacity="0" /></radialGradient>
-        {lvl >= 6 && <linearGradient id="tb-champion-wing" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#FFF3C4" /><stop offset="0.5" stopColor="#F5C451" /><stop offset="1" stopColor="#B7791F" /></linearGradient>}
-      </defs>
-      {lvl >= 5 && <circle cx="32" cy="32" r="31" fill={`url(#${g}-glow)`} />}
-      <Wing /><Wing flip />
-      {/* platinum and up: spikes over the top */}
-      {lvl >= 4 && lvl < 6 && <path d="M24 13 L27 4 L30 11 Z M34 11 L37 4 L40 13 Z M30 10 L32 1 L34 10 Z" fill={`url(#${g}-v)`} stroke={lo} strokeWidth="1" />}
-      {/* the body: medallion for bronze, shield for silver to platinum, crystal for diamond and champion */}
-      {body ? (
-        <g>
-          <path d={body} fill={`url(#${g}-v)`} stroke={lo} strokeWidth="1.6" strokeLinejoin="round" />
-          <path d={inner} fill={`url(#${g}-d)`} opacity="0.9" />
-          {lvl >= 5 && <path d="M32 11.5 L32 49.5 M21.5 19.5 L42.5 35.5 M42.5 19.5 L21.5 35.5" stroke={hi} strokeOpacity="0.35" strokeWidth="1" />}
-          <path d={lvl >= 5 ? "M32 8 L45 17.5 L32 27 L19 17.5 Z" : "M32 10.5 L47 16 V24 C40 21 25 21 17 24 V16 Z"} fill="#FFFFFF" opacity="0.18" />
-        </g>
-      ) : (
-        <g>
-          <circle cx="32" cy="32" r="21" fill={`url(#${g}-v)`} stroke={lo} strokeWidth="1.6" />
-          <circle cx="32" cy="32" r="16" fill={`url(#${g}-d)`} />
-          <circle cx="32" cy="32" r="21" fill="none" stroke={hi} strokeOpacity="0.5" strokeWidth="1" strokeDasharray="2 3" />
-          <path d="M14 26 C20 14 44 14 50 26 C42 21 22 21 14 26 Z" fill="#FFFFFF" opacity="0.18" />
-        </g>
-      )}
-      {/* champion: a jeweled crown sitting on top of the crystal */}
-      {lvl >= 6 && (
-        <g>
-          <path d="M19.5 14 L21.5 1.5 L27.5 7.5 L32 -1.5 L36.5 7.5 L42.5 1.5 L44.5 14 Z" fill="url(#tb-champion-wing)" stroke="#8A5A0B" strokeWidth="1.2" strokeLinejoin="round" />
-          <path d="M19.5 14 H44.5" stroke="#8A5A0B" strokeWidth="1.6" />
-          <circle cx="32" cy="7" r="2.4" fill="#FF4F8B" stroke="#8A5A0B" strokeWidth="0.8" />
-          <circle cx="24" cy="9.5" r="1.6" fill="#5AD8FF" />
-          <circle cx="40" cy="9.5" r="1.6" fill="#5AD8FF" />
-        </g>
-      )}
-      {/* center emblem gets fancier each tier */}
-      {lvl === 0 && <text x="32" y="39" textAnchor="middle" fontSize="20" fontWeight="800" fill="#E6ECF5" fontFamily="Inter, -apple-system, sans-serif">?</text>}
-      {lvl === 1 && <path d="M24 36 L32 27 L40 36" fill="none" stroke={hi} strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />}
-      {lvl === 2 && <path d="M24 37 L32 28.5 L40 37 M24 30 L32 21.5 L40 30" fill="none" stroke={hi} strokeWidth="3.4" strokeLinecap="round" strokeLinejoin="round" />}
-      {(lvl === 3 || lvl === 4) && <path d="M32 19 L35.2 26.4 L43 27.1 L37 32.3 L38.9 40 L32 35.9 L25.1 40 L27 32.3 L21 27.1 L28.8 26.4 Z" fill={hi} stroke={lo} strokeWidth="1" strokeLinejoin="round" />}
-      {lvl === 4 && <circle cx="32" cy="30.5" r="2.6" fill={mid} />}
-      {lvl >= 5 && (
-        <g>
-          <path d="M32 20 L40 28 L32 40 L24 28 Z" fill={lvl >= 6 ? "#FF4F8B" : "#FFFFFF"} stroke={lo} strokeWidth="1.2" strokeLinejoin="round" />
-          <path d="M24 28 L40 28 M28 28 L32 40 L36 28 M28 28 L32 20 L36 28" fill="none" stroke={lo} strokeOpacity="0.45" strokeWidth="0.8" />
-        </g>
-      )}
-      {/* division pips */}
-      {div && (
-        <g>
-          {[0, 1, 2].map((i) => <path key={i} d={`M${19.5 + i * 9} 59.5 l3.5 -3.5 l3.5 3.5 l-3.5 3.5 Z`} fill={i < div ? hi : "rgba(255,255,255,0.12)"} stroke={i < div ? lo : "rgba(0,0,0,0.25)"} strokeWidth="0.8" />)}
-        </g>
-      )}
-      {/* champion sparkles */}
-      {lvl >= 6 && <g className="tb-sparkle"><path d="M56 12 l1.2 3 3 1.2 -3 1.2 -1.2 3 -1.2 -3 -3 -1.2 3 -1.2 Z" fill="#FFF3C4" /><path d="M8 46 l1 2.4 2.4 1 -2.4 1 -1 2.4 -1 -2.4 -2.4 -1 2.4 -1 Z" fill="#FFF3C4" /></g>}
+    <svg width={size} height={size} viewBox="0 0 64 64" role="img" aria-label={`${tier.label}${div ? ` ${ROMAN[div]}` : ""}`} style={{ flexShrink: 0, display: "block", overflow: "visible" }}>
+      <circle cx="32" cy="32" r="30" fill={col} />
+      <circle cx="32" cy="32" r="25.5" fill="none" stroke="#F2F2EE" strokeWidth="9" strokeDasharray="10 10.03" />
+      <circle cx="32" cy="32" r="17.5" fill="rgba(0,0,0,0.2)" />
+      {k === "champion" && <path d="M20 39 L22 25 L28 31 L32 22 L36 31 L42 25 L44 39 Z" fill="#F2F2EE" stroke="rgba(0,0,0,0.3)" strokeWidth="1.5" strokeLinejoin="round" />}
+      {label && showText && <text x="32" y="32" dy="0.35em" textAnchor="middle" fontSize={label.length > 2 ? 17 : 21} fontWeight="900" fill="#FFFFFF" stroke="rgba(0,0,0,0.35)" strokeWidth="2.5" paintOrder="stroke" fontFamily="'Big Shoulders Display', Impact, sans-serif">{label}</text>}
     </svg>
   );
 }
+// A full-screen page for moments that deserve the whole phone: the spin, signing in, a season ending
+function FullScreen({ label, onClose, className = "", children }) {
+  const closeRef = useRef(onClose); closeRef.current = onClose;
+  useEffect(() => {
+    const k = (e) => { if (e.key === "Escape" && closeRef.current) closeRef.current(); };
+    window.addEventListener("keydown", k);
+    return () => window.removeEventListener("keydown", k);
+  }, []);
+  return (
+    <div className={`fs-page${className ? ` ${className}` : ""}`} role="dialog" aria-modal="true" aria-label={label}>
+      <div className="fs-inner">{children}</div>
+    </div>
+  );
+}
+const ORD_WORDS = ["", "first", "second", "third", "fourth", "fifth", "sixth", "seventh", "eighth", "ninth", "tenth"];
+function SeasonEndScreen({ se, onClose }) {
+  const [yy, mm] = String(se.seasonId).split("-");
+  const month = new Date(+yy, +mm - 1, 1).toLocaleString("en-US", { month: "long" });
+  const next = new Date(+yy, +mm, 1).toLocaleString("en-US", { month: "long" });
+  const perk = PRESTIGE_PERKS.find((pk) => pk.n === se.prestige);
+  const fromTier = tierForRating(se.from), toTier = tierForRating(se.to);
+  const short = (r) => rankName(r).replace("Platinum", "Plat").replace("Diamond", "Dia");
+  return (
+    <FullScreen label={`${month} season is over`} onClose={onClose} className={`se-page${se.champ ? " champ" : ""}`}>
+      <div className="se-rays" aria-hidden="true" style={{ "--rc": se.champ ? "rgba(232,178,58,0.14)" : "rgba(242,242,238,0.05)" }} />
+      <div className="lbl se-kick">{month} is over</div>
+      <h1 className="se-big">You finished<br /><span style={{ color: fromTier.color }}>{se.champ ? "Champion" : rankName(se.from)}</span></h1>
+      <div className="se-emblem badge-pop">
+        {se.champ ? (
+          <div className="se-pchip">
+            <span className="se-crown"><Icon name="crown" size={34} stroke={2} /></span>
+            <b className="num">P{se.prestige}</b><span>Prestige</span>
+          </div>
+        ) : <TierBadge tier={fromTier} size={150} div={divisionOf(se.from)} />}
+      </div>
+      <p className="se-copy">{se.champ ? `That's your ${ORD_WORDS[se.prestige] || ordinal(se.prestige)} prestige. It stays on your profile forever.` : "Every month the ladder resets partway. Finish a month at Champion to earn a prestige."}</p>
+      <div className="se-rows">
+        {se.champ && <div className="se-row"><span className="chip-ic" style={{ "--cc": "#E2483D", width: 34, height: 34 }} /><b>Prestige bonus</b><em className="num" style={{ color: "var(--t-good)" }}>+{PRESTIGE_REWARD.toLocaleString()}</em></div>}
+        {se.champ && perk && <div className="se-row"><span className="chip-ic" style={{ "--cc": "#E8B23A", width: 34, height: 34 }} /><b>{perk.label} unlocked</b><em>New</em></div>}
+        <div className="se-row">
+          <TierBadge tier={toTier} size={34} div={divisionOf(se.to)} />
+          <span style={{ flex: 1, minWidth: 0 }}><b>{next} starts you at</b><i>Everyone's RP comes partway back. Nobody drops to Bronze.</i></span>
+          <em style={{ color: toTier.color }}>{short(se.to)}</em>
+        </div>
+      </div>
+      <div className="fs-bottom"><button className="btn btn-raise big-cta" onClick={onClose}>{se.champ ? "New season" : "Let's go"}</button></div>
+    </FullScreen>
+  );
+}
+function TitlePill({ k, style }) {
+  const t = findTitle(k); const c = TITLE_RARITY[t.rarity];
+  const leg = t.rarity === "legendary", common = t.rarity === "common";
+  return <span className="title-pill" style={{ color: leg ? "#111214" : common ? "var(--t-text)" : c, background: leg ? "#E8B23A" : common ? "#2E3036" : `${c}2E`, ...style }}>{t.label}</span>;
+}
+const SHOP_FEATURED = [["felt", "blackout", "Black hex weave with a gold rail."], ["back", "midnight", "A gold sunburst on midnight navy."], ["felt", "crimson", "Deep red lattice with gold thread."], ["felt", "royal", "Blue herringbone, old card room style."], ["back", "crimson", "Red rosette, cut like a banknote."], ["back", "emerald", "Green suits for the regulars."]];
 function Modal({ title, onClose, children, width = 380, className = "", stripe }) {
   return (
     <div className={`scrim${className ? ` ${className}-scrim` : ""}`} onClick={onClose}>
@@ -1353,6 +1344,7 @@ function PokerTable({ startStack, name, avatar, photo = null, soundOn, setSoundO
   const [turnPulse, setTurnPulse] = useState(false);
   const [tournamentOver, setTournamentOver] = useState(null);
   const [knockouts, setKnockouts] = useState(0);
+  const bustHandRef = useRef({});
   const [tableCleared, setTableCleared] = useState(false);
   const [bestPot, setBestPot] = useState(0);
   const [rankedResult, setRankedResult] = useState(null);
@@ -1604,6 +1596,7 @@ function PokerTable({ startStack, name, avatar, photo = null, soundOn, setSoundO
     // A bot that hits zero is out in every mode. The human is only marked out in tournaments;
     // cash and ranked handle a human bust with their own end-of-session screens.
     const botsBusted = finalPs.filter((p) => !p.isHuman && !p.eliminated && p.stack <= 0).length;
+    finalPs.forEach((p) => { if (!p.isHuman && !p.eliminated && p.stack <= 0) bustHandRef.current[p.id] = matchHandsRef.current.length + 1; });
     finalPs = finalPs.map((p) => (!p.eliminated && p.stack <= 0 && (tournament || !p.isHuman) ? { ...p, eliminated: true, folded: true } : p));
     if (botsBusted > 0 && humanWon) setKnockouts((k) => k + botsBusted);
     if (!tournament && finalPs[0].stack > 0 && finalPs.every((p) => p.isHuman || p.eliminated)) setTableCleared(true);
@@ -1655,7 +1648,7 @@ function PokerTable({ startStack, name, avatar, photo = null, soundOn, setSoundO
       netBB: net / BB, evBB: evNet / BB, botSkill, afterBigLoss: !!meta.afterBigLoss,
     };
     lastBigLossRef.current = net <= -20 * BB;
-    matchHandsRef.current.push(decisions);
+    matchHandsRef.current.push({ ...decisions, potWon: humanWon });
     handDecisionsRef.current = [];
     onHandResolved({
       won: humanWon, potWon: potWonByHuman, finalStack: finalPs[0].stack, decisions, variant,
@@ -2286,6 +2279,12 @@ function PokerTable({ startStack, name, avatar, photo = null, soundOn, setSoundO
       {ranked && rankedResult && showResults && (
         <RankedResults
           result={rankedResult} rankedState={rankedState} skill={skill} tableLabel={tableSize?.label} canPlayAgain={bankrollAfter >= startStack}
+          standings={(() => {
+            const others = players.filter((p) => !p.isHuman).sort((a, b) => b.stack - a.stack || (bustHandRef.current[b.id] || 0) - (bustHandRef.current[a.id] || 0))
+              .map((p) => ({ name: p.name, stack: Math.max(0, p.stack), bust: p.stack <= 0 ? bustHandRef.current[p.id] : null }));
+            others.splice(Math.max(0, Math.min(others.length, (rankedResult.place || 1) - 1)), 0, { name: "You", stack: Math.max(0, rankedResult.finalStack), me: true });
+            return others;
+          })()}
           onLobby={(extra) => onExit(rankedResult.finalStack, null, { ...rankedResult, ...extra })}
           onAgain={(extra) => onExit(rankedResult.finalStack, null, { ...rankedResult, ...extra }, { again: true })}
           onReview={() => setShowResults(false)}
@@ -2467,16 +2466,16 @@ function useTween(value, duration = 300) {
 
 function PlacementDots({ games, size = 12 }) {
   return (
-    <div style={{ display: "flex", gap: 6, justifyContent: "center" }}>
+    <div className="pl-dots">
       {Array.from({ length: PLACEMENT_MATCHES }).map((_, i) => {
         const g = games[i];
-        return <div key={i} title={g ? (g.won ? "Win" : "Loss") : "Not played"} style={{ width: size, height: size, borderRadius: "50%", background: g ? (g.won ? "var(--t-good)" : "var(--t-bad)") : "transparent", border: g ? "none" : "1.5px solid rgba(244,247,252,0.22)" }} />;
+        return <span key={i} title={g ? (g.won ? "Win" : "Loss") : "Not played"} className={`pl-dot${g ? (g.won ? " w" : " l") : ""}`} style={{ width: size, height: size, borderWidth: Math.max(2, Math.round(size * 0.16)) }} />;
       })}
     </div>
   );
 }
 
-function RankedResults({ result, rankedState, skill, tableLabel, canPlayAgain, onLobby, onAgain, onReview }) {
+function RankedResults({ result, rankedState, skill, tableLabel, canPlayAgain, onLobby, onAgain, onReview, standings }) {
   const [assess, setAssess] = useState(result.placementFinal ? null : "n/a");
   useEffect(() => {
     if (!result.placementFinal) return;
@@ -2486,67 +2485,87 @@ function RankedResults({ result, rankedState, skill, tableLabel, canPlayAgain, o
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-  const headline = result.forfeit ? "Forfeit" : result.won ? "Victory" : "Defeat";
-  const sub = result.cleared ? `You cleared the table in ${result.hands} hand${result.hands === 1 ? "" : "s"}.`
-    : result.busted ? `Busted on hand ${result.hands}, ${ordinal(result.place || 2)} of ${result.field || 2}.`
-    : result.forfeit ? `Left after ${result.hands} hand${result.hands === 1 ? "" : "s"}.`
-    : `Finished ${ordinal(result.place || 1)} of ${result.field || 2} in chips after ${result.hands} hands.`;
   const extra = assess && assess !== "n/a" ? { placedRating: assess.rating, report: assess.report } : {};
   const ready = !result.placementFinal || (assess && assess !== "n/a");
-  const stats = (
-    <div className="results-stats">
-      <div><b className="num">{signed(result.net)}</b><span>Chips</span></div>
-      <div><b className="num">{result.hands}</b><span>Hands</span></div>
-      <div><b className="num">{result.quality == null ? "–" : `${Math.round(result.quality * 100)}%`}</b><span>Good decisions</span></div>
+  const pots = (result.matchHands || []).filter((h) => h && h.potWon).length;
+  const tiles = [
+    { v: signed(result.net), l: "Chips", c: result.net > 0 ? "var(--t-good)" : result.net < 0 ? "var(--t-bad)" : null },
+    { v: result.knockouts || 0, l: "Knockouts" },
+    { v: pots, l: "Pots won" },
+    { v: result.quality == null ? "–" : `${Math.round(result.quality * 100)}%`, l: "Decisions" },
+  ];
+  const stats = <div className="rr-stats">{tiles.map((t) => <div key={t.l}><b className="num" style={t.c ? { color: t.c } : undefined}>{t.v}</b><span>{t.l}</span></div>)}</div>;
+  const table = standings && standings.length > 1 ? (
+    <section className="rr-stand" aria-label="Final standings">
+      {standings.map((s, i) => (
+        <div key={i} className={`rr-srow${s.me ? " me" : ""}${s.stack <= 0 ? " out" : ""}`}>
+          <span className="rr-spl">{ordinal(i + 1)}</span>
+          <span className="rr-sname">{s.name}</span>
+          {s.stack > 0 ? <b className="num">{s.stack.toLocaleString()}</b> : <i>{s.bust ? `Busted, hand ${s.bust}` : "Busted"}</i>}
+        </div>
+      ))}
+    </section>
+  ) : null;
+  const buttons = (
+    <div className="rr-btns">
+      {canPlayAgain ? <button className="btn btn-raise big-cta" disabled={!ready} onClick={() => onAgain(extra)}>{result.placement && !result.placementFinal ? "Next placement" : "Play again"}</button>
+        : <div className="rr-need">You need {RANKED_BUYIN.toLocaleString()} chips to queue again.</div>}
+      <div className="rr-two">
+        <button className="btn" onClick={onReview}>View table</button>
+        <button className="btn" disabled={!ready} onClick={() => onLobby(extra)}>Lobby</button>
+      </div>
     </div>
   );
-  const buttons = (
-    <>
-      <div style={{ display: "flex", gap: 8, marginTop: 24 }}>
-        <button className="btn" disabled={!ready} onClick={() => onLobby(extra)}>Lobby</button>
-        {canPlayAgain && <button className="btn btn-raise" disabled={!ready} onClick={() => onAgain(extra)}>{result.placement && !result.placementFinal ? "Next placement" : "Play again"}</button>}
-      </div>
-      {!canPlayAgain && <div style={{ fontSize: 12, color: "var(--t-mut)", marginTop: 10, textAlign: "center" }}>You need {RANKED_BUYIN.toLocaleString()} chips to queue again.</div>}
-      <button className="linkbtn" onClick={onReview}>Look at the table</button>
-    </>
+  const top = (kicker) => <div className="rr-top"><span className="lbl">{kicker}</span><span className="num">{result.hands} hand{result.hands === 1 ? "" : "s"}</span></div>;
+  const placeBig = result.forfeit ? "Left" : ordinal(result.place || 1);
+  const placeSub = result.forfeit ? "the match early" : result.cleared ? "Cleared the table" : `of ${result.field || 2} players`;
+  const head = (right) => (
+    <div className="rr-head">
+      <div style={{ minWidth: 0 }}><div className="rr-place">{placeBig}</div><div className="rr-of">{placeSub}</div></div>
+      {right}
+    </div>
   );
 
   if (result.placementFinal) {
     const games = [...(rankedState.placementGames || []), { won: result.won }];
     if (!ready) {
       return (
-        <div className="results" role="dialog" aria-label="Placement">
-          <div className="results-inner" style={{ alignItems: "center" }}>
-            <div className="spinner" style={{ width: 40, height: 40 }} aria-hidden="true" />
-            <div className="results-sub" style={{ marginTop: 18, fontSize: 15, color: "var(--t-text)" }}>Reading your game</div>
-            <div className="results-kicker" style={{ marginTop: 6 }}>Scoring your decisions, preflop play, aggression, showdowns and more</div>
+        <div className="results rr" role="dialog" aria-label="Placement">
+          <div className="results-inner rr-wait">
+            <TierBadge tier={UNRANKED} size={110} />
+            <div className="disp" style={{ fontSize: 34, marginTop: 22 }}>Reading your game</div>
+            <div className="rr-small" style={{ marginTop: 8, textAlign: "center" }}>Scoring your decisions, preflop play, aggression, showdowns and more</div>
+            <div className="spinner" style={{ width: 28, height: 28, marginTop: 22 }} aria-hidden="true" />
           </div>
         </div>
       );
     }
     const tier = tierForRating(assess.rating);
     return (
-      <div className="results" role="dialog" aria-label="Placement result">
+      <div className="results rr" role="dialog" aria-label="Placement result">
         <div className="results-inner">
-          <div className="results-kicker">Placements complete</div>
-          <div style={{ display: "flex", justifyContent: "center", margin: "18px 0 12px" }}><div className="badge-pop"><TierBadge tier={tier} size={110} div={divisionOf(assess.rating)} /></div></div>
-          <div className="results-kicker">You placed</div>
-          <h1 className="results-head" style={{ color: tier.color, fontSize: 46, marginTop: 4 }}>{rankName(assess.rating)}</h1>
-          <div className="results-sub num">{assess.rating.toLocaleString()} RP</div>
-          <div style={{ margin: "16px 0 4px" }}><PlacementDots games={games} /></div>
-          {assess.sk && (
-            <div className="results-tier" style={{ marginTop: 16 }}>
-              <SkillDial sr={assess.sk.sr} size={52} />
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontWeight: 700 }}>Skill Rating {assess.sk.sr} <span style={{ color: "var(--t-mut)", fontWeight: 500 }}>±{assess.sk.margin}</span></div>
-                <div style={{ fontSize: 12, color: "var(--t-mid)", marginTop: 2 }}>{assess.sk.label}. Full breakdown in the Coach tab.</div>
-              </div>
-            </div>
-          )}
-          <div className="report">
-            <div className="report-head"><span>Scouting report</span></div>
-            <p>{assess.report}</p>
+          {top("Placements complete")}
+          <div className="rr-placed">
+            <div className="badge-pop"><TierBadge tier={tier} size={128} div={divisionOf(assess.rating)} /></div>
+            <div className="lbl" style={{ marginTop: 18 }}>You placed</div>
+            <div className="rr-rank big" style={{ color: tier.color }}>{rankName(assess.rating)}</div>
+            <div className="rr-small num">{assess.rating.toLocaleString()} RP</div>
+            <div style={{ marginTop: 12 }}><PlacementDots games={games} size={16} /></div>
           </div>
+          {assess.sk && (
+            <section className="rr-card rr-skill">
+              <SkillDial sr={assess.sk.sr} size={58} />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div className="lbl">Skill rating</div>
+                <div className="disp" style={{ fontSize: 24, marginTop: 2 }}>{assess.sk.label} <span className="num" style={{ color: "var(--t-mid)", fontSize: 18 }}>±{assess.sk.margin}</span></div>
+                <div className="rr-small" style={{ marginTop: 2 }}>Full breakdown in the Coach tab.</div>
+              </div>
+            </section>
+          )}
+          <section className="rr-card rr-body">
+            <h3 className="rr-h">Scouting report</h3>
+            <p className="rr-report">{assess.report}</p>
+          </section>
           {stats}
           {buttons}
         </div>
@@ -2556,25 +2575,32 @@ function RankedResults({ result, rankedState, skill, tableLabel, canPlayAgain, o
 
   if (result.placement) {
     const games = [...(rankedState.placementGames || []), { won: result.won }];
+    const left = PLACEMENT_MATCHES - games.length;
     return (
-      <div className="results" role="dialog" aria-label="Placement match result">
+      <div className="results rr" role="dialog" aria-label="Placement match result">
         <div className="results-inner">
-          <div className="results-kicker">Placement match {result.placementNumber} of {PLACEMENT_MATCHES}{tableLabel ? `, ${tableLabel}` : ""}</div>
-          <h1 className="results-head" style={{ color: result.won ? "var(--t-text)" : "var(--t-mid)" }}>{headline}</h1>
-          <div className="results-sub">{sub}</div>
-          <div style={{ margin: "26px 0 10px" }}><PlacementDots games={games} size={16} /></div>
-          <div className="results-sub" style={{ fontSize: 13 }}>{PLACEMENT_MATCHES - games.length} more to go. Your rank comes from how you play, not just whether you win.</div>
+          {top(`Placement ${result.placementNumber} of ${PLACEMENT_MATCHES}${tableLabel ? ` · ${tableLabel}` : ""}`)}
+          {head(<div className="rr-rp" style={{ color: result.won ? "var(--t-good)" : "var(--t-bad)" }}><b>{result.won ? "Win" : "Loss"}</b><span>Placement</span></div>)}
+          <section className="rr-card">
+            <div className="stripe thin" style={{ "--sc": "#A3A6AD" }} />
+            <div className="rr-body">
+              <div className="lbl">Placements</div>
+              <div style={{ margin: "12px 0 10px" }}><PlacementDots games={games} size={18} /></div>
+              <div className="rr-small">{left > 0 ? `${left} more to go. ` : ""}Your rank comes from how you play, not just whether you win.</div>
+            </div>
+          </section>
           {stats}
+          {table}
           {buttons}
         </div>
       </div>
     );
   }
 
-  return <RatedResults result={result} headline={headline} sub={sub} tableLabel={tableLabel} stats={stats} buttons={buttons} />;
+  return <RatedResults result={result} top={top(`Ranked · match over${tableLabel ? ` · ${tableLabel}` : ""}`)} head={head} stats={stats} table={table} buttons={buttons} />;
 }
 
-function RatedResults({ result, headline, sub, tableLabel, stats, buttons }) {
+function RatedResults({ result, top, head, stats, table, buttons }) {
   const shown = useCountUp(result.before, result.after);
   const tierBefore = tierForRating(result.before), tierAfter = tierForRating(result.after);
   const moved = RANK_TIERS.indexOf(tierAfter) - RANK_TIERS.indexOf(tierBefore);
@@ -2582,35 +2608,29 @@ function RatedResults({ result, headline, sub, tableLabel, stats, buttons }) {
   const tierNow = tierForRating(shown);
   const prog = rankProgress(shown);
   const frameUnlocked = result.newFrames.length > 0 ? RANK_TIERS.find((t) => t.key === result.newFrames[result.newFrames.length - 1]) : null;
+  const up = result.after > result.before, down = result.after < result.before;
+  const status = divMoved && up ? (moved > 0 ? "Promoted" : "Moved up") : divMoved && down ? "Dropped" : "Your rank";
+  const on = prog.nextLabel ? Math.round(prog.pct * 10) : 10;
   return (
-    <div className="results" role="dialog" aria-label="Match results">
+    <div className="results rr" role="dialog" aria-label="Match results">
       <div className="results-inner">
-        <div className="results-kicker">Ranked match{tableLabel ? `, ${tableLabel}` : ""}</div>
-        <h1 className="results-head" style={{ color: result.won ? "var(--t-text)" : "var(--t-mid)" }}>{headline}</h1>
-        <div className="results-sub">{sub}</div>
-        <div className="results-delta num" style={{ color: result.delta >= 0 ? "var(--t-good)" : "var(--t-bad)" }}>{signed(result.delta)}<span>RP</span></div>
-        <div className="results-tier" style={{ "--tc": tierNow.color }}>
-          <TierBadge tier={tierNow} size={50} div={divisionOf(shown)} />
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-              <span style={{ fontWeight: 700, color: tierNow.color }}>{rankName(shown)}</span>
-              <span className="num" style={{ fontWeight: 600 }}>{shown.toLocaleString()} RP</span>
+        {top}
+        {head(<div className="rr-rp" style={{ color: result.delta >= 0 ? "var(--t-good)" : "var(--t-bad)" }}><b className="num">{signed(result.delta)}</b><span>Rank points</span></div>)}
+        <section className="rr-card">
+          <div className="stripe" style={{ "--sc": tierNow.color }} />
+          <div className="rr-body">
+            <div className="rr-row1"><span className="lbl" style={{ color: divMoved && down ? "var(--t-bad)" : tierNow.color }}>{status}</span><span className="num">{result.before.toLocaleString()} to {result.after.toLocaleString()} RP</span></div>
+            <div className="rr-rank" style={{ color: tierNow.color }}>{rankName(shown)}</div>
+            <div className="rk-segs">{Array.from({ length: 10 }, (_, i) => <span key={i} style={i < on ? { background: tierNow.color } : undefined} />)}</div>
+            <div className="rr-small" style={{ marginTop: 10 }}>{prog.nextLabel ? `${prog.toNext} more to reach ${prog.nextLabel}` : "Top of the ladder"}</div>
+            {frameUnlocked && <div className="rr-unlock" style={{ "--lc": frameUnlocked.color }}><TierBadge tier={frameUnlocked} size={26} />{frameUnlocked.label} avatar frame unlocked. Equip it from your profile.</div>}
+            <div className="rr-lines">
+              {result.lines.map((l) => (<div key={l.label}><span>{l.label}</span><b className="num" style={{ color: l.value >= 0 ? "var(--t-good)" : "var(--t-bad)" }}>{signed(l.value)}</b></div>))}
             </div>
-            <div className="bar" style={{ marginTop: 8 }}><div style={{ width: `${prog.pct * 100}%`, background: tierNow.color }} /></div>
-            <div style={{ fontSize: 11.5, color: "var(--t-mut)", marginTop: 6 }}>{prog.nextLabel ? `${prog.toNext} RP to ${prog.nextLabel}` : "Top of the ladder"}</div>
           </div>
-        </div>
-        {(divMoved || frameUnlocked) && (
-          <div className="results-note" style={{ borderColor: result.after < result.before ? "rgba(255,107,107,0.4)" : `${tierAfter.color}88` }}>
-            {divMoved && result.after > result.before && <div style={{ fontWeight: 700, color: tierAfter.color }}>{moved > 0 ? "Promoted" : "Moved up"} to {rankName(result.after)}</div>}
-            {divMoved && result.after < result.before && <div style={{ fontWeight: 700, color: "var(--t-bad)" }}>Dropped to {rankName(result.after)}</div>}
-            {frameUnlocked && <div style={{ color: "var(--t-sub)", marginTop: divMoved ? 2 : 0 }}>{frameUnlocked.label} avatar frame unlocked. Equip it from your profile.</div>}
-          </div>
-        )}
-        <div className="results-lines">
-          {result.lines.map((l) => (<div key={l.label}><span>{l.label}</span><b className="num" style={{ color: l.value >= 0 ? "var(--t-good)" : "var(--t-bad)" }}>{signed(l.value)}</b></div>))}
-        </div>
+        </section>
         {stats}
+        {table}
         {buttons}
       </div>
     </div>
@@ -2692,91 +2712,99 @@ function SizePicker({ value, onChange }) {
 }
 
 // Every rank from the top down, where you are on it, how RP works, and prestige.
+// Every rank from the top down as a chip, where you sit, and what prestige gets you
 function RankLadderModal({ ranked, legendNo, onClose }) {
   const placed = isPlaced(ranked);
   const rating = placed ? Math.round(ranked.rating) : null;
   const myTier = tierOf(ranked);
-  const prog = placed ? rankProgress(ranked.rating) : null;
   const meRef = useRef(null);
   useEffect(() => { if (meRef.current && meRef.current.scrollIntoView) meRef.current.scrollIntoView({ block: "center" }); }, []);
   const pres = ranked.prestige || 0;
-  const tiers = RANK_TIERS.slice().reverse();
+  const peakTier = placed ? tierForRating(ranked.peakRating || ranked.rating) : null;
+  const myDiv = placed ? divisionOf(ranked.rating) : null;
+  const [how, setHow] = useState(false);
   return (
-    <Modal title="Ranks" onClose={onClose} width={420}>
-      <div className="ladder-me" style={{ "--lc": myTier.color }}>
-        <TierBadge tier={myTier} size={52} div={placed ? divisionOf(ranked.rating) : null} />
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 6, fontFamily: DISPLAY_FONT, fontSize: 20, fontWeight: 600, color: myTier.color }}>{placed ? legendLabel(ranked, legendNo) || rankName(ranked.rating) : "Unranked"}<PrestigeBadge n={ranked.prestige} size={18} /></div>
-          <div className="num" style={{ fontSize: 12, color: "var(--t-sub)", marginTop: 2 }}>{placed ? `${rating.toLocaleString()} RP${prog.nextLabel ? `, ${prog.toNext} to ${prog.nextLabel}` : ""}` : `${(ranked.placementGames || []).length} of ${PLACEMENT_MATCHES} placement matches played`}</div>
-          {placed && <div className="bar" style={{ marginTop: 8, height: 6 }}><div style={{ width: `${prog.pct * 100}%`, background: myTier.color }} /></div>}
-        </div>
-      </div>
-
-      <div className="ladder-list">
-        {tiers.map((t) => {
+    <Modal title="All ranks" onClose={onClose} width={460} stripe={placed ? myTier.color : "#A3A6AD"}>
+      <div style={{ fontSize: 13, color: "var(--t-mid)", margin: "-8px 0 14px" }}>{placed ? `Each tier is 300 RP, split into I, II and III. You have ${rating.toLocaleString()} RP.` : `Play ${PLACEMENT_MATCHES - (ranked.placementGames || []).length} more placement ${PLACEMENT_MATCHES - (ranked.placementGames || []).length === 1 ? "match" : "matches"} to get your rank.`}</div>
+      <ol className="lad-list">
+        {RANK_TIERS.slice().reverse().map((t) => {
           const isChamp = t.key === "champion";
-          const divs = isChamp ? [{ label: "Champion", min: t.min }] : [3, 2, 1].map((d) => ({ label: `${t.label} ${ROMAN[d]}`, min: t.min + (d - 1) * DIV_SIZE }));
+          const here = placed && myTier.key === t.key;
           const owned = (ranked.frames || []).includes(t.key);
+          const range = isChamp ? "1,500+ · Top players get a Legend number" : `${t.min.toLocaleString()} to ${(t.min + 299).toLocaleString()}`;
+          const extra = !here && peakTier && peakTier.key === t.key ? " · Your peak" : !here && owned && t.min > 0 ? " · Frame unlocked" : "";
           return (
-            <div key={t.key} className="ladder-tier" style={{ borderColor: `${t.color}40` }}>
-              <div className="ladder-tier-head">
-                <TierBadge tier={t} size={38} />
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 15, fontWeight: 700, color: t.color }}>{t.label}</div>
-                  <div style={{ fontSize: 11, color: "var(--t-mut)" }}>{isChamp ? "1,500 RP and up, ranked by Legend number" : `${t.min.toLocaleString()} to ${(t.min + 299).toLocaleString()} RP`}{t.min > 0 ? (owned ? ", frame unlocked" : ", unlocks a frame") : ""}</div>
+            <li key={t.key} ref={here ? meRef : null} className={`lad-row${here ? " here" : ""}`} style={{ "--lc": t.color }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                <TierBadge tier={t} size={42} />
+                <span style={{ flex: 1, minWidth: 0 }}>
+                  <span className="lad-name" style={{ color: t.color }}>{t.label}</span>
+                  <span className="lad-sub">{range}{extra}</span>
+                </span>
+                {here && <span className="lad-you">{isChamp ? (legendNo ? `LEGEND #${legendNo}` : "YOU") : `YOU · ${ROMAN[myDiv]}`}</span>}
+              </div>
+              {here && !isChamp && (
+                <div className="lad-divs">
+                  {[1, 2, 3].map((d) => {
+                    const lo = t.min + (d - 1) * DIV_SIZE;
+                    const fill = rating >= lo + DIV_SIZE ? 100 : rating >= lo ? ((rating - lo) / DIV_SIZE) * 100 : 0;
+                    return (
+                      <div key={d}>
+                        <div className="lad-seg"><div style={{ width: `${fill}%` }} /></div>
+                        <div className={`lad-dl${d === myDiv ? " on" : ""}`}>{ROMAN[d]}{d === myDiv ? ` · ${rating.toLocaleString()}` : ""}</div>
+                      </div>
+                    );
+                  })}
                 </div>
-              </div>
-              <div className="ladder-divs">
-                {divs.map((dv) => {
-                  const here = placed && rankName(ranked.rating) === dv.label;
-                  const passed = placed && rating >= dv.min && !here;
-                  return (
-                    <div key={dv.label} ref={here ? meRef : null} className={`ladder-div${here ? " here" : ""}${passed ? " passed" : ""}`} style={here ? { borderColor: t.color, background: `${t.color}1F` } : undefined}>
-                      <span style={{ fontWeight: here ? 700 : 500, display: "flex", alignItems: "center", gap: 8 }}><TierBadge tier={t} size={24} div={isChamp ? null : [3, 2, 1][divs.indexOf(dv)]} />{dv.label}</span>
-                      <span className="num" style={{ color: "var(--t-mut)" }}>{here ? <b style={{ color: t.color }}>You</b> : passed ? <Icon name="check" size={13} stroke={2.4} style={{ color: "var(--t-good)" }} /> : `${dv.min.toLocaleString()} RP`}</span>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
+              )}
+            </li>
           );
         })}
-      </div>
+      </ol>
 
-      <div className="ladder-section">
-        <div className="ladder-h">How RP works</div>
-        <div className="ladder-p">Each ranked match is {RANKED_MATCH_HANDS} hands. Where you finish in chips decides most of it: first place is the big gain, last place the big loss. Clearing the table, knockouts, smart decisions and win streaks add more. Leaving early costs 30 RP.</div>
-        <div className="ladder-p">Each tier has three divisions of {DIV_SIZE} RP. Higher ranks match you against tougher players. Champion has no divisions. Instead you get a Legend number, your spot among every real player at Champion.</div>
-      </div>
-
-      <div className="ladder-section prestige-box">
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <PrestigeBadge n={Math.max(1, pres)} size={34} />
-          <div style={{ flex: 1 }}>
-            <div className="ladder-h" style={{ margin: 0 }}>Seasons and prestige</div>
-            <div style={{ fontSize: 11.5, color: "#C9B8F5" }}>{pres ? `Prestige ${pres}` : "No prestige yet"} · season ends in {daysLeftInSeason()} days</div>
-          </div>
+      <section className="lad-prestige">
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 10 }}>
+          <div className="disp" style={{ fontSize: 24 }}>Prestige</div>
+          <div className="lbl">{pres ? `You have ${pres}` : "None yet"}</div>
         </div>
-        <div className="ladder-p" style={{ marginTop: 8 }}>Every month is a season. Finish it at Champion and you earn a prestige plus {PRESTIGE_REWARD.toLocaleString()} chips. When a new season starts, everyone's RP comes partway back toward Gold, so you climb again, but nobody drops to Bronze.</div>
-        <div className="perk-list">
+        <div style={{ fontSize: 12.5, lineHeight: 1.45, color: "var(--t-mid)", marginTop: 4 }}>Finish a month at Champion to earn one, plus {PRESTIGE_REWARD.toLocaleString()} chips. You keep your rank, and each one unlocks gear. Season ends in {daysLeftInSeason()} days.</div>
+        <div className="lad-perks">
           {PRESTIGE_PERKS.map((pk) => {
             const got = pres >= pk.n;
             return (
-              <div key={pk.n} className={`perk${got ? " got" : ""}`}>
-                <PrestigeBadge n={pk.n} size={22} />
-                <span style={{ flex: 1 }}>{pk.label}</span>
-                {got ? <Icon name="check" size={14} stroke={2.6} style={{ color: "var(--t-good)" }} /> : <span className="num" style={{ fontSize: 11, color: "var(--t-faint)" }}>Prestige {pk.n}</span>}
+              <div key={pk.n} className={`lad-perk${got ? " got" : ""}`}>
+                <div className="disp" style={{ fontSize: 18, color: got ? "var(--t-accent)" : "var(--t-mid)" }}>P{pk.n}{got ? " · Yours" : ""}</div>
+                <div style={{ fontSize: 11.5, color: got ? "var(--t-text2)" : "var(--t-mid)", marginTop: 2, lineHeight: 1.3 }}>{pk.label.replace("Prestige Gold card back", "Gold card back").replace("Gold shimmer on your name", "Gold name shimmer")}</div>
               </div>
             );
           })}
         </div>
-        {(ranked.history || []).length > 0 && (<>
-          <div className="ladder-h" style={{ marginTop: 12 }}>Past seasons</div>
-          {(ranked.history || []).slice().reverse().map((h) => { const t = RANK_TIERS.find((x) => x.key === h.tier) || RANK_TIERS[0]; const [yy, mm] = String(h.seasonId).split("-"); const name = new Date(+yy, +mm - 1, 1).toLocaleString("en-US", { month: "short", year: "numeric" }); return (
-            <div key={h.seasonId} className="perk"><TierBadge tier={t} size={22} /><span style={{ flex: 1 }}>{name}</span><span style={{ fontSize: 12, fontWeight: 600, color: t.color }}>{t.label}{(ranked.seasonWins || []).includes(h.seasonId) ? " · Prestige" : ""}</span></div>
-          ); })}
-        </>)}
-      </div>
+      </section>
+
+      {(ranked.history || []).length > 0 && (
+        <div style={{ marginTop: 16 }}>
+          <div className="lbl" style={{ marginBottom: 8 }}>Past seasons</div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 8 }}>
+            {(ranked.history || []).slice().reverse().slice(0, 6).map((h) => {
+              const t = tierForRating(h.rating); const [yy, mm] = String(h.seasonId).split("-");
+              return (
+                <div key={h.seasonId} className="spec" style={{ padding: "8px 10px" }}>
+                  <span className="lbl">{new Date(+yy, +mm - 1, 1).toLocaleString("en-US", { month: "short" })}</span>
+                  <b style={{ color: t.color, fontSize: 17 }}>{rankName(h.rating).replace("Platinum", "Plat").replace("Diamond", "Dia")}</b>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      <button className="lad-how" onClick={() => setHow((v) => !v)} aria-expanded={how}>How RP works<Icon name="chevron" size={14} stroke={2.4} style={{ transform: how ? "rotate(-90deg)" : "rotate(90deg)", transition: "transform .2s ease" }} /></button>
+      {how && (
+        <div style={{ fontSize: 13, lineHeight: 1.5, color: "var(--t-mid)" }}>
+          <p style={{ margin: "0 0 8px" }}>Each ranked match is {RANKED_MATCH_HANDS} hands. Where you finish in chips decides most of it: first place is the big gain, last place the big loss. Clearing the table, knockouts, smart decisions and win streaks add more. Leaving early costs 30 RP.</p>
+          <p style={{ margin: 0 }}>Higher ranks match you against tougher players. Champion has no divisions. Instead you get a Legend number, your spot among every real player at Champion. When a new season starts, everyone's RP comes partway back toward Gold, but nobody drops to Bronze.</p>
+        </div>
+      )}
     </Modal>
   );
 }
@@ -3072,40 +3100,57 @@ function SpinModal({ ready, onSpin, onClose, sound }) {
     for (let k = 1; k <= n; k++) { const t = T * (1 - Math.cbrt(1 - (k * SEG) / target)); if (t < T - 0.05) timers.current.push(setTimeout(() => sound && sound.tick(), t * 1000)); }
     timers.current.push(setTimeout(() => { setSpinning(false); setResult(out); if (sound) out.big ? sound.rankUp() : sound.coin(); }, T * 1000 + 150));
   };
+  const close = spinning ? () => {} : onClose;
   const r = 120, cx = 130, cy = 130;
   const pt = (deg, rad) => { const a = ((deg - 90) * Math.PI) / 180; return [cx + rad * Math.cos(a), cy + rad * Math.sin(a)]; };
+  const jackpot = SPIN_PRIZES.find((p) => p.sub === "jackpot");
   return (
-    <Modal title="Daily spin" onClose={spinning ? () => {} : onClose} width={400} stripe="#E8B23A">
+    <FullScreen label="Daily spin" onClose={close} className="spin-page">
+      <div className="fs-top">
+        <div>
+          <h1 className="fs-title">Daily spin</h1>
+          <div className="lbl" style={{ marginTop: 6 }}>One free spin a day</div>
+        </div>
+        <button className="iconbtn" onClick={close} disabled={spinning} aria-label="Close"><Icon name="close" size={15} stroke={2.4} /></button>
+      </div>
       <div className="wheel-wrap">
         <div className="wheel-pointer" aria-hidden="true" />
-        <svg viewBox="0 0 260 260" className="wheel" style={{ transform: `rotate(${rot}deg)`, transition: spinning ? `transform ${T}s cubic-bezier(.33,1,.68,1)` : "none" }} role="img" aria-label="Prize wheel">
+        <svg viewBox="0 0 260 260" className="wheel" style={{ transform: `rotate(${rot}deg)`, transition: spinning ? `transform ${T}s cubic-bezier(.33,1,.68,1)` : "none" }} role="img" aria-label={`Prize wheel: ${SPIN_PRIZES.map((p) => `${p.label} ${p.sub}`).join(", ")}`}>
+          <circle cx={cx} cy={cy} r={r + 7} fill="none" stroke="#2C2F35" strokeWidth="2" />
+          <circle cx={cx} cy={cy} r={r + 3} fill="none" stroke="#111214" strokeWidth="6" />
           {SPIN_PRIZES.map((p, i) => {
             const [x1, y1] = pt(i * SEG, r), [x2, y2] = pt((i + 1) * SEG, r);
-            const [lx, ly] = pt(i * SEG + SEG / 2, r * 0.66);
-            const [sx, sy] = pt(i * SEG + SEG / 2, r * 0.44);
+            const dark = p.sub === "jackpot";
+            const mid = i * SEG + SEG / 2;
             return (
               <g key={i}>
-                <path d={`M${cx} ${cy} L${x1} ${y1} A${r} ${r} 0 0 1 ${x2} ${y2} Z`} fill={p.color} stroke="#111214" strokeWidth="1.5" />
-                <g transform={`rotate(${i * SEG + SEG / 2} ${lx} ${ly})`}><text x={lx} y={ly + 8} textAnchor="middle" fontSize="25" fontWeight="900" fill={p.color === "#C9A24D" ? "#111214" : "#FFFFFF"} fontFamily="'Big Shoulders Display', Impact, sans-serif">{p.label.toUpperCase()}</text></g>
-                <g transform={`rotate(${i * SEG + SEG / 2} ${sx} ${sy})`}><text x={sx} y={sy + 4} textAnchor="middle" fontSize="10" fontWeight="700" letterSpacing="1" fill={p.color === "#C9A24D" ? "rgba(17,18,20,0.75)" : "rgba(255,255,255,0.85)"} fontFamily="'Familjen Grotesk Variable', -apple-system, sans-serif">{p.sub.toUpperCase()}</text></g>
+                <path d={`M${cx} ${cy} L${x1} ${y1} A${r} ${r} 0 0 1 ${x2} ${y2} Z`} fill={p.color} />
+                <g transform={`rotate(${mid} ${cx} ${cy})`}>
+                  <text x={cx} y={cy - 76} textAnchor="middle" fontSize={p.label === "?" ? 28 : 25} fontWeight="900" fill={dark ? "#111214" : "#FFFFFF"} fontFamily="'Big Shoulders Display', Impact, sans-serif">{p.label.toUpperCase()}</text>
+                  <text x={cx} y={cy - 63} textAnchor="middle" fontSize="9.5" fontWeight="900" letterSpacing="1" fill={dark ? "#111214" : "#FFFFFF"} fontFamily="'Big Shoulders Display', Impact, sans-serif">{p.sub.toUpperCase()}</text>
+                </g>
               </g>
             );
           })}
-          <circle cx={cx} cy={cy} r={r - 1} fill="none" stroke="#F2F2EE" strokeWidth="10" strokeDasharray="15 9" />
-          <circle cx={cx} cy={cy} r="30" fill="#111214" stroke="var(--t-accent)" strokeWidth="5" strokeDasharray="7 5" />
-          <text x={cx} y={cy + 7} textAnchor="middle" fontSize="19" fontWeight="900" fill="#F2F2EE" fontFamily="'Big Shoulders Display', Impact, sans-serif">FELT</text>
+          <circle cx={cx} cy={cy} r={r - 6} fill="none" stroke="#F2F2EE" strokeWidth="12" strokeDasharray="17.4 11.6" />
+          <circle cx={cx} cy={cy} r="34" fill="#111214" stroke="var(--t-accent)" strokeWidth="5" strokeDasharray="8.9 6" />
+          <text x={cx} y={cy + 8} textAnchor="middle" fontSize="22" fontWeight="900" letterSpacing="1" fill="#F2F2EE" fontFamily="'Big Shoulders Display', Impact, sans-serif">FELT</text>
         </svg>
       </div>
       {result ? (
         <div className="spin-result">
-          <div style={{ fontSize: 12, color: "var(--t-mid)" }}>{result.big ? "Jackpot" : "You won"}</div>
+          <div className="lbl">{result.big ? "Jackpot" : "You won"}</div>
           <div className="disp">{result.text}</div>
-          <button className="btn btn-raise" style={{ width: "100%", marginTop: 12 }} onClick={onClose}>Nice</button>
         </div>
       ) : (
-        <button className="btn btn-raise shine" style={{ width: "100%", marginTop: 14 }} disabled={!ready || spinning} onClick={go}>{spinning ? "Spinning..." : ready ? "Spin" : `Come back in ${hoursUntilTomorrow()}h`}</button>
+        <p className="spin-note">Chips, XP or a mystery prize. The jackpot pays <b className="num">{(jackpot ? jackpot.amount : 5000).toLocaleString()}</b>.</p>
       )}
-    </Modal>
+      <div className="fs-bottom">
+        {result ? <button className="btn btn-raise big-cta" onClick={onClose}>Nice</button>
+          : <button className="btn btn-raise big-cta" disabled={!ready || spinning} onClick={go}>{spinning ? "Spinning" : ready ? "Spin" : `Back in ${hoursUntilTomorrow()}h`}</button>}
+        <div className="fs-foot">Comes back at midnight</div>
+      </div>
+    </FullScreen>
   );
 }
 
@@ -3309,82 +3354,84 @@ function CoachScreen({ data }) {
   const k = data.skill || defaultSkill();
   const sk = computeSkill(k);
   const need = 10;
+  const [open, setOpen] = useState(null);
   const recent = (k.recentQ || []).slice(0, 20).reverse();
   const tourneys = (k.tourneys || []).map((r) => ({ ...r, pts: Math.round(tourneyPoints(r)) })).sort((a, b) => b.at - a.at);
   const idx = tournamentIndex(k.tourneys);
   const scoreColor = (x) => (x >= 70 ? "var(--t-good)" : x >= 45 ? "var(--t-accent)" : "var(--t-bad)");
+  const barColor = (x) => (x >= 70 ? "var(--c-green)" : x >= 45 ? "var(--t-accent)" : "var(--c-red)");
   if (!sk || k.hands < need) {
     return (
       <div className="screen screen-fade">
         <header className="home-head"><div className="wordmark">Coach</div></header>
-        <section className="panel" style={{ textAlign: "center", padding: "26px 20px" }}>
-          <div style={{ fontFamily: DISPLAY_FONT, fontSize: 22, fontWeight: 700 }}>Play a few hands first</div>
-          <p className="sheet-body" style={{ margin: "8px 0 16px" }}>Your Skill Rating looks at eight things: decisions against the odds, preflop discipline, aggression, position, showdowns, luck-adjusted results, composure and tournaments. It needs {need} hands to start.</p>
-          <div className="bar" style={{ maxWidth: 220, margin: "0 auto" }}><div style={{ width: `${(k.hands / need) * 100}%`, background: "var(--t-accent)" }} /></div>
-          <div className="num" style={{ fontSize: 12, color: "var(--t-mut)", marginTop: 8 }}>{k.hands} of {need} hands</div>
+        <section className="co-card co-hero">
+          <SkillDial sr={k.hands} max={need} size={118} color="var(--t-accent)" />
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div className="lbl">Skill rating</div>
+            <div className="disp" style={{ fontSize: 30, marginTop: 4 }}>Play a few hands</div>
+            <div className="co-sub">It needs {need} hands to start. Then it scores eight things, from decisions against the odds to composure.</div>
+          </div>
         </section>
       </div>
     );
   }
+  const comps = sk.comps.slice().sort((a, b) => b.weight - a.weight);
   return (
     <div className="screen screen-fade">
       <header className="home-head"><div className="wordmark">Coach</div></header>
 
-      <section className="panel" style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 14 }}>
-        <SkillDial sr={sk.sr} size={88} />
+      <section className="co-card co-hero">
+        <SkillDial sr={sk.sr} size={118} />
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 12, color: "var(--t-mut)" }}>Skill Rating</div>
-          <div style={{ fontFamily: DISPLAY_FONT, fontSize: 26, fontWeight: 700, color: scoreColor(sk.sr), lineHeight: 1.1 }}>{sk.label}</div>
-          <div className="num" style={{ fontSize: 12.5, color: "var(--t-mid)", marginTop: 4 }}>±{sk.margin} from {k.hands.toLocaleString()} hands. The margin shrinks as you play.</div>
+          <div className="lbl">Skill rating</div>
+          <div className="disp" style={{ fontSize: 32, color: scoreColor(sk.sr), marginTop: 4 }}>{sk.label}</div>
+          <div className="co-sub num">Plus or minus {sk.margin}, from {k.hands.toLocaleString()} hands. The margin shrinks as you play.</div>
         </div>
       </section>
 
-      <section className="panel" style={{ marginBottom: 14 }}>
-        <div className="report-head" style={{ marginBottom: 6 }}><span>Scouting report</span></div>
-        <p style={{ fontSize: 13.5, lineHeight: 1.55, color: "var(--t-text2)", margin: 0 }}>{skillReport(sk)}</p>
+      <section className="co-card">
+        <h2 className="co-h">Scouting report</h2>
+        <p className="co-report">{skillReport(sk)}</p>
       </section>
 
       <SectionLabel right="Score out of 100">Breakdown</SectionLabel>
-      <div className="list" style={{ gap: 6, marginBottom: 14 }}>
-        {sk.comps.slice().sort((a, b) => b.weight - a.weight).map((c) => (
-          <div key={c.key} className="comp-row" style={{ opacity: c.enough ? 1 : 0.62 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 10 }}>
-              <div style={{ fontSize: 13.5, fontWeight: 600 }}>{c.label} <span style={{ fontSize: 11, color: "var(--t-faint)", fontWeight: 500 }}>{Math.round(c.weight * 100)}%</span></div>
-              <div className="num" style={{ fontSize: 15, fontWeight: 700, color: c.enough ? scoreColor(c.score) : "var(--t-mut)" }}>{c.enough ? c.score : "–"}</div>
-            </div>
-            <div className="bar" style={{ marginTop: 7, height: 5 }}><div style={{ width: `${c.enough ? c.score : 0}%`, background: scoreColor(c.score) }} /></div>
-            <div style={{ fontSize: 11.5, color: "var(--t-mid)", marginTop: 6, lineHeight: 1.4 }}>{c.detail}</div>
-          </div>
-        ))}
-      </div>
+      <section className="co-card co-list">
+        {comps.map((c) => {
+          const leak = c.enough && c.score < 45;
+          const show = leak || open === c.key;
+          return (
+            <button key={c.key} className="co-row" onClick={() => setOpen(open === c.key ? null : c.key)} aria-expanded={show} style={{ opacity: c.enough ? 1 : 0.6 }}>
+              <span className="co-top"><span className="co-name">{c.label} <i>{Math.round(c.weight * 100)}%</i></span><b className="num" style={{ color: c.enough ? scoreColor(c.score) : "var(--t-mid)" }}>{c.enough ? c.score : "–"}</b></span>
+              <span className="co-bar"><span style={{ width: `${c.enough ? c.score : 0}%`, background: barColor(c.score) }} /></span>
+              {show && <span className="co-detail">{c.detail}</span>}
+            </button>
+          );
+        })}
+      </section>
 
       {recent.length > 1 && (
-        <section className="panel" style={{ marginBottom: 14 }}>
-          <div style={{ fontSize: 12, color: "var(--t-mut)" }}>Decision quality, last {recent.length} hands</div>
-          <div className="spark" aria-label="Decision quality by hand, oldest to newest">
-            {recent.map((q, i) => <div key={i} style={{ height: `${Math.max(8, q * 100)}%`, background: q >= 0.7 ? "var(--t-good)" : q >= 0.5 ? "var(--t-accent)" : "var(--t-bad)" }} title={pctStr(q)} />)}
+        <section className="co-card">
+          <div className="co-headrow"><h2 className="co-h">Last {recent.length} hands</h2><span>Newest on the right</span></div>
+          <div className="co-bars" aria-label="Decision quality by hand, oldest to newest">
+            {recent.map((q, i) => <span key={i} title={pctStr(q)} style={{ height: `${Math.max(12, q * 100)}%`, background: q >= 0.7 ? "var(--c-green)" : q >= 0.5 ? "#4A4D55" : "var(--c-red)" }} />)}
           </div>
-          <div style={{ fontSize: 11, color: "var(--t-faint)", marginTop: 6 }}>Newest on the right</div>
+          <div className="co-legend"><span><i style={{ background: "var(--c-green)" }} />Good</span><span><i style={{ background: "#4A4D55" }} />Okay</span><span><i style={{ background: "var(--c-red)" }} />Leak</span></div>
         </section>
       )}
 
-      <SectionLabel right={`${idx.toLocaleString()} pts`}>Tournament index</SectionLabel>
-      <section className="panel" style={{ marginBottom: 14 }}>
+      <SectionLabel right={<b className="co-pts num">{idx.toLocaleString()} pts</b>}>Tournament index</SectionLabel>
+      <section className="co-card co-list">
         {tourneys.length === 0 ? (
-          <div style={{ fontSize: 13, color: "var(--t-mid)", lineHeight: 1.5 }}>Works like the Global Poker Index. Each cash scores buy-in size times how deep you went against the field, then fades as it ages. Your best 8 count.</div>
-        ) : (
-          <>
-            {tourneys.slice(0, 6).map((r, i) => (
-              <div key={r.at + "-" + i} className="kv" style={{ alignItems: "center" }}>
-                <span>{ordinal(r.place)} of {r.field}, {r.buyIn ? `${r.buyIn.toLocaleString()} buy-in` : "freeroll"} <span style={{ color: "var(--t-faint)" }}>{new Date(r.at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</span></span>
-                <b className="num" style={{ color: r.pts > 0 ? "var(--t-good)" : "var(--t-faint)" }}>{r.pts > 0 ? `+${r.pts}` : "0"}</b>
-              </div>
-            ))}
-            <div style={{ fontSize: 11.5, color: "var(--t-faint)", marginTop: 10, lineHeight: 1.45 }}>Only paid finishes score. Results lose value after a week and drop off after 90 days, like the GPI.</div>
-          </>
-        )}
+          <p className="co-sub" style={{ margin: "12px 0" }}>Works like the Global Poker Index. Each cash scores buy-in size times how deep you went against the field, then fades as it ages. Your best 8 count.</p>
+        ) : tourneys.slice(0, 6).map((r, i) => (
+          <div key={r.at + "-" + i} className="co-trow">
+            <span className="co-place" style={{ color: r.pts > 0 ? "var(--t-text)" : "var(--t-mid)" }}>{ordinal(r.place)}</span>
+            <span className="co-tmeta num">of {r.field}, {r.buyIn ? `${r.buyIn.toLocaleString()} buy-in` : "freeroll"} <i>{new Date(r.at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</i></span>
+            <b className="num" style={{ color: r.pts > 0 ? "var(--t-good)" : "var(--t-mid)" }}>{r.pts > 0 ? `+${r.pts}` : "0"}</b>
+          </div>
+        ))}
       </section>
-      <div style={{ fontSize: 11.5, color: "var(--t-faint)", margin: "0 4px", lineHeight: 1.5 }}>Every decision is graded against your real odds at that moment. All-in pots count the equity you had when the chips went in, so bad beats don't hurt your rating and lucky rivers don't help it. Results against tougher opponents count more.</div>
+      <div className="co-foot">Every decision is graded against your real odds at that moment. All-in pots count the equity you had when the chips went in, so bad beats don't hurt your rating and lucky rivers don't help it. Only paid tournament finishes score, and they fade after a week.</div>
     </div>
   );
 }
@@ -3402,32 +3449,36 @@ function FeltSwatch({ f }) {
     </div>
   );
 }
-function ChipSetSwatch({ c }) { return <div className="chipset-sw"><div style={{ transform: "scale(1.55)", transformOrigin: "50% 100%" }}><ChipStack amount={31525} set={c.key} /></div></div>; }
+function ChipSetSwatch({ c }) {
+  const cols = c.colors ? [c.colors[5000], c.colors[1000], c.colors[500]] : ["#E2483D", "#3B7BEB", "#1FA463"];
+  return <div className="cs-sw">{cols.map((col, i) => <span key={i} style={{ background: col }} />)}</div>;
+}
 function FxSwatch({ f }) {
   const ic = f.key === "coins" ? <span className="fx-sw-coin" /> : f.key === "fireworks" ? <span className="fx-sw-burst">{Array.from({ length: 8 }).map((_, k) => <i key={k} style={{ transform: `rotate(${k * 45}deg) translateY(-11px)` }} />)}</span> : <span className="fx-sw-conf">{["#F5B83D", "#34D399", "#6FA8FF", "#FF7AB8"].map((c, k) => <i key={k} style={{ background: c, transform: `rotate(${k * 35 - 40}deg) translate(${(k - 1.5) * 9}px, ${k % 2 ? -6 : 5}px)` }} />)}</span>;
   return <div className="fx-sw">{ic}</div>;
 }
 function CosmeticTile({ item, owned, equipped, chips, onBuy, onEquip, children }) {
   const canAfford = item.cost != null && chips >= item.cost;
-  let label, cls = "", act = null;
-  if (equipped) { label = "Equipped"; cls = " eq"; }
-  else if (owned) { label = "Equip"; act = onEquip; }
-  else if (item.prestige) { label = `Prestige ${item.prestige}`; cls = " locked"; }
-  else if (item.pass) { label = `Pass lvl ${item.pass}`; cls = " locked"; }
-  else { label = item.cost.toLocaleString(); act = canAfford ? onBuy : null; cls = canAfford ? " buy" : " locked"; }
+  const buyable = !owned && !item.pass && !item.prestige;
+  const act = equipped ? null : owned ? onEquip : buyable && canAfford ? onBuy : null;
+  const st = equipped ? ["eq", "Equipped"] : owned ? ["own", "Owned"] : item.prestige ? ["pres", `Prestige ${item.prestige}`] : item.pass ? ["pass", `Pass lv ${item.pass}`] : [canAfford ? "buy" : "buy poor", item.cost.toLocaleString()];
   return (
-    <button className={`cos-tile${equipped ? " on" : ""}`} onClick={act || undefined} disabled={!act && !equipped} aria-pressed={equipped}>
-      <div className="cos-prev">{children}</div>
-      <div className="cos-name">{item.label}</div>
-      <div className={`cos-tag num${cls}`}>{!owned && !item.pass && !item.prestige && <span className="chip-dot" style={{ width: 9, height: 9 }} />}{(item.pass || item.prestige) && !owned ? <Icon name="lock" size={10} stroke={2.2} /> : null}{label}</div>
+    <button className={`sh-tile${equipped ? " on" : ""}`} onClick={act || undefined} disabled={!act} aria-pressed={equipped} aria-label={`${item.label}, ${st[1]}`}>
+      <span className="sh-prev">{children}</span>
+      <span className="sh-name">{item.label}</span>
+      <span className={`sh-st ${st[0]} num`}>{buyable && !equipped && !owned && <i className="sh-dot" />}{st[1]}</span>
     </button>
   );
 }
 
 function ShopScreen({ data, onClaimChips, onBuyAvatar, onClaimDaily, onBuyCosmetic, onEquipCosmetic, onBuyTitle }) {
-  const st = streakState(data.streak);
   const cos = data.cosmetics || defaultCosmetics();
-  const curDay = st.claimedToday ? data.streak.count : st.nextDay;
+  const pr = data.ranked.prestige;
+  const feat = SHOP_FEATURED.map(([type, key, blurb]) => {
+    const item = type === "felt" ? FELTS.find((f) => f.key === key) : CARD_BACKS.find((b) => b.key === key);
+    return item ? { type, item, blurb } : null;
+  }).find((x) => x && !ownsCosmetic(cos, x.type === "felt" ? "felts" : "backs", x.item, pr));
+  const tt = data.titles || defaultTitles();
   return (
     <div className="screen screen-fade">
       <header className="home-head">
@@ -3435,96 +3486,82 @@ function ShopScreen({ data, onClaimChips, onBuyAvatar, onClaimDaily, onBuyCosmet
         <div className="home-chips"><b className="num">{data.chips.toLocaleString()}</b><span>CHIPS</span></div>
       </header>
 
-      <section className="streak-card" style={{ marginBottom: 24 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 10 }}>
-          <div className="disp" style={{ fontSize: 21, fontWeight: 800 }}>Daily streak</div>
-          <div style={{ fontSize: 12.5, color: "var(--t-mid)" }}>{st.claimedToday ? "Claimed. Back tomorrow" : `Day ${curDay} of 7`}</div>
-        </div>
-        <div className="streak-days">
-          {STREAK_REWARDS.map((amt, i) => {
-            const day = i + 1;
-            const got = st.claimedToday ? day <= curDay : day < curDay;
-            const today = day === curDay && !st.claimedToday;
-            return (
-              <div key={day} className={`sday${got ? " got" : ""}${today ? " today" : ""}${day === 7 ? " big" : ""}`}>
-                <i>{got ? <Icon name="check" size={14} stroke={3.2} /> : day}</i>
-                <span className="num">{kNum(amt)}</span>
-              </div>
-            );
-          })}
-        </div>
-        {!st.claimedToday && <button className="btn btn-raise big-cta" style={{ minHeight: 50, fontSize: 22 }} onClick={onClaimDaily}>Claim {STREAK_REWARDS[curDay - 1].toLocaleString()}</button>}
-      </section>
+      {feat && (
+        <section className="sh-feat">
+          <div style={{ flex: 1, minWidth: 0, position: "relative", zIndex: 1 }}>
+            <div className="lbl">Featured {feat.type === "felt" ? "felt" : "card back"}</div>
+            <div className="disp" style={{ fontSize: 38, marginTop: 4 }}>{feat.item.label}</div>
+            <div className="sh-blurb">{feat.blurb}</div>
+            <button className="btn btn-go sh-buy num" disabled={data.chips < feat.item.cost} onClick={() => onBuyCosmetic(feat.type, feat.item)}>Buy {feat.item.cost.toLocaleString()}</button>
+          </div>
+          <div className="sh-feat-art" aria-hidden="true">{feat.type === "felt" ? <div style={{ transform: "scale(1.75)" }}><FeltSwatch f={feat.item} /></div> : <div style={{ transform: "rotate(-8deg)" }}><BackSwatch b={feat.item} w={74} /></div>}</div>
+        </section>
+      )}
 
       <SectionLabel right="Tap to equip">Table felts</SectionLabel>
-      <div className="cos-grid" style={{ marginBottom: 24 }}>
+      <div className="sh-scroll">
         {FELTS.map((f) => (
-          <CosmeticTile key={f.key} item={f} owned={ownsCosmetic(cos, "felts", f, data.ranked.prestige)} equipped={cos.felt === f.key} chips={data.chips} onBuy={() => onBuyCosmetic("felt", f)} onEquip={() => onEquipCosmetic("felt", f.key)}>
+          <CosmeticTile key={f.key} item={f} owned={ownsCosmetic(cos, "felts", f, pr)} equipped={cos.felt === f.key} chips={data.chips} onBuy={() => onBuyCosmetic("felt", f)} onEquip={() => onEquipCosmetic("felt", f.key)}>
             <FeltSwatch f={f} />
           </CosmeticTile>
         ))}
       </div>
 
       <SectionLabel right="Tap to equip">Card backs</SectionLabel>
-      <div className="cos-grid" style={{ marginBottom: 24 }}>
+      <div className="sh-scroll">
         {CARD_BACKS.map((b) => (
-          <CosmeticTile key={b.key} item={b} owned={ownsCosmetic(cos, "backs", b, data.ranked.prestige)} equipped={cos.cardBack === b.key} chips={data.chips} onBuy={() => onBuyCosmetic("back", b)} onEquip={() => onEquipCosmetic("back", b.key)}>
-            <BackSwatch b={b} w={42} />
+          <CosmeticTile key={b.key} item={b} owned={ownsCosmetic(cos, "backs", b, pr)} equipped={cos.cardBack === b.key} chips={data.chips} onBuy={() => onBuyCosmetic("back", b)} onEquip={() => onEquipCosmetic("back", b.key)}>
+            <BackSwatch b={b} w={50} />
           </CosmeticTile>
         ))}
       </div>
 
       <SectionLabel right="From the season pass">Chip sets</SectionLabel>
-      <div className="cos-grid" style={{ marginBottom: 24 }}>
+      <div className="sh-grid">
         {CHIP_SETS.map((c) => (
-          <CosmeticTile key={c.key} item={c} owned={ownsCosmetic(cos, "chipsets", c, data.ranked.prestige)} equipped={(cos.chipset || "classic") === c.key} chips={data.chips} onEquip={() => onEquipCosmetic("chipset", c.key)}>
+          <CosmeticTile key={c.key} item={c} owned={ownsCosmetic(cos, "chipsets", c, pr)} equipped={(cos.chipset || "classic") === c.key} chips={data.chips} onEquip={() => onEquipCosmetic("chipset", c.key)}>
             <ChipSetSwatch c={c} />
           </CosmeticTile>
         ))}
       </div>
 
       <SectionLabel right="Plays when you win big">Win effects</SectionLabel>
-      <div className="cos-grid" style={{ marginBottom: 24 }}>
+      <div className="sh-grid">
         {WIN_FX.map((f) => (
-          <CosmeticTile key={f.key} item={f} owned={ownsCosmetic(cos, "fxs", f, data.ranked.prestige)} equipped={(cos.fx || "confetti") === f.key} chips={data.chips} onEquip={() => onEquipCosmetic("fx", f.key)}>
+          <CosmeticTile key={f.key} item={f} owned={ownsCosmetic(cos, "fxs", f, pr)} equipped={(cos.fx || "confetti") === f.key} chips={data.chips} onEquip={() => onEquipCosmetic("fx", f.key)}>
             <FxSwatch f={f} />
           </CosmeticTile>
         ))}
       </div>
 
       <SectionLabel right="Shows under your name">Titles</SectionLabel>
-      <div className="list" style={{ gap: 6, marginBottom: 24 }}>
+      <section className="sh-titles">
         {TITLES.filter((t) => t.cost).map((t) => {
-          const owned = (data.titles || defaultTitles()).owned.includes(t.key);
-          const can = data.chips >= t.cost;
+          const owned = tt.owned.includes(t.key); const eq = tt.equipped === t.key; const can = data.chips >= t.cost;
           return (
-            <div key={t.key} className="title-row">
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <TitleTag k={t.key} size={14} />
-                <div style={{ fontSize: 11, color: "var(--t-faint)", marginTop: 2, textTransform: "capitalize" }}>{t.rarity}</div>
-              </div>
-              {owned ? <span className="cos-tag eq">Owned</span>
-                : <button className="btn btn-sm" disabled={!can} onClick={() => onBuyTitle(t)} style={{ display: "inline-flex", alignItems: "center", gap: 6 }}><span className="chip-dot" style={{ width: 10, height: 10 }} /><span className="num">{t.cost.toLocaleString()}</span></button>}
+            <div key={t.key} className="sh-trow">
+              <TitlePill k={t.key} />
+              <span className="sh-rar">{t.rarity}</span>
+              {eq ? <span className="sh-st eq">Equipped</span> : owned ? <span className="sh-st own">Owned</span>
+                : <button className="sh-price num" disabled={!can} onClick={() => onBuyTitle(t)} aria-label={`Buy ${findTitle(t.key).label} for ${t.cost.toLocaleString()} chips`}>{t.cost.toLocaleString()}</button>}
             </div>
           );
         })}
-        <div style={{ fontSize: 11.5, color: "var(--t-faint)", padding: "4px 2px 0" }}>More titles are earned by playing. See them all on your profile.</div>
-      </div>
+      </section>
+      <div className="sh-note">More titles are earned by playing. Equip them from your profile.</div>
 
-      <SectionLabel right="Rank frames come from ranked play">Avatars</SectionLabel>
-      <div className="avatar-grid" style={{ marginBottom: 24 }}>
+      <SectionLabel right="Frames come from ranked">Avatars</SectionLabel>
+      <div className="sh-scroll sh-avs">
         {AVATAR_CATALOG.map((a) => {
-          const owned = data.unlocked.includes(a.emoji);
-          const canAfford = data.chips >= a.cost;
+          const owned = data.unlocked.includes(a.emoji); const eq = data.avatar === a.emoji && !data.usePhoto; const can = data.chips >= a.cost;
           return (
-            <button key={a.emoji} disabled={owned || !canAfford} onClick={() => onBuyAvatar(a)} className="avatar-tile" style={{ opacity: owned || canAfford ? 1 : 0.4 }}>
-              <div style={{ fontSize: 26 }}>{a.emoji}</div>
-              <div className="num" style={{ fontSize: 10.5, color: owned ? "var(--t-good)" : "var(--t-sub)", marginTop: 4, fontWeight: 600 }}>{owned ? "Owned" : a.cost === 0 ? "Free" : a.cost.toLocaleString()}</div>
+            <button key={a.emoji} className={`sh-av${eq ? " on" : ""}`} disabled={owned || !can} onClick={() => onBuyAvatar(a)} aria-label={`${a.emoji} avatar, ${eq ? "yours" : owned ? "owned" : a.cost === 0 ? "free" : `${a.cost} chips`}`}>
+              <span className="sh-av-c">{a.emoji}</span>
+              <span className={`sh-st ${eq ? "eq" : owned ? "own" : can ? "buy" : "buy poor"} num`}>{eq ? "Yours" : owned ? "Owned" : a.cost === 0 ? "Free" : a.cost.toLocaleString()}</span>
             </button>
           );
         })}
       </div>
-
     </div>
   );
 }
@@ -3580,8 +3617,7 @@ function LeaderboardScreen({ data, account, online = {}, onOpenAuth }) {
     return (
       <div key={(pinned ? "pin-" : "") + (p.id || p.name) + (p.isYou ? "-you" : "")} ref={p.isYou && !pinned ? meRef : null} className={`lb-row${pinned ? " lb-pinned" : ""}${p.profile && !p.isYou ? " tap" : ""}`} onClick={p.profile && !p.isYou ? () => setOpenF(p.id) : undefined} style={{ background: p.isYou ? "var(--t-raise)" : "var(--t-panel)", boxShadow: p.isYou ? "inset 0 0 0 2px var(--t-accent)" : "none" }}>
         <div className="num" style={{ minWidth: 26, fontFamily: "var(--t-display)", fontSize: 20, fontWeight: 900, color: p.isYou ? "var(--t-accent)" : i < 3 ? medal[i] : "var(--t-mid)" }}>{p.isYou && pinned ? `#${i + 1}` : i + 1}</div>
-        {tier && <TierBadge tier={tier} size={30} />}
-        {live && p.profile && <PlayerAvatar p={p.profile} size={30} live={!p.isYou && !!online[p.id]} />}
+        {live && p.profile ? <PlayerAvatar p={p.profile} size={38} live={!p.isYou && !!online[p.id]} tier={tier} /> : tier ? <TierBadge tier={tier} size={36} /> : <span className="pod-letter" style={{ width: 36, height: 36, fontSize: 16, background: AVATAR_COLORS[hashStr(p.name || "?") % AVATAR_COLORS.length] }}>{(p.name || "?")[0]}</span>}
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 14.5, fontWeight: 700, color: "var(--t-text)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}><span className={pnameCls(p.prestige)}>{p.isYou && p.name !== "You" ? `${p.name} (you)` : p.name}</span>{p.prestige ? <PrestigeBadge n={p.prestige} size={15} /> : null}</div>
           {(tier || (p.title && p.title !== "rookie")) && <div style={{ fontSize: 11, display: "flex", gap: 8, alignItems: "baseline", whiteSpace: "nowrap", overflow: "hidden" }}>{tier && <span style={{ color: tier.color }}>{live && scope === "world" && p.rating >= 1500 ? `Legend #${i + 1}` : rankName(p.rating)}</span>}{p.title && p.title !== "rookie" && <TitleTag k={p.title} size={10.5} />}</div>}
@@ -3622,24 +3658,7 @@ function LeaderboardScreen({ data, account, online = {}, onOpenAuth }) {
           <button onClick={() => setTab("index")} className="segbtn">Tourney</button>
           <button onClick={() => setTab("friends")} className="segbtn on">Friends</button>
         </div>
-        {!account ? (
-          <div className="panel acct-cta"><div style={{ fontSize: 14.5, fontWeight: 700 }}>See how you stack up</div><div style={{ fontSize: 12.5, color: "var(--t-mid)", marginTop: 3 }}>Make an account and add friends to rank against them.</div><button className="btn btn-sm btn-raise" style={{ marginTop: 12, width: "100%" }} onClick={() => onOpenAuth("signup")}>Create account</button></div>
-        ) : fl === null ? <div className="empty">Loading…</div> : (
-          <div className="list" style={{ gap: 6 }}>
-            {rows.map((p, i) => (
-              <div key={p.id} className={`friend-row${p.isYou ? "" : " tap"}`} style={p.isYou ? { background: "var(--t-raise)", boxShadow: "inset 0 0 0 2px var(--t-accent)" } : undefined} onClick={p.isYou ? undefined : () => setOpenF(p.id)}>
-                <div className="num" style={{ minWidth: 22, fontFamily: "var(--t-display)", fontSize: 20, fontWeight: 900, color: p.isYou ? "var(--t-accent)" : i < 3 ? ["var(--t-accent)", "#C9D4E2", "#D9894E"][i] : "var(--t-mid)" }}>{i + 1}</div>
-                <PlayerAvatar p={p} size={34} live={!p.isYou && !!online[p.id]} />
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 14.5, fontWeight: 700, color: "var(--t-text)", display: "flex", alignItems: "center", gap: 5 }}>{p.display_name}{p.isYou ? " (you)" : ""}<PrestigeBadge n={p.prestige} size={14} /></div>
-                  <div style={{ fontSize: 11, color: p.placed ? tierForRating(p.rating).color : "var(--t-mut)" }}>{p.placed ? rankName(p.rating) : "Unranked"}</div>
-                </div>
-                <div className="num" style={{ fontSize: 13, fontWeight: 600, color: "var(--t-text2)" }}>{p.placed ? `${p.rating.toLocaleString()} RP` : "-"}</div>
-              </div>
-            ))}
-            {fl.length === 0 && <div className="empty">Add friends from your Profile tab and they'll show up here.</div>}
-          </div>
-        )}
+        <FriendsSection account={account} online={online} onOpenAuth={onOpenAuth} bare />
         {openF && <FriendProfileModal friendId={openF} online={online} onClose={() => setOpenF(null)} />}
       </div>
     );
@@ -4135,79 +4154,82 @@ function FriendsTableCard({ onOpen }) {
   );
 }
 function FriendsTableModal({ account, data, onClose, onOpenTable, onOpenAuth, onDebit }) {
-  const [mode, setMode] = useState("menu");
-  const [stake, setStake] = useState(1); const [seats, setSeats] = useState(6); const [friendly, setFriendly] = useState(false);
-  const [buyIn, setBuyIn] = useState(0); const [code, setCode] = useState(""); const [busy, setBusy] = useState(false); const [err, setErr] = useState(null);
+  const [stake, setStake] = useState(() => (data.chips >= 2500 ? 2 : data.chips >= 400 ? 1 : 0));
+  const [seats, setSeats] = useState(6); const [friendly, setFriendly] = useState(false);
+  const [buyIn, setBuyIn] = useState(0); const [code, setCode] = useState(""); const [busy, setBusy] = useState(null);
+  const [err, setErr] = useState(null); const [joinErr, setJoinErr] = useState(null); const [codeFocus, setCodeFocus] = useState(false);
   const [mine, setMine] = useState(null);
+  const codeRef = useRef(null);
   useEffect(() => { if (!account) return; api("mine").then((r) => setMine(r.tables || [])).catch(() => setMine([])); }, [account]);
-  const [sb, bb] = ONLINE_STAKES[stake]; const lo = bb * 20, hi = bb * 100;
-  useEffect(() => { setBuyIn(Math.min(hi, Math.max(lo, Math.min(data.chips, bb * 50)))); }, [stake]); // eslint-disable-line react-hooks/exhaustive-deps
+  const [sb, bb] = ONLINE_STAKES[stake]; const lo = bb * 20, mid = bb * 50, hi = bb * 100;
+  useEffect(() => { setBuyIn(data.chips >= mid ? mid : lo); }, [stake]); // eslint-disable-line react-hooks/exhaustive-deps
   if (!account) {
     return (
-      <Modal title="Play with friends" onClose={onClose}>
+      <Modal title="Play friends" onClose={onClose} stripe="#1FA463">
         <p className="sheet-body" style={{ marginTop: 0 }}>Make an account so your friends can find you and join your table.</p>
-        <button className="btn btn-raise" style={{ width: "100%" }} onClick={() => { onClose(); onOpenAuth("signup"); }}>Create account</button>
+        <button className="btn btn-raise big-cta" onClick={() => { onClose(); onOpenAuth("signup"); }}>Create account</button>
       </Modal>
     );
   }
   const create = async () => {
-    setBusy(true); setErr(null);
+    setBusy("create"); setErr(null);
     try {
       if (!friendly) await cloud.pushSave(account, data, publicProfile(data));
       const r = await api("create", { sb, bb, friendly, maxSeats: seats, buyIn });
       if (r.debit) onDebit(r.debit);
       onOpenTable(r.tableId);
     } catch (e) { setErr(e.message); }
-    setBusy(false);
+    setBusy(null);
   };
   const join = async () => {
-    setBusy(true); setErr(null);
-    try { const r = await api("join", { code }); onOpenTable(r.tableId); } catch (e) { setErr(e.message); }
-    setBusy(false);
+    if (code.length !== 4 || busy) return;
+    setBusy("join"); setJoinErr(null);
+    try { const r = await api("join", { code }); onOpenTable(r.tableId); } catch (e) { setJoinErr(e.message); }
+    setBusy(null);
   };
   const affordable = friendly || data.chips >= lo;
   return (
-    <Modal title={mode === "create" ? "New table" : mode === "join" ? "Join a table" : "Play with friends"} onClose={onClose} width={380}>
-      {mode === "menu" && (<>
-        {mine && mine.length > 0 && (<>
-          <div className="friend-sub">You're sitting at</div>
-          <div className="list" style={{ gap: 6, marginBottom: 12 }}>
-            {mine.map((t) => <button key={t.id} className="row" onClick={() => onOpenTable(t.id)}><div style={{ textAlign: "left" }}><div className="row-title">Table {t.code}</div><div className="row-sub num">{t.sb}/{t.bb} · {t.players} {t.players === 1 ? "player" : "players"}{t.friendly ? " · Friendly" : ""}</div></div><Icon name="chevron" size={15} /></button>)}
-          </div>
-        </>)}
-        <div className="list" style={{ gap: 8 }}>
-          <button className="row" onClick={() => setMode("create")}><div style={{ textAlign: "left" }}><div className="row-title">Start a table</div><div className="row-sub">Pick the blinds, invite your friends</div></div><Icon name="chevron" size={15} /></button>
-          <button className="row" onClick={() => setMode("join")}><div style={{ textAlign: "left" }}><div className="row-title">Join with a code</div><div className="row-sub">Got a 4-letter code from a friend?</div></div><Icon name="chevron" size={15} /></button>
+    <Modal title="Play friends" onClose={onClose} width={400} stripe="#1FA463" className="ft-sheet">
+      {(mine || []).map((t) => (
+        <div key={t.id} className="ftc ft-mine">
+          <span className="ft-dot" />
+          <div style={{ flex: 1, minWidth: 0 }}><div className="lbl">You're sitting at</div><div className="disp ft-mine-t num">Table {t.code} · {kNum(t.sb)}/{kNum(t.bb)}</div></div>
+          <button className="btn btn-go btn-sm" onClick={() => onOpenTable(t.id)}>Rejoin</button>
         </div>
-      </>)}
-      {mode === "create" && (<>
-        <div className="friend-sub">Blinds</div>
-        <div className="stake-grid">{ONLINE_STAKES.map(([s, b], i) => <button key={b} className={`stake-btn${stake === i ? " on" : ""}`} onClick={() => setStake(i)}><span className="num">{shortNum(s)}/{shortNum(b)}</span></button>)}</div>
-        <div className="friend-sub" style={{ marginTop: 12 }}>Seats</div>
-        <div className="seg">{[2, 4, 6, 9].map((n) => <button key={n} className={`segbtn${seats === n ? " on" : ""}`} onClick={() => setSeats(n)}>{n === 2 ? "Heads-up" : `${n} seats`}</button>)}</div>
-        <SettingRow label="Friendly table" sub={friendly ? `Everyone gets ${(bb * 100).toLocaleString()} free chips. Bankrolls aren't touched.` : "Real chips. Buy in from your bankroll, cash out when you leave."}>
+      ))}
+      <section className="ftc">
+        <h3 className="ft-h">Join with a code</h3>
+        <div className="ft-code">
+          <label className="code-boxes">
+            <input ref={codeRef} className="code-real" value={code} onChange={(e) => { setJoinErr(null); setCode(e.target.value.toUpperCase().replace(/[^A-Z]/g, "").slice(0, 4)); }} onFocus={() => setCodeFocus(true)} onBlur={() => setCodeFocus(false)} onKeyDown={(e) => { if (e.key === "Enter") join(); }} maxLength={4} autoCapitalize="characters" autoCorrect="off" autoComplete="off" spellCheck={false} aria-label="Table code" />
+            {[0, 1, 2, 3].map((i) => <span key={i} className={`cbox${codeFocus && i === Math.min(code.length, 3) ? " cur" : ""}`} aria-hidden="true">{code[i] || ""}</span>)}
+          </label>
+          <button className="btn ft-join" disabled={!!busy || code.length !== 4} onClick={join}>{busy === "join" ? "…" : "Join"}</button>
+        </div>
+        {joinErr && <div className="auth-err" style={{ marginTop: 10 }}>{joinErr}</div>}
+      </section>
+      <section className="ftc">
+        <h3 className="ft-h">Start a table</h3>
+        <div className="ft-sub">Pick the blinds, invite your friends</div>
+        <div className="ft-line"><span className="lbl">Blinds</span>
+          <div className="ft-opts scroll">{ONLINE_STAKES.map(([s, b], i) => <button key={b} className={`ft-opt num${stake === i ? " on" : ""}`} onClick={() => setStake(i)}>{kNum(s)}/{kNum(b)}</button>)}</div>
+        </div>
+        <div className="ft-line"><span className="lbl">Seats</span>
+          <div className="ft-opts">{[2, 4, 6, 9].map((n) => <button key={n} className={`ft-opt${seats === n ? " on" : ""}`} onClick={() => setSeats(n)}>{n === 2 ? "Heads-up" : n}</button>)}</div>
+        </div>
+        <div className="ft-friendly">
+          <div style={{ flex: 1, minWidth: 0 }}><div className="disp" style={{ fontSize: 19 }}>Friendly table</div><div className="ft-sub" style={{ marginTop: 2 }}>Free chips, nothing on the line</div></div>
           <Toggle on={friendly} onClick={() => setFriendly((f) => !f)} label="Friendly table" />
-        </SettingRow>
-        {!friendly && (affordable ? (
-          <div style={{ marginTop: 4 }}>
-            <div className="friend-sub">Your buy in</div>
-            <div className="slider-row"><input type="range" min={lo} max={Math.min(hi, data.chips)} step={bb} value={buyIn} onChange={(e) => setBuyIn(Number(e.target.value))} style={{ flex: 1 }} aria-label="Buy in" /><span className="num" style={{ fontWeight: 700, minWidth: 64, textAlign: "right" }}>{buyIn.toLocaleString()}</span></div>
+        </div>
+        {!friendly && (
+          <div className="ft-line"><span className="lbl">Buy in</span>
+            <div className="ft-opts">{[lo, mid, hi].map((v) => <button key={v} className={`ft-opt num${buyIn === v ? " on" : ""}`} disabled={v > data.chips} onClick={() => setBuyIn(v)}>{v.toLocaleString()}</button>)}</div>
           </div>
-        ) : <div className="auth-err" style={{ marginTop: 8 }}>You need {lo.toLocaleString()} chips for these blinds. Pick lower blinds or make it a friendly table.</div>)}
-        {err && <div className="auth-err" style={{ marginTop: 10 }}>{err}</div>}
-        <div style={{ display: "flex", gap: 8, marginTop: 14 }}>
-          <button className="btn" onClick={() => setMode("menu")}>Back</button>
-          <button className="btn btn-raise" disabled={busy || !affordable} onClick={create}>{busy ? "Making it…" : "Create table"}</button>
-        </div>
-      </>)}
-      {mode === "join" && (<>
-        <input className="input code-input" value={code} onChange={(e) => setCode(e.target.value.toUpperCase().replace(/[^A-Z]/g, "").slice(0, 4))} placeholder="ABCD" autoFocus autoCapitalize="characters" aria-label="Table code" />
-        {err && <div className="auth-err" style={{ marginTop: 10 }}>{err}</div>}
-        <div style={{ display: "flex", gap: 8, marginTop: 14 }}>
-          <button className="btn" onClick={() => setMode("menu")}>Back</button>
-          <button className="btn btn-raise" disabled={busy || code.length !== 4} onClick={join}>{busy ? "Finding it…" : "Join"}</button>
-        </div>
-      </>)}
+        )}
+        <div className="ft-note" style={!affordable ? { color: "var(--t-bad)" } : undefined}>{friendly ? `Everyone gets ${hi.toLocaleString()} free chips. Bankrolls aren't touched.` : affordable ? "Real chips. Buy in from your bankroll, cash out when you leave." : `You need ${lo.toLocaleString()} chips for these blinds. Pick lower blinds or make it friendly.`}</div>
+      </section>
+      {err && <div className="auth-err" style={{ marginTop: 10 }}>{err}</div>}
+      <button className="btn btn-raise big-cta" disabled={!!busy || !affordable} onClick={create}>{busy === "create" ? "Making it" : "Create table"}</button>
     </Modal>
   );
 }
@@ -4215,12 +4237,13 @@ function FriendsTableModal({ account, data, onClose, onOpenTable, onOpenAuth, on
 /* =========================================================================
    ACCOUNTS AND FRIENDS
    ========================================================================= */
-function PlayerAvatar({ p, size = 40, live = false }) {
+function PlayerAvatar({ p, size = 40, live = false, tier = null }) {
   const style = { width: size, height: size, borderRadius: "50%", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--t-panel2)", fontSize: size * 0.48 };
   return (
     <div style={{ position: "relative", flexShrink: 0, width: size, height: size }}>
       <div style={style}>{p && p.photo ? <img src={p.photo} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} /> : (p && p.avatar) || "🙂"}</div>
       {live && <span className="live-dot" style={{ width: Math.max(9, size * 0.26), height: Math.max(9, size * 0.26) }} aria-label="Online" />}
+      {tier && <span className="av-tier"><TierBadge tier={tier} size={Math.max(15, Math.round(size * 0.44))} /></span>}
     </div>
   );
 }
@@ -4240,25 +4263,40 @@ function AuthModal({ mode, setMode, onClose, onAuthed, account, data }) {
     } catch (e2) { setErr(e2.message || "Something went wrong."); }
     setBusy(false);
   };
+  const switchTo = (m) => { setErr(""); setMode(m); };
+  const can = pick ? username.length >= 3 : !!email && password.length >= (signup ? 6 : 1) && (!signup || username.length >= 3);
   return (
-    <Modal title={pick ? "Pick a username" : signup ? "Create your account" : "Sign in"} onClose={onClose}>
+    <FullScreen label={pick ? "Pick a username" : signup ? "Create your account" : "Sign in"} onClose={onClose} className="auth-page">
+      <div className="auth-chips" aria-hidden="true"><span style={{ "--cc": "#E2483D" }} /><span style={{ "--cc": "#3B7BEB" }} /><span style={{ "--cc": "#1FA463" }} /></div>
+      <div className="auth-hero">
+        <div className="auth-logo">FELT</div>
+        <p className="auth-blurb">{pick ? "Pick the name your friends will find you by." : "Keep your chips safe, climb the ranks and play your friends."}</p>
+      </div>
+      {!pick && (
+        <div className="seg auth-seg" role="tablist">
+          <button role="tab" aria-selected={!signup} className={`segbtn${!signup ? " on" : ""}`} onClick={() => switchTo("signin")}>Sign in</button>
+          <button role="tab" aria-selected={signup} className={`segbtn${signup ? " on" : ""}`} onClick={() => switchTo("signup")}>New account</button>
+        </div>
+      )}
       <form onSubmit={submit} className="auth-form">
-        {!pick && !signup ? null : (
+        {(pick || signup) && (
           <label className="auth-field"><span>Username</span>
-            <div className="auth-at"><b>@</b><input className="input" value={username} onChange={(e) => setUsername(cleanUsername(e.target.value).replace(/[^a-z0-9_]/g, ""))} maxLength={16} autoCapitalize="none" autoCorrect="off" spellCheck={false} placeholder="yourname" autoFocus aria-label="Username" /></div>
+            <div className="auth-at"><b>@</b><input className="input" value={username} onChange={(e) => setUsername(cleanUsername(e.target.value).replace(/[^a-z0-9_]/g, ""))} maxLength={16} autoCapitalize="none" autoCorrect="off" spellCheck={false} placeholder="yourname" aria-label="Username" /></div>
             <small>Friends add you with this. Letters, numbers and _ only.</small>
           </label>
         )}
         {!pick && (<>
-          <label className="auth-field"><span>Email</span><input className="input" type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoCapitalize="none" autoComplete="email" placeholder="you@email.com" autoFocus={!signup} aria-label="Email" /></label>
+          <label className="auth-field"><span>Email</span><input className="input" type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoCapitalize="none" autoComplete="email" placeholder="you@email.com" aria-label="Email" /></label>
           <label className="auth-field"><span>Password</span><input className="input" type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete={signup ? "new-password" : "current-password"} placeholder={signup ? "6 or more characters" : ""} aria-label="Password" /></label>
         </>)}
         {err && <div className="auth-err" role="alert">{err}</div>}
-        <button type="submit" className="btn btn-raise" disabled={busy || (pick ? username.length < 3 : (!email || password.length < (signup ? 6 : 1) || (signup && username.length < 3)))}>{busy ? "One sec…" : pick ? "Save username" : signup ? "Create account" : "Sign in"}</button>
-        {!pick && <div className="auth-switch">{signup ? "Already have an account?" : "New to felt?"} <button type="button" onClick={() => { setErr(""); setMode(signup ? "signin" : "signup"); }}>{signup ? "Sign in" : "Create one"}</button></div>}
-        {signup && <div className="auth-note">Everything you have now moves into the account.</div>}
+        <button type="submit" className="btn btn-raise big-cta" disabled={busy || !can}>{busy ? "One sec" : pick ? "Save username" : signup ? "Create account" : "Sign in"}</button>
       </form>
-    </Modal>
+      <div className="fs-bottom">
+        <button type="button" className="auth-guest" onClick={onClose}>{pick ? "Not now" : account ? "Close" : "Keep playing as a guest"}</button>
+        {!pick && !account && <div className="fs-foot">Your guest chips move into your account when you sign up.</div>}
+      </div>
+    </FullScreen>
   );
 }
 function FriendProfileModal({ friendId, online = {}, onClose, onRemove, account = null, onAdded }) {
@@ -4270,40 +4308,32 @@ function FriendProfileModal({ friendId, online = {}, onClose, onRemove, account 
     cloud.friends(account).then((r) => { if (!on) return; const has = (l) => l.some((x) => x.id === friendId); setRel(has(r.friends) ? "friend" : has(r.incoming) ? "incoming" : has(r.outgoing) ? "outgoing" : "none"); }).catch(() => on && setRel("none"));
     return () => { on = false; };
   }, [account, friendId, onRemove]);
-  if (p === null) return <Modal title="Profile" onClose={onClose}><div className="empty">Loading…</div></Modal>;
+  if (p === null) return <Modal title="Player" onClose={onClose}><div className="empty">Loading…</div></Modal>;
   if (!p) return <Modal title="Player" onClose={onClose}><div className="empty">Couldn't load this player.</div></Modal>;
   const st = p.stats || {}; const tier = p.placed ? tierForRating(p.rating) : UNRANKED;
   const winRate = st.handsPlayed ? Math.round((st.handsWon / st.handsPlayed) * 100) : 0;
   const live = online[p.id];
+  const ring = p.placed ? tier.color : "#3A3D44";
   return (
-    <Modal title="Profile" onClose={onClose} width={380}>
-      <div className="fp-head">
-        <div style={{ position: "relative" }}>{(p.prestige || 0) >= 5 && <CrownMark size={22} top={-18} />}<PlayerAvatar p={p} size={84} live={!!live} /></div>
-        <div className="fp-name"><span className={pnameCls(p.prestige)}>{p.display_name}</span><PrestigeBadge n={p.prestige} size={20} /></div>
-        <div className="fp-user">@{p.username}</div>
-        <div className={`fp-status${live ? " on" : ""}`}>{presenceLine(p, online)}</div>
-        {p.title && p.title !== "rookie" && <TitleTag k={p.title} size={12.5} style={{ marginTop: 4 }} />}
+    <Modal title="" onClose={onClose} width={400} stripe={p.placed ? tier.color : "#A3A6AD"} className="fp-sheet">
+      <button className="iconbtn fp-close" onClick={onClose} aria-label="Close"><Icon name="close" size={15} stroke={2.4} /></button>
+      <div className="fp-hero">
+        <div className="fp-av" style={{ "--rc": ring }}>{(p.prestige || 0) >= 5 && <CrownMark size={22} top={-20} />}<PlayerAvatar p={p} size={92} live={!!live} /></div>
+        <div className="fp-big"><span className={pnameCls(p.prestige)}>{p.display_name}</span><PrestigeBadge n={p.prestige} size={24} /></div>
+        <div className="fp-at">@{p.username}</div>
+        {p.title && p.title !== "rookie" && <TitlePill k={p.title} style={{ marginTop: 8 }} />}
       </div>
-      <div className="fp-rank">
-        <TierBadge tier={tier} size={44} />
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 16, fontWeight: 700, color: tier.color }}>{p.placed ? rankName(p.rating) : "Unranked"}</div>
-          <div className="num" style={{ fontSize: 12, color: "var(--t-mut)" }}>{p.placed ? `${p.rating.toLocaleString()} RP · peak ${rankName(p.peak || p.rating)}` : "Still in placements"}</div>
-        </div>
-        <div className="num" style={{ textAlign: "right", fontSize: 13, fontWeight: 700 }}>{st.rankedWins || 0}W {st.rankedLosses || 0}L</div>
-      </div>
-      <div className="fp-stats">
-        <div><b className="num">{shortNum(p.chips || 0)}</b><span>Chips</span></div>
-        <div><b className="num">{(st.handsPlayed || 0).toLocaleString()}</b><span>Hands</span></div>
-        <div><b className="num">{winRate}%</b><span>Win rate</span></div>
-        <div><b className="num">{shortNum(st.biggestPot || 0)}</b><span>Biggest pot</span></div>
-        <div><b className="num">{st.bestWinStreak || 0}</b><span>Best streak</span></div>
-        <div><b className="num">{st.achievements || 0}</b><span>Achievements</span></div>
+      <div className={`fp-pill${live ? " on" : ""}`}><i />{presenceLine(p, online)}</div>
+      <div className="fp-grid">
+        <div><span className="lbl">Ranked</span><b style={{ color: p.placed ? tier.color : "var(--t-mid)" }}>{p.placed ? rankName(p.rating) : "Unranked"}</b><i className="num">{p.placed ? `${p.rating.toLocaleString()} RP · ${st.rankedWins || 0}W ${st.rankedLosses || 0}L` : "Still in placements"}</i></div>
+        <div><span className="lbl">Hands</span><b className="num">{(st.handsPlayed || 0).toLocaleString()}</b><i className="num">{winRate}% won</i></div>
+        <div><span className="lbl">Biggest pot</span><b className="num">{(st.biggestPot || 0).toLocaleString()}</b><i className="num">Best streak {st.bestWinStreak || 0}</i></div>
+        <div><span className="lbl">Chips</span><b className="num">{shortNum(p.chips || 0)}</b><i className="num">{st.achievements || 0} achievements</i></div>
       </div>
       {account && !onRemove && account.id !== p.id && rel && (
-        <button className={`btn${rel === "friend" || rel === "outgoing" ? "" : " btn-raise"}`} style={{ width: "100%", marginTop: 14 }} disabled={!!addMsg || rel === "friend" || rel === "outgoing"} onClick={async () => { try { const r = await cloud.addFriend(account, p.username); setAddMsg(r.status === "sent" ? "Request sent" : r.status === "accepted" ? "You're friends now" : r.status === "already" ? "Already friends" : "Request pending"); if (onAdded) onAdded(); } catch (e) { setAddMsg(e.message); } }}>{addMsg || (rel === "friend" ? "Friends" : rel === "outgoing" ? "Request sent" : rel === "incoming" ? "Accept friend request" : "Add friend")}</button>
+        <button className={`btn big-cta${rel === "friend" || rel === "outgoing" ? "" : " btn-raise"}`} disabled={!!addMsg || rel === "friend" || rel === "outgoing"} onClick={async () => { try { const r = await cloud.addFriend(account, p.username); setAddMsg(r.status === "sent" ? "Request sent" : r.status === "accepted" ? "You're friends now" : r.status === "already" ? "Already friends" : "Request pending"); if (onAdded) onAdded(); } catch (e) { setAddMsg(e.message); } }}>{addMsg || (rel === "friend" ? "Friends" : rel === "outgoing" ? "Request sent" : rel === "incoming" ? "Accept friend request" : "Add friend")}</button>
       )}
-      {onRemove && <button className="btn" style={{ width: "100%", marginTop: 14, color: confirm ? "var(--t-bad)" : "var(--t-mut)" }} onClick={() => { if (confirm) { onRemove(p.id); onClose(); } else setConfirm(true); }}>{confirm ? "Tap again to remove" : "Remove friend"}</button>}
+      {onRemove && <button className="fp-remove" onClick={() => { if (confirm) { onRemove(p.id); onClose(); } else setConfirm(true); }}>{confirm ? "Tap again to remove" : "Remove friend"}</button>}
     </Modal>
   );
 }
@@ -4311,22 +4341,25 @@ function timeAgo(t) {
   const m = Math.round((Date.now() - t) / 60000);
   if (m < 2) return "just now"; if (m < 60) return `${m}m ago`; const h = Math.round(m / 60); if (h < 24) return `${h}h ago`; const d = Math.round(h / 24); return d < 30 ? `${d}d ago` : "a while ago";
 }
-function FriendsSection({ account, online = {}, onOpenAuth, sound }) {
+function FriendsSection({ account, online = {}, onOpenAuth, sound, bare = false }) {
   const [lists, setLists] = useState(null); const [input, setInput] = useState(""); const [msg, setMsg] = useState(null); const [busy, setBusy] = useState(false); const [open, setOpen] = useState(null);
   const refresh = useCallback(() => { if (!account) return; cloud.friends(account).then(setLists).catch(() => setLists((l) => l || { friends: [], incoming: [], outgoing: [], offline: true })); }, [account]);
   useEffect(() => { refresh(); if (!account) return; const t = setInterval(refresh, 20000); return () => clearInterval(t); }, [refresh, account]);
   if (!cloudEnabled()) return null;
   if (!account) {
     return (<>
-      <SectionLabel>Friends</SectionLabel>
-      <div className="panel acct-cta">
-        <div style={{ fontSize: 14.5, fontWeight: 700 }}>Play with your friends</div>
-        <div style={{ fontSize: 12.5, color: "var(--t-mid)", marginTop: 3, lineHeight: 1.45 }}>Make an account to add friends, see their rank and stats, and keep your progress safe on any phone.</div>
-        <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
-          <button className="btn btn-sm" style={{ flex: 1 }} onClick={() => onOpenAuth("signin")}>Sign in</button>
-          <button className="btn btn-sm btn-raise" style={{ flex: 1 }} onClick={() => onOpenAuth("signup")}>Create account</button>
+      {!bare && <SectionLabel>Friends</SectionLabel>}
+      <section className="rk-card" style={{ "--sc": "#1FA463" }}>
+        <div className="stripe" />
+        <div className="rk-body">
+          <div className="disp" style={{ fontSize: 26 }}>Play with your friends</div>
+          <div style={{ fontSize: 13, color: "var(--t-mid)", marginTop: 6, lineHeight: 1.45 }}>Make an account to add friends, see their rank and stats, and keep your chips safe on any phone.</div>
+          <div className="act-row two" style={{ marginTop: 14 }}>
+            <button className="btn" onClick={() => onOpenAuth("signin")}>Sign in</button>
+            <button className="btn btn-raise" onClick={() => onOpenAuth("signup")}>Create account</button>
+          </div>
         </div>
-      </div>
+      </section>
     </>);
   }
   const add = async (e) => {
@@ -4340,42 +4373,56 @@ function FriendsSection({ account, online = {}, onOpenAuth, sound }) {
     setBusy(false);
   };
   const act = async (fn) => { try { await fn(); if (sound) sound.tap(); } catch (e) { setMsg({ ok: false, text: e.message }); } refresh(); };
-  const L0 = lists || { friends: [], incoming: [], outgoing: [] };
-  const L = { ...L0, friends: [...L0.friends].sort((a, b) => (online[b.id] ? 1 : 0) - (online[a.id] ? 1 : 0)) };
-  const liveCount = L.friends.filter((p) => online[p.id]).length;
-  const row = (p, right, onTap, showLive = false) => (
-    <div key={p.id} className={`friend-row${onTap ? " tap" : ""}`} onClick={onTap || undefined} role={onTap ? "button" : undefined} tabIndex={onTap ? 0 : undefined}>
-      <PlayerAvatar p={p} size={36} live={showLive && !!online[p.id]} />
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 13.5, fontWeight: 650, display: "flex", alignItems: "center", gap: 5, whiteSpace: "nowrap", overflow: "hidden" }}><span className={pnameCls(p.prestige)}>{p.display_name}</span><PrestigeBadge n={p.prestige} size={14} />{p.placed && <span style={{ fontSize: 11, fontWeight: 600, color: tierForRating(p.rating).color }}>{rankName(p.rating)}</span>}</div>
-        <div style={{ fontSize: 11, color: showLive && online[p.id] ? "var(--t-good)" : "var(--t-mut)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{showLive ? presenceLine(p, online) : `@${p.username}`}</div>
-      </div>
-      {right}
-    </div>
+  const L = lists || { friends: [], incoming: [], outgoing: [] };
+  const on = L.friends.filter((p) => online[p.id]).sort((a, b) => (b.placed ? b.rating : -1) - (a.placed ? a.rating : -1));
+  const off = L.friends.filter((p) => !online[p.id]).sort((a, b) => (b.placed ? b.rating : -1) - (a.placed ? a.rating : -1));
+  const shortRank = (p) => (p.placed ? rankName(p.rating).replace("Platinum", "Plat").replace("Diamond", "Dia") : "Unranked");
+  const row = (p, live) => (
+    <button key={p.id} className="fr-row" onClick={() => setOpen(p.id)}>
+      <PlayerAvatar p={p} size={40} live={live} tier={p.placed ? tierForRating(p.rating) : null} />
+      <span style={{ flex: 1, minWidth: 0, textAlign: "left" }}>
+        <span className="fr-name"><span className={pnameCls(p.prestige)}>{p.display_name}</span><PrestigeBadge n={p.prestige} size={15} /></span>
+        <span className="fr-sub" style={{ color: live ? "var(--t-good)" : "var(--t-mid)" }}>{presenceLine(p, online)}</span>
+      </span>
+      <span className="fr-rank" style={{ color: p.placed ? tierForRating(p.rating).color : "var(--t-mid)" }}>{shortRank(p)}{p.placed && <i className="num">{p.rating.toLocaleString()} RP</i>}</span>
+    </button>
   );
   return (<>
-    <SectionLabel right={liveCount ? `${liveCount} online` : `@${account.username || "you"}`}>Friends</SectionLabel>
-    <form onSubmit={add} style={{ display: "flex", gap: 8, marginBottom: 8 }}>
-      <div className="auth-at" style={{ flex: 1 }}><b>@</b><input value={input} onChange={(e) => setInput(e.target.value)} placeholder="Add by username" className="input" autoCapitalize="none" autoCorrect="off" spellCheck={false} aria-label="Friend's username" /></div>
-      <button type="submit" className="btn btn-sm" disabled={busy || !input.trim()}>{busy ? "…" : "Add"}</button>
+    {!bare && <SectionLabel right={`@${account.username || "you"}`}>Friends</SectionLabel>}
+    <form onSubmit={add} style={{ display: "flex", gap: 8, marginBottom: 10 }}>
+      <label className="fr-add">
+        <Icon name="search" size={16} stroke={2.2} />
+        <input value={input} onChange={(e) => setInput(e.target.value)} placeholder="Add by username" autoCapitalize="none" autoCorrect="off" spellCheck={false} aria-label="Friend's username" />
+      </label>
+      <button type="submit" className="btn btn-go" style={{ flex: "none", minHeight: 50, padding: "0 18px" }} disabled={busy || !input.trim()}>{busy ? "…" : "Add"}</button>
     </form>
     {msg && <div className={`friend-msg${msg.ok ? " ok" : ""}`}>{msg.text}</div>}
-    {L.incoming.length > 0 && (<>
-      <div className="friend-sub">Requests</div>
-      <div className="list" style={{ gap: 6, marginBottom: 10 }}>
-        {L.incoming.map((p) => row(p, <div style={{ display: "flex", gap: 6 }}><button className="btn btn-sm" onClick={() => act(() => cloud.remove(account, p.id))}>Decline</button><button className="btn btn-sm btn-raise" onClick={() => act(() => cloud.accept(account, p.id))}>Accept</button></div>))}
-      </div>
-    </>)}
-    <div className="list" style={{ gap: 6 }}>
-      {lists === null && <div className="empty">Loading friends…</div>}
-      {lists && L.friends.length === 0 && <div className="empty">No friends yet. Tell yours your username: @{account.username}</div>}
-      {L.friends.map((p) => row(p, <Icon name="chevron" size={14} style={{ color: "var(--t-faint)" }} />, () => setOpen(p.id), true))}
-    </div>
+    {L.incoming.map((p) => (
+      <section key={p.id} className="fr-req">
+        <div className="stripe thin" />
+        <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 14px 12px" }}>
+          <PlayerAvatar p={p} size={40} tier={p.placed ? tierForRating(p.rating) : null} />
+          <span style={{ flex: 1, minWidth: 0 }}><span className="fr-name">{p.display_name}</span><span className="fr-sub">Wants to be friends</span></span>
+          <button className="iconbtn" style={{ background: "var(--t-panel2)" }} aria-label={`Decline ${p.display_name}`} onClick={() => act(() => cloud.remove(account, p.id))}><Icon name="close" size={14} stroke={2.6} /></button>
+          <button className="btn btn-sm btn-raise" style={{ minHeight: 44 }} onClick={() => act(() => cloud.accept(account, p.id))}>Accept</button>
+        </div>
+      </section>
+    ))}
+    {lists === null && <div className="empty">Loading friends…</div>}
+    {lists && L.friends.length === 0 && <div className="empty" style={{ padding: "6px 4px 12px" }}>No friends yet. Tell yours your username: @{account.username}</div>}
+    {on.length > 0 && (<><div className="lbl fr-h">Online · {on.length}</div><section className="fr-list">{on.map((p) => row(p, true))}</section></>)}
+    {off.length > 0 && (<><div className="lbl fr-h">Offline · {off.length}</div><section className="fr-list">{off.map((p) => row(p, false))}</section></>)}
     {L.outgoing.length > 0 && (<>
-      <div className="friend-sub" style={{ marginTop: 10 }}>Waiting on them</div>
-      <div className="list" style={{ gap: 6 }}>
-        {L.outgoing.map((p) => row(p, <button className="btn btn-sm" onClick={() => act(() => cloud.remove(account, p.id))}>Cancel</button>))}
-      </div>
+      <div className="lbl fr-h">Waiting on them</div>
+      <section className="fr-list">
+        {L.outgoing.map((p) => (
+          <div key={p.id} className="fr-row">
+            <PlayerAvatar p={p} size={40} />
+            <span style={{ flex: 1, minWidth: 0 }}><span className="fr-name">{p.display_name}</span><span className="fr-sub">@{p.username}</span></span>
+            <button className="btn btn-sm" onClick={() => act(() => cloud.remove(account, p.id))}>Cancel</button>
+          </div>
+        ))}
+      </section>
     </>)}
     {open && <FriendProfileModal friendId={open} online={online} onClose={() => setOpen(null)} onRemove={(id) => act(() => cloud.remove(account, id))} />}
   </>);
@@ -4495,12 +4542,19 @@ function ProfileScreen({ data, account, online, legendNo, pushOn, pushBusy, onEn
   const frameColor = rk.frame ? RANK_TIERS.find((t) => t.key === rk.frame)?.color : null;
   const skillNow = computeSkill(data.skill);
   const saveName = () => { onUpdateName(nameInput.trim() || "You"); setEditingName(false); };
+  const settingsRef = useRef(null);
+  const [achSel, setAchSel] = useState(null);
+  const ACH_COLORS = ["#E2483D", "#FF8A4C", "#3B7BEB", "#1FA463", "#E8B23A", "#A855F7", "#0EA5B7"];
+  const nextAch = ACHIEVEMENTS.find((a) => !data.achievements.includes(a.id));
+  const shownAch = achSel ? ACHIEVEMENTS.find((a) => a.id === achSel) : nextAch;
+  const thisMonth = new Date().toLocaleString("en-US", { month: "short" });
+  const shortRank = (r) => rankName(r).replace("Platinum", "Plat").replace("Diamond", "Dia").replace("Champion", "Champ");
 
   return (
     <div className="screen screen-fade">
       <header className="home-head">
         <div className="wordmark">Me</div>
-        <button className="iconbtn" onClick={() => setShowSettings(true)} aria-label="Settings"><Icon name="settings" size={17} stroke={2} /></button>
+        <button className="iconbtn" onClick={() => settingsRef.current && settingsRef.current.scrollIntoView({ behavior: "smooth", block: "start" })} aria-label="Settings"><Icon name="settings" size={17} stroke={2} /></button>
       </header>
       <section className="id-card" style={{ "--sc": frameColor || (placed ? tier.color : "#A3A6AD") }}>
         <div className="stripe" />
@@ -4528,64 +4582,54 @@ function ProfileScreen({ data, account, online, legendNo, pushOn, pushBusy, onEn
         </div>
       </section>
 
-      <SectionLabel right={<button className="ranked-info" onClick={() => setLadder(true)}>{placed && rk.peakRating > rk.rating ? `Peak ${rankName(rk.peakRating)}, ` : ""}all ranks<Icon name="chevron" size={11} /></button>}>Ranked</SectionLabel>
-      <section className="panel" style={{ marginBottom: 26 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <TierBadge tier={tier} size={46} div={placed ? divisionOf(rk.rating) : null} />
+      <SectionLabel right={<button className="rk-link" onClick={() => setLadder(true)}>{placed && rk.peakRating > rk.rating ? `Peak ${rankName(rk.peakRating)}, all ranks` : "All ranks"}</button>}>Ranked</SectionLabel>
+      <section className="panel" style={{ marginBottom: 22 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+          <TierBadge tier={tier} size={58} div={placed ? divisionOf(rk.rating) : null} />
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 15, fontWeight: 700, color: tier.color }}>{placed ? legendLabel(rk, legendNo) || rankName(rk.rating) : "Unranked"}</div>
-            <div className="num" style={{ fontSize: 12, color: "var(--t-mut)", marginTop: 1 }}>{placed ? `${Math.round(rk.rating).toLocaleString()} RP${prog.nextLabel ? `, ${prog.toNext} to ${prog.nextLabel}` : ""}` : `${(rk.placementGames || []).length} of ${PLACEMENT_MATCHES} placements played`}</div>
-          </div>
-          <div style={{ textAlign: "right" }}>
-            <div className="num" style={{ fontSize: 14, fontWeight: 600 }}>{rk.wins}W {rk.losses}L</div>
-            <div className="num" style={{ fontSize: 11, color: "var(--t-mut)" }}>{rk.wins + rk.losses > 0 ? `${Math.round((rk.wins / (rk.wins + rk.losses)) * 100)}% won` : "No matches yet"}</div>
+            <div className="disp" style={{ fontSize: 30, color: placed ? tier.color : "var(--t-text)" }}>{placed ? legendLabel(rk, legendNo) || rankName(rk.rating) : "Unranked"}</div>
+            <div className="num" style={{ fontSize: 12.5, color: "var(--t-mid)", marginTop: 4 }}>{placed ? `${Math.round(rk.rating).toLocaleString()} RP · ${rk.wins} wins, ${rk.losses} losses` : `${(rk.placementGames || []).length} of ${PLACEMENT_MATCHES} placements played`}</div>
           </div>
         </div>
-        {placed ? <div className="bar" style={{ marginTop: 14 }}><div style={{ width: `${prog.pct * 100}%`, background: tier.color }} /></div> : <div style={{ marginTop: 14 }}><PlacementDots games={rk.placementGames || []} /></div>}
+        {placed ? (
+          <div className="rk-segs" aria-hidden="true">{Array.from({ length: 10 }, (_, i) => <span key={i} style={i < Math.round(prog.pct * 10) ? { background: tier.color } : undefined} />)}</div>
+        ) : (
+          <div className="rk-segs" style={{ gridTemplateColumns: `repeat(${PLACEMENT_MATCHES}, minmax(0, 1fr))` }}>{Array.from({ length: PLACEMENT_MATCHES }, (_, i) => <span key={i} style={(rk.placementGames || [])[i] ? { background: rk.placementGames[i].won ? "var(--c-green)" : "var(--c-red)" } : undefined} />)}</div>
+        )}
+        {placed && prog.nextLabel && <div style={{ fontSize: 12, color: "var(--t-mid)", marginTop: 8 }}>{prog.toNext} RP to {prog.nextLabel}</div>}
 
         {(rk.recent || []).length > 0 && (
           <div style={{ marginTop: 16 }}>
-            <div style={{ fontSize: 11.5, color: "var(--t-mut)", marginBottom: 7 }}>{rk.recent.length === 1 ? "Last match" : `Last ${rk.recent.length} matches, newest first`}</div>
-            <div style={{ display: "flex", gap: 4 }}>
+            <div className="lbl" style={{ marginBottom: 8 }}>{rk.recent.length === 1 ? "Last match" : `Last ${rk.recent.length} matches`}</div>
+            <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
               {rk.recent.map((m, i) => (
-                <div key={i} title={`${m.won ? "Win" : "Loss"}${m.placement ? ", placement" : `, ${signed(m.delta)} RP`}`} className="num" style={{ flex: 1, maxWidth: 34, textAlign: "center", fontSize: 10, fontWeight: 700, padding: "5px 0", borderRadius: 6, color: m.won ? "var(--t-bg)" : "var(--t-bad)", background: m.won ? "var(--t-good)" : "rgba(255,107,107,0.16)" }}>{m.placement ? (m.won ? "W" : "L") : signed(m.delta)}</div>
+                <span key={i} title={`${m.won ? "Win" : "Loss"}${m.placement ? ", placement" : `, ${signed(m.delta)} RP`}`} className="rk-recent num" style={{ background: m.won ? "var(--c-green)" : "var(--t-panel2)", color: m.won ? "#111214" : "var(--t-bad)" }}>{m.placement ? (m.won ? "W" : "L") : signed(m.delta)}</span>
               ))}
             </div>
           </div>
         )}
 
-        {rk.history.length > 0 && (
-          <div style={{ marginTop: 16 }}>
-            <div style={{ fontSize: 11.5, color: "var(--t-mut)", marginBottom: 7 }}>Past seasons</div>
-            <div style={{ display: "flex", gap: 12, overflowX: "auto" }}>
-              {rk.history.slice().reverse().map((h) => {
-                const label = new Date(`${h.seasonId}-15`).toLocaleString("en-US", { month: "short", year: "numeric" });
-                return (
-                  <div key={h.seasonId} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, flexShrink: 0 }}>
-                    <TierBadge tier={tierForRating(h.rating)} size={26} />
-                    <div style={{ fontSize: 10, color: "var(--t-mut)" }}>{label}</div>
-                  </div>
-                );
-              })}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 8, marginTop: 16 }}>
+          {[...(rk.history || []).slice(-2).map((h) => { const [yy, mm] = String(h.seasonId).split("-"); return { key: h.seasonId, m: new Date(+yy, +mm - 1, 1).toLocaleString("en-US", { month: "short" }), r: h.rating, now: false }; }), { key: "now", m: thisMonth, r: placed ? rk.rating : null, now: true }].map((x) => (
+            <div key={x.key} className="spec" style={{ padding: "8px 10px", boxShadow: x.now && placed ? `inset 0 0 0 1.5px ${tier.color}` : "none" }}>
+              <span className="lbl">{x.m}{x.now ? " · now" : ""}</span>
+              <b style={{ fontSize: 18, color: x.r != null ? tierForRating(x.r).color : "var(--t-mid)" }}>{x.r != null ? shortRank(x.r) : "Unranked"}</b>
             </div>
-          </div>
-        )}
+          ))}
+        </div>
 
-        <div style={{ marginTop: 16, paddingTop: 14, borderTop: "1px solid rgba(244,247,252,0.06)" }}>
-          <div style={{ fontSize: 11.5, color: "var(--t-mut)", marginBottom: 9 }}>Avatar frame{rk.frames.length === 0 ? ". Reach Silver to unlock your first." : ""}</div>
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            {RANK_TIERS.filter((t) => t.min > 0).map((t) => {
-              const owned = rk.frames.includes(t.key);
-              const on = rk.frame === t.key;
-              return (
-                <button key={t.key} disabled={!owned} onClick={() => onSelectFrame(on ? null : t.key)} className="frame-swatch" aria-pressed={on} title={owned ? `${t.label} frame` : `Reach ${t.label} to unlock`}
-                  style={{ borderColor: owned ? t.color : "rgba(244,247,252,0.12)", background: on ? `${t.color}33` : "transparent", opacity: owned ? 1 : 0.45 }}>
-                  {owned ? <span style={{ width: 8, height: 8, borderRadius: "50%", background: t.color, display: "block" }} /> : <Icon name="lock" size={11} style={{ color: "var(--t-faint)" }} />}
-                  <span>{t.label}</span>
-                </button>
-              );
-            })}
-          </div>
+        <div className="lbl" style={{ margin: "18px 0 10px" }}>Avatar frame{rk.frames.length === 0 ? " · reach Silver for your first" : ""}</div>
+        <div className="frame-grid">
+          {RANK_TIERS.filter((t) => t.min > 0).map((t) => {
+            const owned = rk.frames.includes(t.key);
+            const on = rk.frame === t.key;
+            return (
+              <button key={t.key} disabled={!owned} onClick={() => onSelectFrame(on ? null : t.key)} className={`frame-chip${on ? " on" : ""}`} aria-pressed={on} title={owned ? `${t.label} frame` : `Reach ${t.label} to unlock`} style={{ "--lc": t.color }}>
+                <TierBadge tier={t} size={36} />
+                <span>{owned ? t.label : <Icon name="lock" size={11} stroke={2.4} />}</span>
+              </button>
+            );
+          })}
         </div>
       </section>
 
@@ -4594,40 +4638,67 @@ function ProfileScreen({ data, account, online, legendNo, pushOn, pushBusy, onEn
         <StatCard label="Hands played" value={data.stats.handsPlayed.toLocaleString()} />
         <StatCard label="Win rate" value={`${winRate}%`} />
         <StatCard label="Biggest pot" value={data.stats.biggestPot.toLocaleString()} />
-        <StatCard label="Net chips" value={signed(data.stats.netChips || 0)} />
+        <StatCard label="Net chips" value={signed(data.stats.netChips || 0)} color={(data.stats.netChips || 0) > 0 ? "var(--t-good)" : (data.stats.netChips || 0) < 0 ? "var(--t-bad)" : undefined} />
       </div>
       <section className="panel" style={{ marginBottom: 10 }}>
-        <div className="panel-label"><Icon name="chart" size={14} stroke={2} />Chip graph</div>
+        <div className="panel-head"><span className="disp" style={{ fontSize: 21 }}>Bankroll</span><span style={{ fontSize: 12, color: "var(--t-mid)" }}>Your chips over time</span></div>
         <BankrollChart points={(data.history || {}).bankroll} />
       </section>
       <section className="panel" style={{ marginBottom: 10 }}>
-        <div className="panel-label">Win rate by position</div>
+        <div className="panel-head"><span className="disp" style={{ fontSize: 21 }}>Win rate by seat</span></div>
         <PositionBars pos={data.stats.pos} />
       </section>
-      <section className="panel" style={{ marginBottom: 26 }}>
-        <div className="panel-label"><Icon name="trophy" size={14} stroke={2} />Best hands</div>
+      <section className="panel" style={{ marginBottom: 10 }}>
+        <div className="panel-head"><span className="disp" style={{ fontSize: 21 }}>Best hands</span></div>
         <BestHands list={(data.history || {}).best} suitColor={data.settings.colorblind ? SUIT_COLOR_CB : SUIT_COLOR} />
       </section>
 
-      <SectionLabel right={`${data.achievements.length} of ${ACHIEVEMENTS.length}`}>Achievements</SectionLabel>
-      <div className="list" style={{ gap: 6, marginBottom: 26 }}>
-        {ACHIEVEMENTS.map((a) => {
-          const done = data.achievements.includes(a.id);
-          const cur = Math.max(0, Math.min(a.target, data.stats[a.stat] || 0));
-          return (
-            <div key={a.id} className="ach-row">
-              <div className="ach-mark" style={{ background: done ? "var(--t-good)" : "transparent", borderColor: done ? "var(--t-good)" : "rgba(244,247,252,0.18)", color: "var(--t-bg)" }}>{done && <Icon name="check" size={12} stroke={2.6} />}</div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 13.5, fontWeight: 600, color: done ? "var(--t-text)" : "var(--t-sub)" }}>{a.label}</div>
-                <div style={{ fontSize: 11.5, color: "var(--t-mut)" }}>{a.desc}</div>
-              </div>
-              {!done && <div className="num" style={{ fontSize: 11.5, color: "var(--t-faint)" }}>{cur.toLocaleString()}/{a.target.toLocaleString()}</div>}
-            </div>
-          );
-        })}
-      </div>
+      <section className="panel" style={{ marginBottom: 22 }}>
+        <div className="panel-head"><span className="disp" style={{ fontSize: 21 }}>Achievements</span><span style={{ fontSize: 12, color: "var(--t-mid)" }}>{data.achievements.length} of {ACHIEVEMENTS.length}</span></div>
+        <div className="ach-chips">
+          {ACHIEVEMENTS.map((a, i) => {
+            const done = data.achievements.includes(a.id);
+            return <button key={a.id} className={`ach-chip${done ? " got" : ""}${achSel === a.id ? " sel" : ""}`} style={{ "--cc": ACH_COLORS[i % ACH_COLORS.length] }} aria-label={`${a.label}${done ? ", earned" : ", locked"}`} aria-pressed={achSel === a.id} onClick={() => setAchSel(achSel === a.id ? null : a.id)} />;
+          })}
+        </div>
+        <div style={{ fontSize: 13, color: "var(--t-mid)", marginTop: 12, lineHeight: 1.45 }}>
+          {shownAch ? (() => { const done = data.achievements.includes(shownAch.id); const cur = Math.max(0, Math.min(shownAch.target, data.stats[shownAch.stat] || 0)); return <>{achSel ? (done ? "Earned: " : "Locked: ") : "Next up: "}<b style={{ color: "var(--t-text)" }}>{shownAch.label}</b>, {shownAch.desc.charAt(0).toLowerCase() + shownAch.desc.slice(1)}.{!done && <span className="num"> {cur.toLocaleString()} of {shownAch.target.toLocaleString()}.</span>}</>; })() : "All earned. Nice."}
+        </div>
+      </section>
 
-      <FriendsSection account={account} online={online} onOpenAuth={onOpenAuth} sound={sound} />
+      <div ref={settingsRef} style={{ scrollMarginTop: 12 }}><SectionLabel>Settings</SectionLabel></div>
+      <section className="panel" style={{ padding: "0 16px", marginBottom: 12 }}>
+        {account && (
+          <SettingRow label="Notifications" sub={pushOn ? "On for invites and your turn" : isIOS() && !isStandalone() ? "Add felt to your Home Screen first" : "Your turn and table invites"}>
+            {pushOn ? <span className="cos-tag eq">On</span> : <button className="btn btn-sm btn-raise" disabled={pushBusy || (isIOS() && !isStandalone())} onClick={onEnablePush}>Turn on</button>}
+          </SettingRow>
+        )}
+        <SettingRow label="Colorblind suits" sub="Blue and black instead of red and black">
+          <Toggle on={data.settings.colorblind} onClick={() => onUpdateSettings({ colorblind: !data.settings.colorblind })} label="Colorblind suits" />
+        </SettingRow>
+        <SettingRow label="Card size" sub="Bigger hole cards">
+          <SegToggle options={[{ v: "normal", l: "Normal" }, { v: "large", l: "Large" }]} value={data.settings.cardSize} onChange={(v) => onUpdateSettings({ cardSize: v })} />
+        </SettingRow>
+        <SettingRow label="Animation speed" sub="How fast the table moves">
+          <SegToggle options={[{ v: "normal", l: "Normal" }, { v: "fast", l: "Fast" }]} value={data.settings.animSpeed} onChange={(v) => onUpdateSettings({ animSpeed: v })} />
+        </SettingRow>
+        <SettingRow label="Squeeze your cards" sub="Peel them up slowly like a live game">
+          <Toggle on={data.settings.squeeze !== false} onClick={() => onUpdateSettings({ squeeze: data.settings.squeeze === false })} label="Squeeze your cards" />
+        </SettingRow>
+        <SettingRow label="Run it twice" sub="When you're all in, deal the board twice and split">
+          <Toggle on={!!data.settings.runTwice} onClick={() => onUpdateSettings({ runTwice: !data.settings.runTwice })} label="Run it twice" />
+        </SettingRow>
+        <button className="set-link" onClick={onExportData}><span><b>Export my data</b><i>Download your profile as a file</i></span><Icon name="download" size={16} /></button>
+        <button className="set-link" onClick={() => { setTransfer(true); setCopied(false); setPasted(""); }}><span><b>Move my profile</b><i>Copy a code here, paste it into another copy of felt</i></span><Icon name="share" size={16} /></button>
+        <button className="set-link" onClick={() => importRef.current && importRef.current.click()}><span><b>Import from a file</b><i>Use a file you exported before</i></span><Icon name="download" size={16} style={{ transform: "rotate(180deg)" }} /></button>
+        <input ref={importRef} type="file" accept="application/json,.json" style={{ display: "none" }} onChange={(e) => { onImportData(e.target.files && e.target.files[0]); e.target.value = ""; }} />
+        {isAdmin && <button className="set-link" onClick={onOpenAdmin}><span><b>Admin tools</b><i>Send chips, look up players, close tables</i></span><span className="pass-lvl" style={{ fontSize: 13 }}>ONLY YOU</span><Icon name="chevron" size={16} /></button>}
+        <button className="set-link" onClick={() => { if (confirmReset) { onResetProfile(); setConfirmReset(false); } else setConfirmReset(true); }}><span><b style={{ color: "var(--t-bad)" }}>{confirmReset ? "Tap again to reset" : "Reset profile"}</b><i>{confirmReset ? "This can't be undone" : "Wipes chips, stats, rank and settings"}</i></span><Icon name="reset" size={16} style={{ color: "var(--t-bad)" }} /></button>
+        {cloudEnabled() && (account
+          ? <button className="set-link" onClick={onSignOut}><span><b style={{ color: "var(--t-bad)" }}>Sign out</b><i>@{account.username || "player"} · {account.email || "saving online"}</i></span></button>
+          : <button className="set-link" onClick={() => onOpenAuth("signup")}><span><b>Sign up or sign in</b><i>Not signed in. Progress only saves on this phone.</i></span><span className="pass-lvl" style={{ fontSize: 13 }}>SIGN UP</span></button>)}
+      </section>
+      <div style={{ height: 12 }} />
 
       {ladder && <RankLadderModal ranked={rk} legendNo={legendNo} onClose={() => setLadder(false)} />}
       {transfer && (
@@ -4681,68 +4752,15 @@ function ProfileScreen({ data, account, online, legendNo, pushOn, pushBusy, onEn
         </Modal>
       )}
 
-      {showSettings && (
-        <Modal title="Settings" onClose={() => { setShowSettings(false); setConfirmReset(false); }}>
-          {account && (
-            <SettingRow label="Notifications" sub={pushOn ? "On for invites and your turn" : isIOS() && !isStandalone() ? "Add felt to your Home Screen first" : "Invites and your turn at friends tables"}>
-              {pushOn ? <span className="cos-tag eq">On</span> : <button className="btn btn-sm btn-raise" disabled={pushBusy || (isIOS() && !isStandalone())} onClick={onEnablePush}>Turn on</button>}
-            </SettingRow>
-          )}
-          {isAdmin && (
-            <SettingRow label="Admin" sub="Send chips, look up players, close tables">
-              <button className="btn btn-sm btn-raise" onClick={() => { setShowSettings(false); onOpenAdmin(); }}>Open</button>
-            </SettingRow>
-          )}
-          {cloudEnabled() && (
-            <SettingRow label={account ? `@${account.username || "player"}` : "Account"} sub={account ? `Saving online · ${account.email || ""}` : "Not signed in. Progress only saves on this phone."}>
-              {account ? <button className="btn btn-sm" onClick={() => { onSignOut(); setShowSettings(false); }}>Sign out</button> : <button className="btn btn-sm btn-raise" onClick={() => { onOpenAuth("signup"); setShowSettings(false); }}>Sign up</button>}
-            </SettingRow>
-          )}
-          <SettingRow label="Colorblind suits" sub="Blue and black instead of red and black">
-            <Toggle on={data.settings.colorblind} onClick={() => onUpdateSettings({ colorblind: !data.settings.colorblind })} label="Colorblind suits" />
-          </SettingRow>
-          <SettingRow label="Card size" sub="Bigger hole cards">
-            <SegToggle options={[{ v: "normal", l: "Normal" }, { v: "large", l: "Large" }]} value={data.settings.cardSize} onChange={(v) => onUpdateSettings({ cardSize: v })} />
-          </SettingRow>
-          <SettingRow label="Animation speed" sub="How fast the table moves">
-            <SegToggle options={[{ v: "normal", l: "Normal" }, { v: "fast", l: "Fast" }]} value={data.settings.animSpeed} onChange={(v) => onUpdateSettings({ animSpeed: v })} />
-          </SettingRow>
-          <SettingRow label="Squeeze your cards" sub="Peel your hole cards to reveal them">
-            <Toggle on={data.settings.squeeze !== false} onClick={() => onUpdateSettings({ squeeze: data.settings.squeeze === false })} label="Squeeze your cards" />
-          </SettingRow>
-          <SettingRow label="Run it twice" sub="When you're all in, deal the board twice and split">
-            <Toggle on={!!data.settings.runTwice} onClick={() => onUpdateSettings({ runTwice: !data.settings.runTwice })} label="Run it twice" />
-          </SettingRow>
-          <div className="list" style={{ marginTop: 16, gap: 8 }}>
-            <button className="row" onClick={onExportData}>
-              <div style={{ textAlign: "left" }}><div className="row-title">Export my data</div><div className="row-sub">Download your profile as a file</div></div>
-              <Icon name="download" size={15} style={{ color: "var(--t-mid)" }} />
-            </button>
-            <button className="row" onClick={() => { setTransfer(true); setShowSettings(false); setCopied(false); setPasted(""); }}>
-              <div style={{ textAlign: "left" }}><div className="row-title">Move my profile</div><div className="row-sub">Copy a code here, paste it into another copy of felt</div></div>
-              <Icon name="share" size={15} style={{ color: "var(--t-mid)" }} />
-            </button>
-            <button className="row" onClick={() => importRef.current && importRef.current.click()}>
-              <div style={{ textAlign: "left" }}><div className="row-title">Import from a file</div><div className="row-sub">Use a file you exported before</div></div>
-              <Icon name="download" size={15} style={{ color: "var(--t-mid)", transform: "rotate(180deg)" }} />
-            </button>
-            <input ref={importRef} type="file" accept="application/json,.json" style={{ display: "none" }} onChange={(e) => { onImportData(e.target.files && e.target.files[0]); e.target.value = ""; }} />
-            <button className="row" style={{ borderColor: confirmReset ? "rgba(255,107,107,0.5)" : undefined }} onClick={() => { if (confirmReset) { onResetProfile(); setShowSettings(false); setConfirmReset(false); } else setConfirmReset(true); }}>
-              <div style={{ textAlign: "left" }}><div className="row-title" style={{ color: "var(--t-bad)" }}>{confirmReset ? "Tap again to reset" : "Reset profile"}</div><div className="row-sub">{confirmReset ? "This can't be undone" : "Wipes chips, stats, rank, and settings"}</div></div>
-              <Icon name="reset" size={15} style={{ color: "var(--t-bad)" }} />
-            </button>
-          </div>
-        </Modal>
-      )}
     </div>
   );
 }
 function SettingRow({ label, sub, children }) {
   return (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: "12px 0", borderBottom: "1px solid rgba(244,247,252,0.06)" }}>
-      <div>
-        <div style={{ fontSize: 13.5, fontWeight: 600 }}>{label}</div>
-        <div style={{ fontSize: 11.5, color: "var(--t-mut)" }}>{sub}</div>
+    <div className="set-row">
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: 14.5, fontWeight: 600 }}>{label}</div>
+        {sub && <div style={{ fontSize: 12, color: "var(--t-mid)", marginTop: 1 }}>{sub}</div>}
       </div>
       {children}
     </div>
@@ -4764,11 +4782,11 @@ function SegToggle({ options, value, onChange }) {
     </div>
   );
 }
-function StatCard({ label, value }) {
+function StatCard({ label, value, color }) {
   return (
     <div className="stat">
-      <div className="num" style={{ fontSize: 20, fontWeight: 600, fontFamily: DISPLAY_FONT }}>{value}</div>
-      <div style={{ fontSize: 11.5, color: "var(--t-mut)", marginTop: 2 }}>{label}</div>
+      <div className="lbl">{label}</div>
+      <div className="disp num" style={{ fontSize: 32, marginTop: 4, color: color || "var(--t-text)" }}>{value}</div>
     </div>
   );
 }
@@ -5348,21 +5366,9 @@ export default function App() {
       )}
       {adminOpen && isAdmin && <AdminModal onClose={() => setAdminOpen(false)} />}
       {loaded && bootDone && data.ranked.seasonEnd && !data.ranked.seasonEnd.seen && (() => {
-        const se = data.ranked.seasonEnd; const [yy, mm] = String(se.seasonId).split("-");
-        const month = new Date(+yy, +mm - 1, 1).toLocaleString("en-US", { month: "long" });
+        const se = data.ranked.seasonEnd;
         const close = () => persist({ ...data, ranked: { ...data.ranked, seasonEnd: { ...se, seen: true } } });
-        const perk = PRESTIGE_PERKS.find((pk) => pk.n === se.prestige);
-        return (
-          <Modal title="" onClose={close} width={360}>
-            <div className="season-end">
-              {se.champ ? <PrestigeBadge n={se.prestige} size={72} /> : <TierBadge tier={tierForRating(se.to)} size={64} />}
-              <div className="se-kicker">{month} season is over</div>
-              <div className="se-title">{se.champ ? `Prestige ${se.prestige}` : "New season"}</div>
-              <div className="se-body">{se.champ ? `You finished ${month} at Champion. That's a prestige${perk ? `, and it unlocks your ${perk.label.toLowerCase()}` : ""}. +${PRESTIGE_REWARD.toLocaleString()} chips.` : `You finished at ${rankName(se.from)}.`} Everyone's RP came partway back, so you start this season at {rankName(se.to)}.</div>
-              <button className="btn btn-raise" style={{ width: "100%", marginTop: 14 }} onClick={close}>{se.champ ? "Let's go" : "Got it"}</button>
-            </div>
-          </Modal>
-        );
+        return <SeasonEndScreen se={se} onClose={close} />;
       })()}
       {ftOpen && <FriendsTableModal account={account} data={data} onClose={() => setFtOpen(false)} onOpenTable={openTable} onOpenAuth={setAuthOpen} onDebit={handleDebit} />}
       {authOpen && <AuthModal mode={authOpen} setMode={setAuthOpen} onClose={() => setAuthOpen(null)} onAuthed={handleAuthed} account={account} data={data} />}
@@ -5881,6 +5887,272 @@ input[type=range] { accent-color: var(--t-accent); height: 28px; }
 .seat .emote-bubble { z-index: 6; }
 .ot-watch { padding: 14px 16px !important; }
 .ot-last { background: #111214; color: var(--t-text); font-family: var(--t-display); font-weight: 800; font-size: 13px; letter-spacing: 0.06em; text-transform: uppercase; }
+/* rank ladder as chips */
+.lad-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.lad-row { padding: 10px 14px; border-radius: 14px; background: var(--t-raise); }
+.lad-row.here { padding: 12px 14px 14px; box-shadow: inset 0 0 0 2px var(--lc); }
+.lad-name { display: block; font-family: var(--t-display); font-weight: 900; font-size: 24px; line-height: 1; text-transform: uppercase; letter-spacing: 0.02em; }
+.lad-sub { display: block; font-size: 12px; color: var(--t-mid); margin-top: 3px; }
+.lad-you { padding: 3px 8px; border-radius: 6px; background: var(--lc); color: #111214; font-family: var(--t-display); font-weight: 900; font-size: 14px; letter-spacing: 0.06em; white-space: nowrap; }
+.lad-divs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin-top: 12px; }
+.lad-seg { height: 8px; border-radius: 3px; background: var(--t-track); overflow: hidden; }
+.lad-seg > div { height: 100%; background: var(--lc); }
+.lad-dl { font-family: var(--t-display); font-weight: 800; font-size: 14px; color: var(--t-mid); margin-top: 4px; }
+.lad-dl.on { color: var(--t-text); }
+.lad-prestige { position: relative; overflow: hidden; margin-top: 14px; padding: 20px 14px 14px; border-radius: 16px; background: var(--t-raise); }
+.lad-prestige::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 8px; background: repeating-linear-gradient(90deg, #E8B23A 0 16px, #111214 16px 22px); }
+.lad-perks { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin-top: 10px; }
+.lad-perk { padding: 8px; border-radius: 10px; background: #111214; }
+.lad-perk.got { box-shadow: inset 0 0 0 1.5px var(--t-accent); }
+.lad-how { display: flex; align-items: center; gap: 6px; margin: 16px 0 6px; background: none; border: none; padding: 6px 0; color: var(--t-text); font-family: var(--t-display); font-weight: 800; font-size: 18px; letter-spacing: 0.04em; text-transform: uppercase; cursor: pointer; min-height: 44px; }
+.av-tier { position: absolute; right: -4px; bottom: -4px; border-radius: 50%; box-shadow: 0 0 0 2px var(--t-panel); display: block; }
+.lb-row .av-tier, .friend-row .av-tier { box-shadow: 0 0 0 2px var(--t-panel); }
+/* profile */
+.panel-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin-bottom: 12px; }
+.stat { padding: 12px 14px; border-radius: 14px; }
+.rk-recent { min-width: 34px; padding: 5px 6px; border-radius: 6px; text-align: center; font-family: var(--t-display); font-weight: 900; font-size: 14px; line-height: 1; }
+.frame-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
+.frame-chip { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 8px 2px; border-radius: 12px; border: none; background: #111214; color: var(--t-text); cursor: pointer; font-family: var(--t-display); font-weight: 800; font-size: 13px; letter-spacing: 0.04em; text-transform: uppercase; }
+.frame-chip:disabled { opacity: 0.4; cursor: default; }
+.frame-chip.on { box-shadow: inset 0 0 0 2px var(--lc); }
+.frame-chip span { min-height: 14px; display: flex; align-items: center; }
+.ach-chips { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
+.ach-chip { position: relative; width: 100%; padding-top: 100%; height: 0; border-radius: 50%; border: none; background: #24262B; cursor: pointer; }
+.ach-chip::after { content: ""; position: absolute; top: 0; left: 0; right: 0; bottom: 0; border-radius: 50%; box-sizing: border-box; border: 4px dashed #3A3D44; }
+.ach-chip.got { background: var(--cc); }
+.ach-chip.got::after { border-color: #F2F2EE; }
+.ach-chip.sel { box-shadow: 0 0 0 3px var(--t-bg), 0 0 0 5px var(--t-text); }
+.set-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 58px; padding: 8px 0; border-bottom: 1px solid var(--rule); }
+.set-link { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 58px; padding: 8px 0; background: none; border: none; border-bottom: 1px solid var(--rule); color: var(--t-mid); text-align: left; cursor: pointer; font-family: inherit; }
+.set-link:last-child { border-bottom: none; }
+.set-link > span:first-child { flex: 1; min-width: 0; }
+.set-link b { display: block; font-size: 14.5px; font-weight: 600; color: var(--t-text); }
+.set-link i { display: block; font-style: normal; font-size: 12px; color: var(--t-mid); margin-top: 1px; }
+/* friends */
+.fr-add { flex: 1; display: flex; align-items: center; gap: 8px; padding: 0 12px; min-height: 50px; border-radius: 12px; background: var(--t-panel); color: var(--t-mid); }
+.fr-add input { flex: 1; min-width: 0; border: none; background: transparent; color: var(--t-text); font-size: 16px; outline: none; }
+.fr-req { border-radius: 16px; background: var(--t-panel); overflow: hidden; margin-bottom: 10px; }
+.fr-h { padding: 8px 4px 8px; }
+.fr-list { border-radius: 16px; background: var(--t-panel); padding: 0 14px; margin-bottom: 8px; }
+.fr-row { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 66px; padding: 8px 0; background: none; border: none; border-bottom: 1px solid var(--rule); color: var(--t-text); cursor: pointer; font-family: inherit; }
+.fr-row:last-child { border-bottom: none; }
+.fr-name { display: flex; align-items: center; gap: 5px; font-size: 15px; font-weight: 700; white-space: nowrap; overflow: hidden; }
+.fr-sub { display: block; font-size: 12.5px; color: var(--t-mid); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fr-rank { display: flex; flex-direction: column; align-items: flex-end; font-family: var(--t-display); font-weight: 800; font-size: 15px; letter-spacing: 0.04em; text-transform: uppercase; flex-shrink: 0; }
+.fr-rank i { font-style: normal; font-family: var(--t-body); font-size: 11.5px; font-weight: 600; letter-spacing: 0; text-transform: none; color: var(--t-mid); }
+/* ---------- full-screen pages ---------- */
+.fs-page { position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 32; background: var(--t-bg); overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; animation: screenIn .2s ease; }
+.fs-inner { position: relative; z-index: 1; max-width: 440px; min-height: 100%; margin: 0 auto; box-sizing: border-box; padding: calc(env(safe-area-inset-top) + 30px) 18px calc(env(safe-area-inset-bottom) + 22px); display: flex; flex-direction: column; }
+.fs-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+.fs-title { margin: 0; font-family: var(--t-display); font-weight: 900; font-size: 40px; line-height: 0.88; letter-spacing: 0.02em; text-transform: uppercase; }
+.fs-bottom { margin-top: auto; padding-top: 24px; display: flex; flex-direction: column; align-items: center; align-self: stretch; }
+.fs-bottom .big-cta { margin-top: 0; }
+.fs-foot { font-size: 12px; color: var(--t-mid); margin-top: 10px; text-align: center; }
+/* spin */
+.spin-page .wheel-wrap { position: relative; width: 330px; max-width: 86vw; height: auto; margin: 44px auto 0; }
+.spin-page .wheel-wrap::before { content: ""; display: block; padding-top: 100%; }
+.spin-page .wheel { position: absolute; top: 0; left: 0; width: 100%; height: 100%; filter: drop-shadow(0 24px 40px rgba(0,0,0,0.55)); }
+.spin-page .wheel-pointer { top: -8px; }
+.spin-note { margin: 36px 0 0; text-align: center; font-size: 14px; line-height: 1.5; color: var(--t-mid); }
+.spin-note b { color: var(--t-text); }
+.spin-page .spin-result { margin-top: 28px; text-align: center; }
+.spin-page .spin-result .disp { font-size: 54px; color: var(--t-accent); margin-top: 4px; }
+/* ranked results */
+.results.rr { align-items: flex-start; padding: calc(env(safe-area-inset-top) + 22px) 18px calc(env(safe-area-inset-bottom) + 20px); background: var(--t-bg); }
+.rr .results-inner { max-width: 420px; min-height: 100%; margin: 0 auto; }
+.rr-top { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; font-size: 12px; color: var(--t-mid); }
+.rr-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; margin: 12px 0 18px; }
+.rr-place { font-family: var(--t-display); font-weight: 900; font-size: 116px; line-height: 0.8; text-transform: uppercase; }
+.rr-of { font-family: var(--t-display); font-weight: 800; font-size: 22px; line-height: 1; text-transform: uppercase; letter-spacing: 0.02em; color: var(--t-sub); margin-top: 8px; }
+.rr-rp { text-align: right; flex-shrink: 0; }
+.rr-rp b { display: block; font-family: var(--t-display); font-weight: 900; font-size: 62px; line-height: 0.85; text-transform: uppercase; }
+.rr-rp span { display: block; font-size: 11px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: var(--t-mid); margin-top: 6px; }
+.rr-card { border-radius: 16px; background: var(--t-panel); overflow: hidden; margin-bottom: 10px; }
+.rr-body { padding: 14px 16px 16px; }
+.rr-body .pl-dots { justify-content: flex-start; }
+.rr-row1 { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; font-size: 12.5px; color: var(--t-mid); }
+.rr-rank { font-family: var(--t-display); font-weight: 900; font-size: 40px; line-height: 0.95; text-transform: uppercase; margin-top: 4px; }
+.rr-rank.big { font-size: 52px; text-align: center; margin-top: 6px; }
+.rr .rk-segs { margin-top: 12px; }
+.rr-small { font-size: 12.5px; color: var(--t-mid); line-height: 1.45; }
+.rr-unlock { display: flex; align-items: center; gap: 10px; margin-top: 12px; padding: 10px 12px; border-radius: 12px; background: #111214; box-shadow: inset 0 0 0 1.5px var(--lc); font-size: 13px; color: var(--t-text2); line-height: 1.35; }
+.rr-lines { margin-top: 12px; border-top: 1px solid var(--rule); padding-top: 2px; }
+.rr-lines > div { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; padding-top: 8px; font-size: 13px; color: var(--t-mid); }
+.rr-lines b { font-family: var(--t-display); font-weight: 800; font-size: 17px; }
+.rr-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-bottom: 10px; }
+.rr-stats > div { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 12px 4px 10px; border-radius: 12px; background: var(--t-panel); text-align: center; min-width: 0; }
+.rr-stats b { font-family: var(--t-display); font-weight: 900; font-size: 26px; line-height: 1; white-space: nowrap; }
+.rr-stats span { font-size: 9.5px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--t-mid); margin-top: 6px; }
+.rr-stand { border-radius: 16px; background: var(--t-panel); padding: 2px 16px; margin-bottom: 10px; }
+.rr-srow { display: flex; align-items: center; gap: 14px; min-height: 46px; border-bottom: 1px solid var(--rule); }
+.rr-srow:last-child { border-bottom: none; }
+.rr-spl { width: 40px; flex-shrink: 0; font-family: var(--t-display); font-weight: 900; font-size: 20px; text-transform: uppercase; }
+.rr-sname { flex: 1; min-width: 0; font-size: 14px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rr-srow b { font-family: var(--t-display); font-weight: 800; font-size: 19px; }
+.rr-srow i { font-style: normal; font-size: 12.5px; color: var(--t-mid); white-space: nowrap; }
+.rr-srow.out .rr-spl, .rr-srow.out .rr-sname { color: var(--t-mid); }
+.rr-srow.me .rr-sname { color: var(--t-accent); }
+.rr-btns { margin-top: auto; padding-top: 14px; }
+.rr-btns .big-cta { margin-top: 0; margin-bottom: 8px; }
+.rr-two { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.rr-two .btn { min-height: 54px; }
+.rr-need { font-size: 12.5px; color: var(--t-mid); text-align: center; margin-bottom: 10px; }
+.rr-placed { display: flex; flex-direction: column; align-items: center; margin: 22px 0 18px; text-align: center; }
+.rr-skill { display: flex; align-items: center; gap: 14px; padding: 14px 16px; }
+.rr-h { margin: 0; font-family: var(--t-display); font-weight: 800; font-size: 20px; letter-spacing: 0.04em; text-transform: uppercase; }
+.rr-report { margin: 8px 0 0; font-size: 14px; line-height: 1.55; color: var(--t-text2); }
+.rr .rr-wait { align-items: center; justify-content: center; text-align: center; }
+.pl-dots { display: flex; gap: 6px; justify-content: center; }
+.pl-dot { display: block; border-radius: 50%; box-sizing: border-box; border: 2px dashed #3A3D44; }
+.pl-dot.w { background: var(--c-green); border-color: rgba(242,242,238,0.9); }
+.pl-dot.l { background: var(--c-red); border-color: rgba(242,242,238,0.9); }
+/* season end */
+.se-page .fs-inner { text-align: center; align-items: center; }
+.se-rays { position: absolute; top: 0; left: 0; right: 0; height: 78%; pointer-events: none; background: repeating-conic-gradient(from 0deg at 50% 46%, var(--rc) 0deg 8deg, transparent 8deg 20deg); -webkit-mask-image: radial-gradient(circle at 50% 46%, #000 25%, transparent 72%); mask-image: radial-gradient(circle at 50% 46%, #000 25%, transparent 72%); }
+.se-kick { margin-top: 18px; letter-spacing: 0.3em; }
+.se-big { margin: 12px 0 0; font-family: var(--t-display); font-weight: 900; font-size: 60px; line-height: 0.86; text-transform: uppercase; letter-spacing: 0.01em; }
+.se-emblem { margin: 40px 0 22px; }
+.se-pchip { position: relative; width: 150px; height: 150px; border-radius: 50%; box-sizing: border-box; border: 13px dashed #F2F2EE; background: #E8B23A; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #111214; box-shadow: 0 0 0 6px #111214, 0 18px 40px rgba(0,0,0,0.5); }
+.se-pchip b { font-family: var(--t-display); font-weight: 900; font-size: 58px; line-height: 0.85; }
+.se-pchip > span:last-child { font-size: 10px; font-weight: 800; letter-spacing: 0.2em; text-transform: uppercase; margin-top: 4px; }
+.se-crown { position: absolute; top: -50px; left: 50%; margin-left: -17px; color: #E8B23A; }
+.se-copy { margin: 0 0 18px; font-size: 14.5px; line-height: 1.5; color: var(--t-sub); max-width: 330px; }
+.se-rows { align-self: stretch; display: flex; flex-direction: column; gap: 8px; text-align: left; }
+.se-row { display: flex; align-items: center; gap: 14px; padding: 14px 16px; border-radius: 14px; background: var(--t-panel); }
+.se-row > b { flex: 1; min-width: 0; font-size: 14.5px; font-weight: 700; }
+.se-row span b { display: block; font-size: 14.5px; font-weight: 700; }
+.se-row i { display: block; font-style: normal; font-size: 12px; color: var(--t-mid); margin-top: 2px; line-height: 1.35; }
+.se-row em { font-style: normal; font-family: var(--t-display); font-weight: 900; font-size: 22px; text-transform: uppercase; flex-shrink: 0; }
+/* coach */
+.co-card { border-radius: 18px; background: var(--t-panel); padding: 14px 16px 16px; margin-bottom: 12px; }
+.co-hero { display: flex; align-items: center; gap: 18px; padding: 16px; }
+.co-sub { font-size: 12.5px; line-height: 1.4; color: var(--t-mid); margin-top: 6px; }
+.co-h { margin: 0; font-family: var(--t-display); font-weight: 800; font-size: 20px; letter-spacing: 0.04em; text-transform: uppercase; }
+.co-report { margin: 8px 0 0; font-size: 14px; line-height: 1.55; color: var(--t-text2); }
+.co-list { padding: 4px 16px; }
+.co-row { display: block; width: 100%; padding: 11px 0; background: none; border: none; border-bottom: 1px solid var(--rule); color: var(--t-text); text-align: left; cursor: pointer; font-family: inherit; }
+.co-row:last-child { border-bottom: none; }
+.co-top { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.co-name { font-size: 14px; font-weight: 600; }
+.co-name i { font-style: normal; font-size: 11px; color: var(--t-mid); font-weight: 500; }
+.co-top b { font-family: var(--t-display); font-weight: 900; font-size: 21px; line-height: 1; }
+.co-bar { display: block; height: 6px; border-radius: 3px; background: var(--t-track); margin-top: 7px; overflow: hidden; }
+.co-bar span { display: block; height: 100%; border-radius: 3px; }
+.co-detail { display: block; font-size: 12px; color: var(--t-mid); line-height: 1.4; margin-top: 7px; }
+.co-headrow { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.co-headrow > span { font-size: 12px; color: var(--t-mid); }
+.co-bars { display: flex; align-items: flex-end; gap: 4px; height: 64px; margin-top: 14px; }
+.co-bars span { flex: 1; min-width: 0; border-radius: 2px; }
+.co-legend { display: flex; gap: 16px; margin-top: 12px; font-size: 12px; color: var(--t-mid); }
+.co-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.co-legend i { width: 9px; height: 9px; border-radius: 2px; }
+.sec-label .co-pts { font-family: var(--t-display); font-weight: 800; font-size: 20px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--t-text); }
+.co-trow { display: flex; align-items: center; gap: 12px; min-height: 52px; border-bottom: 1px solid var(--rule); }
+.co-trow:last-child { border-bottom: none; }
+.co-place { width: 44px; flex-shrink: 0; font-family: var(--t-display); font-weight: 900; font-size: 24px; text-transform: uppercase; }
+.co-tmeta { flex: 1; min-width: 0; font-size: 13px; }
+.co-tmeta i { font-style: normal; color: var(--t-mid); }
+.co-trow b { font-family: var(--t-display); font-weight: 800; font-size: 19px; }
+.co-foot { font-size: 11.5px; color: var(--t-faint); margin: 2px 4px 0; line-height: 1.5; }
+/* shop */
+.sh-feat { position: relative; display: flex; align-items: center; gap: 8px; padding: 16px 16px 18px; border-radius: 18px; background: var(--t-panel); overflow: hidden; margin-bottom: 24px; }
+.sh-blurb { font-size: 12.5px; color: var(--t-mid); margin-top: 6px; line-height: 1.4; }
+.sh-buy { margin-top: 14px; min-height: 44px; padding: 10px 16px; font-size: 20px; }
+.sh-feat-art { width: 132px; height: 110px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; margin-right: -4px; }
+.sh-scroll { display: flex; gap: 8px; overflow-x: auto; margin: 0 -16px 24px; padding: 0 16px 2px; scroll-padding: 0 16px; scroll-snap-type: x proximity; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+.sh-scroll::-webkit-scrollbar { display: none; }
+.sh-scroll > .sh-tile { flex: 0 0 108px; scroll-snap-align: start; }
+.sh-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-bottom: 24px; }
+.sh-tile { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 10px 10px 12px; border-radius: 14px; border: none; background: var(--t-panel); color: var(--t-text); text-align: left; cursor: pointer; font-family: inherit; min-width: 0; }
+.sh-tile:disabled { cursor: default; }
+.sh-tile:active:not(:disabled) { transform: scale(0.97); }
+.sh-prev { align-self: stretch; height: 84px; display: flex; align-items: center; justify-content: center; margin-bottom: 8px; }
+.sh-grid .sh-prev { height: 56px; }
+.sh-name { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.sh-st { display: inline-flex; align-items: center; gap: 5px; font-family: var(--t-display); font-weight: 800; font-size: 17px; letter-spacing: 0.04em; text-transform: uppercase; line-height: 1.1; white-space: nowrap; }
+.sh-st.eq { color: var(--t-text); }
+.sh-st.own { color: var(--t-mid); }
+.sh-st.pass { color: #B98BFF; }
+.sh-st.pres { color: var(--t-accent); }
+.sh-st.buy { color: var(--t-text); }
+.sh-st.poor { color: var(--t-mid); }
+.sh-dot { width: 11px; height: 11px; border-radius: 50%; box-sizing: border-box; border: 2px dashed #F2F2EE; background: var(--c-red); flex-shrink: 0; }
+.sh-titles { border-radius: 18px; background: var(--t-panel); padding: 2px 14px; }
+.sh-trow { display: flex; align-items: center; gap: 10px; min-height: 57px; border-bottom: 1px solid var(--rule); }
+.sh-trow:last-child { border-bottom: none; }
+.title-pill { display: inline-block; padding: 4px 8px; border-radius: 6px; font-family: var(--t-display); font-weight: 800; font-size: 16px; letter-spacing: 0.04em; text-transform: uppercase; line-height: 1.1; white-space: nowrap; }
+.sh-rar { flex: 1; min-width: 0; font-size: 12px; color: var(--t-mid); text-transform: capitalize; }
+.sh-price { min-height: 40px; padding: 0 12px; border-radius: 10px; border: none; background: var(--t-panel2); color: var(--t-text); font-family: var(--t-display); font-weight: 800; font-size: 18px; letter-spacing: 0.02em; cursor: pointer; }
+.sh-price:disabled { color: var(--t-mid); cursor: default; opacity: 0.7; }
+.sh-note { font-size: 11.5px; color: var(--t-faint); margin: 8px 4px 24px; }
+.sh-scroll.sh-avs { gap: 10px; padding-top: 6px; padding-bottom: 6px; }
+.sh-av { flex: 0 0 auto; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 0; border: none; background: none; color: var(--t-text); cursor: pointer; font-family: inherit; }
+.sh-av-c { width: 66px; height: 66px; border-radius: 50%; background: var(--t-panel2); display: flex; align-items: center; justify-content: center; font-size: 32px; }
+.sh-av.on .sh-av-c { box-shadow: 0 0 0 3px var(--t-bg), 0 0 0 6px var(--t-accent); }
+.sh-av:disabled { cursor: default; }
+.sh-av .sh-st { font-size: 14px; }
+.cs-sw { display: flex; align-items: center; }
+.cs-sw span { width: 34px; height: 34px; border-radius: 50%; box-sizing: border-box; border: 4px dashed #F2F2EE; margin-left: -10px; box-shadow: 0 0 0 2px var(--t-panel); }
+.cs-sw span:first-child { margin-left: 0; }
+/* friend profile */
+.fp-close { position: absolute; top: 26px; right: 18px; z-index: 2; }
+.fp-hero { display: flex; flex-direction: column; align-items: center; text-align: center; padding-top: 18px; }
+.fp-av { position: relative; padding: 5px; border-radius: 50%; box-shadow: inset 0 0 0 3px var(--rc); }
+.fp-big { display: flex; align-items: center; gap: 8px; margin-top: 12px; font-family: var(--t-display); font-weight: 900; font-size: 40px; line-height: 0.95; text-transform: uppercase; max-width: 100%; }
+.fp-big > span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fp-at { font-size: 13px; color: var(--t-mid); margin-top: 4px; }
+.fp-pill { display: flex; align-items: center; gap: 10px; margin-top: 16px; padding: 12px 14px; border-radius: 12px; background: var(--t-raise); font-size: 13.5px; font-weight: 600; color: var(--t-mid); }
+.fp-pill i { width: 10px; height: 10px; border-radius: 50%; background: #5A5E66; flex-shrink: 0; }
+.fp-pill.on { background: rgba(31,164,99,0.14); color: var(--t-good); }
+.fp-pill.on i { background: var(--c-green); box-shadow: 0 0 0 3px rgba(31,164,99,0.25); }
+.fp-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+.fp-grid > div { padding: 12px 14px; border-radius: 14px; background: var(--t-raise); min-width: 0; }
+.fp-grid b { display: block; font-family: var(--t-display); font-weight: 900; font-size: 26px; line-height: 1; text-transform: uppercase; margin-top: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fp-grid i { display: block; font-style: normal; font-size: 11.5px; color: var(--t-mid); margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fp-remove { display: block; margin: 16px auto 0; padding: 10px 14px; background: none; border: none; color: var(--t-bad); font-size: 13.5px; font-weight: 700; cursor: pointer; font-family: inherit; }
+/* sign in */
+.auth-chips { position: absolute; top: calc(env(safe-area-inset-top) + 50px); right: -46px; width: 210px; height: 212px; pointer-events: none; }
+.auth-chips span { position: absolute; width: 124px; height: 124px; border-radius: 50%; box-sizing: border-box; border: 11px dashed #F2F2EE; background: var(--cc); box-shadow: 0 12px 30px rgba(0,0,0,0.45); }
+.auth-chips span:nth-child(1) { left: 0; top: 38px; }
+.auth-chips span:nth-child(2) { left: 70px; top: 0; }
+.auth-chips span:nth-child(3) { left: 80px; top: 88px; }
+.auth-hero { margin-top: 150px; }
+.auth-logo { font-family: var(--t-display); font-weight: 900; font-size: 124px; line-height: 0.8; letter-spacing: 0.01em; }
+.auth-blurb { margin: 22px 0 0; font-size: 15px; line-height: 1.5; color: var(--t-sub); max-width: 330px; }
+.auth-seg { display: flex; margin: 26px 0 18px; }
+.auth-seg .segbtn { flex: 1; min-height: 46px; font-size: 18px; }
+.auth-page .auth-form { gap: 14px; }
+.auth-page .auth-form > .auth-field:first-child { margin-top: 0; }
+.auth-page .input { background: var(--t-panel); border: 2px solid var(--t-track); min-height: 52px; font-size: 16px; }
+.auth-page .input:focus { border-color: #5A5E66; outline: none; }
+.auth-page .auth-form .big-cta { margin-top: 4px; }
+.auth-guest { background: none; border: none; color: var(--t-text); font-size: 14.5px; font-weight: 700; text-decoration: underline; text-underline-offset: 4px; cursor: pointer; padding: 8px; font-family: inherit; }
+@media (max-height: 740px) { .auth-hero { margin-top: 108px; } .auth-logo { font-size: 100px; } .auth-chips { transform: scale(0.8); transform-origin: top right; } }
+/* play friends sheet */
+.ftc { border-radius: 16px; background: var(--t-raise); padding: 14px; margin-bottom: 10px; }
+.ft-mine { display: flex; align-items: center; gap: 12px; }
+.ft-dot { width: 12px; height: 12px; border-radius: 50%; background: var(--c-green); box-shadow: 0 0 0 4px rgba(31,164,99,0.25); flex-shrink: 0; }
+.ft-mine-t { font-size: 22px; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ft-h { margin: 0; font-family: var(--t-display); font-weight: 800; font-size: 21px; letter-spacing: 0.04em; text-transform: uppercase; }
+.ft-sub { font-size: 12.5px; color: var(--t-mid); margin-top: 2px; }
+.ft-code { display: flex; gap: 8px; margin-top: 12px; }
+.code-boxes { position: relative; flex: 1; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; cursor: text; }
+.code-real { position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; border: none; padding: 0; font-size: 16px; color: transparent; background: transparent; caret-color: transparent; z-index: 1; }
+.cbox { height: 54px; border-radius: 10px; background: #111214; box-shadow: inset 0 0 0 1.5px #3A3D44; display: flex; align-items: center; justify-content: center; font-family: var(--t-display); font-weight: 900; font-size: 30px; color: var(--t-text); }
+.cbox.cur { box-shadow: inset 0 0 0 2px var(--t-accent); }
+.ft-join { flex: 0 0 88px; min-height: 54px; }
+.ft-line { display: flex; align-items: center; gap: 10px; margin-top: 12px; }
+.ft-line > .lbl { width: 56px; flex-shrink: 0; font-size: 10.5px; }
+.ft-opts { flex: 1; min-width: 0; display: flex; gap: 6px; }
+.ft-opts.scroll { overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+.ft-opts.scroll::-webkit-scrollbar { display: none; }
+.ft-opt { flex: 1 1 0; min-width: 0; min-height: 40px; padding: 0 6px; border-radius: 10px; border: none; background: var(--t-panel2); color: var(--t-text); font-family: var(--t-display); font-weight: 800; font-size: 16px; letter-spacing: 0.02em; text-transform: uppercase; white-space: nowrap; cursor: pointer; }
+.ft-opts.scroll .ft-opt { flex: 0 0 72px; }
+.ft-opt.on { background: #F2F2EE; color: #111214; font-weight: 900; }
+.ft-opt:disabled { opacity: 0.35; cursor: default; }
+.ft-friendly { display: flex; align-items: center; gap: 12px; margin-top: 12px; padding: 12px 14px; border-radius: 12px; background: #111214; }
+.ft-note { font-size: 12px; color: var(--t-mid); margin-top: 12px; line-height: 1.4; }
+.ft-sheet .big-cta { margin-top: 4px; }
 `;
 const GLOBAL_STYLE = `
 :root { --t-bg: #0B1426; --t-panel: #14223D; --t-panel2: #25395F; --t-text: #F4F7FC; --t-text2: #C8D3E6; --t-sub: #A9B8D0; --t-mid: #8FA1BE; --t-mut: #7587A6; --t-faint: #5E7196; --t-accent: #F5B83D; --t-good: #34D399; --t-bad: #FF6B6B; --t-display: 'Fraunces', Georgia, serif; --t-body: 'Inter', -apple-system, sans-serif; }
