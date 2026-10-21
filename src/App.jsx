@@ -1254,6 +1254,14 @@ function TitlePill({ k, style }) {
   return <span className="title-pill" style={{ color: leg ? "#111214" : common ? "var(--t-text)" : c, background: leg ? "#EDB000" : common ? "#2E3036" : `${c}2E`, ...style }}>{t.label}</span>;
 }
 const SHOP_FEATURED = [["felt", "blackout", "Black hex weave with a gold rail."], ["back", "midnight", "A gold sunburst on midnight navy."], ["felt", "crimson", "Deep red lattice with gold thread."], ["felt", "royal", "Blue herringbone, old card room style."], ["back", "crimson", "Red rosette, cut like a banknote."], ["back", "emerald", "Green suits for the regulars."]];
+// On a computer opponents sit around the oval, clockwise from your left. Slots are percent of the table area.
+const SEAT_SLOTS = {
+  1: [[50, 15]], 2: [[28, 17], [72, 17]], 3: [[10, 42], [50, 14], [90, 42]], 4: [[10, 50], [33, 15], [67, 15], [90, 50]],
+  5: [[9, 60], [22, 20], [50, 13], [78, 20], [91, 60]], 6: [[9, 62], [12, 25], [37, 14], [63, 14], [88, 25], [91, 62]],
+  7: [[8, 62], [11, 27], [31, 15], [50, 13], [69, 15], [89, 27], [92, 62]], 8: [[8, 64], [9, 31], [26, 16], [42, 13], [58, 13], [74, 16], [91, 31], [92, 64]],
+  9: [[8, 66], [8, 34], [22, 17], [37, 13], [50, 12], [63, 13], [78, 17], [92, 34], [92, 66]],
+};
+const seatPos = (k, n) => { const row = SEAT_SLOTS[Math.max(1, Math.min(9, n))]; const p = row[k] || [50, 10]; return { "--sx": `${p[0]}%`, "--sy": `${p[1]}%` }; };
 // The felt wordmark: lowercase, with a red diamond for the period
 const LOGO_RED = "#E8202A";
 const DIAMOND_PATH = "M50 3 C60 21 72 37 87 50 C72 63 60 79 50 97 C40 79 28 63 13 50 C28 37 40 21 50 3 Z";
@@ -1356,6 +1364,9 @@ function PokerTable({ startStack, name, avatar, photo = null, soundOn, setSoundO
   const [tournamentOver, setTournamentOver] = useState(null);
   const [knockouts, setKnockouts] = useState(0);
   const bustHandRef = useRef({});
+  // keyboard play on a computer: F fold, C check or call, R raise, 1 2 3 presets, Space deals
+  const keyRef = useRef(null);
+  useEffect(() => { const h = (e) => keyRef.current && keyRef.current(e); window.addEventListener("keydown", h); return () => window.removeEventListener("keydown", h); }, []);
   const [tableCleared, setTableCleared] = useState(false);
   const [bestPot, setBestPot] = useState(0);
   const [rankedResult, setRankedResult] = useState(null);
@@ -1980,6 +1991,30 @@ function PokerTable({ startStack, name, avatar, photo = null, soundOn, setSoundO
       ? `${placementNo ? `Placement ${placementNo} of ${PLACEMENT_MATCHES}` : "Ranked"}, ${handsCount === 0 ? `${RANKED_MATCH_HANDS} hand match` : handsCount >= RANKED_MATCH_HANDS ? "final hand" : `hand ${handsCount} of ${RANKED_MATCH_HANDS}`}`
       : tutorial ? "Practice, nothing at stake" : vip ? `${stakes?.label || "High Roller"} · ${SB.toLocaleString()} / ${BB.toLocaleString()}` : `${gameTag ? `${gameTag} cash` : "Cash game"}, blinds ${SB}/${BB}`;
 
+  keyRef.current = (e) => {
+    if (e.metaKey || e.ctrlKey || e.altKey || e.repeat) return;
+    const t = e.target; const tg = (t && t.tagName) || "";
+    if ((tg === "INPUT" && t.type !== "range") || tg === "TEXTAREA" || tg === "SELECT") return;
+    if (document.querySelector(".scrim, .fs-page, .results")) return;
+    const k = e.key === " " ? "space" : e.key.toLowerCase();
+    if (humanTurn && human) {
+      const maxAmt = human.stack + human.streetContributed;
+      const minAmt = Math.max(currentBet + minRaise, BB);
+      const clampAmt = (v) => Math.max(minAmt, Math.min(maxAmt, v));
+      const kind = currentBet === 0 ? "bet" : "raise";
+      if (k === "f") { e.preventDefault(); handleFoldClick(); return; }
+      if (k === "c" || k === "k") { e.preventDefault(); handleAction(0, humanToCall <= 0 ? "check" : "call"); return; }
+      if ((k === "r" || k === "b") && maxAmt > currentBet) { e.preventDefault(); setShowRaise(true); return; }
+      if (showRaise) {
+        if (k === "escape") { e.preventDefault(); setShowRaise(false); setCustomRaise(false); return; }
+        if (!customRaise && (k === "1" || k === "2" || k === "3")) { e.preventDefault(); const v = k === "1" ? clampAmt(currentBet + Math.round(pot * 0.5)) : k === "2" ? clampAmt(currentBet + pot) : maxAmt; setBetInput(v); handleAction(0, kind, v); return; }
+        if (customRaise && k === "enter") { e.preventDefault(); handleAction(0, kind, clampAmt(betInput)); return; }
+      }
+    }
+    if ((k === "space" || k === "enter") && betweenHands && !(ranked && rankedResult) && !tournamentOver && !busted && !(tableCleared && !ranked && !tournament)) { e.preventDefault(); startHand(); return; }
+    if (k === "s" && betweenHands && showChoice && !showChoice.shown && stage === "showdown") { e.preventDefault(); showHand(); }
+  };
+
   return (
     <div data-felt={felt ? felt.key : "green"} data-back={cardBack ? cardBack.key : "blue"} className={`table-wrap${drama ? " is-drama" : ""}${vip ? " vip" : ""}${bots.length >= 7 ? " crowded" : ""}`} style={{ "--rail-c": railColor, ...(cardBack ? { "--back-a": cardBack.a, "--back-b": cardBack.b, "--back-ring": cardBack.ring, ...(cardBack.img ? { "--back-img": cardBack.img, "--back-size": cardBack.size } : {}) } : {}), ...(felt ? { "--felt1": felt.c1, "--felt2": felt.c2, "--felt3": felt.c3, "--rail": felt.rail, ...(felt.tex ? { "--felt-tex": felt.tex, "--felt-tex-size": felt.texSize } : {}), ...(felt.line ? { "--felt-line": felt.line } : {}) } : {}) }}>
       <div className="table-top">
@@ -2017,7 +2052,7 @@ function PokerTable({ startStack, name, avatar, photo = null, soundOn, setSoundO
           const inHand = !p.eliminated && p.hole.length > 0 && stage !== "idle";
           const botRating = ranked ? botRanks[i] : null;
           return (
-            <div key={p.id} className={`seat${isActive ? " active" : ""}`} style={{ "--seat-c": AVATAR_COLORS[i % AVATAR_COLORS.length], opacity: p.eliminated ? 0.28 : p.folded ? 0.45 : 1 }}>
+            <div key={p.id} className={`seat${isActive ? " active" : ""}`} style={{ ...seatPos(i, bots.length), "--seat-c": AVATAR_COLORS[i % AVATAR_COLORS.length], opacity: p.eliminated ? 0.28 : p.folded ? 0.45 : 1 }}>
               <div className="seat-top">
                 <div ref={(el) => { seatRefs.current[p.id] = el; }} className="seat-av">
                   <div className="bot-av" style={{ background: AVATAR_COLORS[i % AVATAR_COLORS.length] }}>{p.name[0]}</div>
@@ -2154,9 +2189,9 @@ function PokerTable({ startStack, name, avatar, photo = null, soundOn, setSoundO
             <div className="raise-box">
               {!customRaise ? (
                 <div className="preset-row">
-                  {presets.map((p) => (
+                  {presets.map((p, pi) => (
                     <button key={p.label} className="btn preset-btn" onClick={() => { vibrate(20); setBetInput(p.value); handleAction(0, currentBet === 0 ? "bet" : "raise", p.value); }}>
-                      <div style={{ fontSize: 12.5, fontWeight: 600 }}>{p.label}</div>
+                      <div style={{ fontSize: 12.5, fontWeight: 600 }}>{p.label}<kbd className="kh" aria-hidden="true">{pi + 1}</kbd></div>
                       <div className="num" style={{ fontSize: 10.5, opacity: 0.8 }}>{p.value.toLocaleString()}</div>
                     </button>
                   ))}
@@ -2204,16 +2239,16 @@ function PokerTable({ startStack, name, avatar, photo = null, soundOn, setSoundO
             <div style={{ fontSize: 12.5, color: "var(--t-mid)", marginTop: 4 }}>{showChoice.shown ? "The table saw what you had." : "Nobody called, so it's your choice."}</div>
             <div className="act-row two" style={{ marginTop: 12 }}>
               <button className="btn btn-raise show-btn" disabled={showChoice.shown} onClick={showHand}>{showChoice.shown ? "Shown" : "Show"}</button>
-              <button className="btn" onClick={startHand}>{showChoice.shown ? "Next hand" : "Muck"}</button>
+              <button className="btn" onClick={startHand}>{showChoice.shown ? "Next hand" : "Muck"}<kbd className="kh" aria-hidden="true">Space</kbd></button>
             </div>
           </div>
         ) : betweenHands ? (
-          <button className="btn btn-raise" style={{ flex: "none", width: "100%" }} onClick={startHand}>{stage === "idle" ? "Deal" : "Next hand"}</button>
+          <button className="btn btn-raise" style={{ flex: "none", width: "100%" }} onClick={startHand}>{stage === "idle" ? "Deal" : "Next hand"}<kbd className="kh" aria-hidden="true">Space</kbd></button>
         ) : humanTurn ? (
           <div className="act-row">
-            <button className="btn btn-fold" onClick={handleFoldClick}>{confirmFold ? "Sure?" : "Fold"}</button>
-            {humanToCall <= 0 ? (<button className="btn btn-go" onClick={() => { vibrate(15); handleAction(0, "check"); }}>Check</button>) : (<button className="btn btn-go" onClick={() => { vibrate(15); handleAction(0, "call"); }}>Call {Math.min(humanToCall, human.stack).toLocaleString()}</button>)}
-            {!showRaise ? (<button className="btn btn-raise" onClick={() => setShowRaise(true)} disabled={human.stack + human.streetContributed <= currentBet}>{currentBet === 0 ? "Bet" : "Raise"}</button>) : (<button className="btn" onClick={() => { setShowRaise(false); setCustomRaise(false); }}>Cancel</button>)}
+            <button className="btn btn-fold" onClick={handleFoldClick}>{confirmFold ? "Sure?" : "Fold"}<kbd className="kh" aria-hidden="true">F</kbd></button>
+            {humanToCall <= 0 ? (<button className="btn btn-go" onClick={() => { vibrate(15); handleAction(0, "check"); }}>Check<kbd className="kh" aria-hidden="true">C</kbd></button>) : (<button className="btn btn-go" onClick={() => { vibrate(15); handleAction(0, "call"); }}>Call {Math.min(humanToCall, human.stack).toLocaleString()}<kbd className="kh" aria-hidden="true">C</kbd></button>)}
+            {!showRaise ? (<button className="btn btn-raise" onClick={() => setShowRaise(true)} disabled={human.stack + human.streetContributed <= currentBet}>{currentBet === 0 ? "Bet" : "Raise"}<kbd className="kh" aria-hidden="true">R</kbd></button>) : (<button className="btn" onClick={() => { setShowRaise(false); setCustomRaise(false); }}>Cancel<kbd className="kh" aria-hidden="true">Esc</kbd></button>)}
           </div>
         ) : human && !human.folded && !human.allIn && !human.eliminated && !betweenHands ? (
           <div className="pre-row" role="group" aria-label="Act in advance">
@@ -3205,7 +3240,7 @@ function HomeMenu({ onPlayAI, onFriendsTable, onEquipPass, topCards, data, chips
     { key: "practice", title: "Practice", sub: "Tips as you play", color: "#00A560", core: <Icon name="cap" size={24} stroke={2.2} />, act: () => onPlayAI({ mode: "practice", tableSize: TABLE_SIZES[1], stakes: { sb: 10, bb: 20 } }) },
   ];
   return (
-    <div className="screen screen-fade">
+    <div className="screen screen-fade scr-wide">
       <header className="home-head">
         <FeltLogo className="home-logo" />
         <div style={{ display: "flex", alignItems: "flex-end", gap: 14 }}>
@@ -3215,11 +3250,9 @@ function HomeMenu({ onPlayAI, onFriendsTable, onEquipPass, topCards, data, chips
       </header>
 
       <div className="home-stack">
-        {topCards}
-        <StreakBanner streak={data.streak} onClaim={onClaimDaily} />
-        <SpinCard ready={spinReady(data)} onOpen={() => setModal("spin")} />
-        <RankedCard ranked={ranked} legendNo={legendNo} chips={chips} onPlay={() => setModal("ranked")} onInfo={() => setModal("ladder")} />
-        <div className="mode-chips">
+        <div className="home-main">
+        <div className="hs-item" style={{ order: 4 }}><RankedCard ranked={ranked} legendNo={legendNo} chips={chips} onPlay={() => setModal("ranked")} onInfo={() => setModal("ladder")} /></div>
+        <div className="hs-item mode-chips" style={{ order: 5 }}>
           {modes.map((o) => (
             <button key={o.key} className="mode-chip" onClick={o.act} style={{ "--cc": o.color }}>
               <span className="mc-disc"><span className="mc-core">{o.core}</span></span>
@@ -3228,10 +3261,16 @@ function HomeMenu({ onPlayAI, onFriendsTable, onEquipPass, topCards, data, chips
             </button>
           ))}
         </div>
-        {cloudEnabled() && onFriendsTable && <FriendsTableCard onOpen={onFriendsTable} />}
-        <VipCard chips={chips} onOpen={() => setModal("vip")} />
-        <PassCard pass={data.pass} onOpen={(l) => { setPassFocus(l); setModal("pass"); }} />
-        <ChallengesCard challenges={data.challenges} onClaim={onClaimChallenge} />
+        {cloudEnabled() && onFriendsTable && <div className="hs-item" style={{ order: 6 }}><FriendsTableCard onOpen={onFriendsTable} /></div>}
+        <div className="hs-item" style={{ order: 7 }}><VipCard chips={chips} onOpen={() => setModal("vip")} /></div>
+        </div>
+        <div className="home-side">
+        <div className="hs-item" style={{ order: 1 }}>{topCards}</div>
+        <div className="hs-item" style={{ order: 2 }}><StreakBanner streak={data.streak} onClaim={onClaimDaily} /></div>
+        <div className="hs-item" style={{ order: 3 }}><SpinCard ready={spinReady(data)} onOpen={() => setModal("spin")} /></div>
+        <div className="hs-item" style={{ order: 8 }}><PassCard pass={data.pass} onOpen={(l) => { setPassFocus(l); setModal("pass"); }} /></div>
+        <div className="hs-item" style={{ order: 9 }}><ChallengesCard challenges={data.challenges} onClaim={onClaimChallenge} /></div>
+        </div>
       </div>
 
       {modal === "pass" && <PassModal pass={data.pass} data={data} focus={passFocus} onClose={close} onEquip={onEquipPass} />}
@@ -3374,7 +3413,7 @@ function CoachScreen({ data }) {
   const barColor = (x) => (x >= 70 ? "var(--c-green)" : x >= 45 ? "var(--t-accent)" : "var(--c-red)");
   if (!sk || k.hands < need) {
     return (
-      <div className="screen screen-fade">
+      <div className="screen screen-fade scr-narrow">
         <header className="home-head"><div className="wordmark">Coach</div></header>
         <section className="co-card co-hero">
           <SkillDial sr={k.hands} max={need} size={118} color="var(--t-accent)" />
@@ -3389,10 +3428,12 @@ function CoachScreen({ data }) {
   }
   const comps = sk.comps.slice().sort((a, b) => b.weight - a.weight);
   return (
-    <div className="screen screen-fade">
+    <div className="screen screen-fade scr-wide">
       <header className="home-head"><div className="wordmark">Coach</div></header>
 
-      <section className="co-card co-hero">
+      <div className="co-cols">
+      <div className="co-col">
+      <section className="co-card co-hero" style={{ order: 1 }}>
         <SkillDial sr={sk.sr} size={118} />
         <div style={{ flex: 1, minWidth: 0 }}>
           <div className="lbl">Skill rating</div>
@@ -3401,11 +3442,24 @@ function CoachScreen({ data }) {
         </div>
       </section>
 
-      <section className="co-card">
+      <section className="co-card" style={{ order: 2 }}>
         <h2 className="co-h">Scouting report</h2>
         <p className="co-report">{skillReport(sk)}</p>
       </section>
 
+      {recent.length > 1 && (
+        <section className="co-card" style={{ order: 4 }}>
+          <div className="co-headrow"><h2 className="co-h">Last {recent.length} hands</h2><span>Newest on the right</span></div>
+          <div className="co-bars" aria-label="Decision quality by hand, oldest to newest">
+            {recent.map((q, i) => <span key={i} title={pctStr(q)} style={{ height: `${Math.max(12, q * 100)}%`, background: q >= 0.7 ? "var(--c-green)" : q >= 0.5 ? "#4A4D55" : "var(--c-red)" }} />)}
+          </div>
+          <div className="co-legend"><span><i style={{ background: "var(--c-green)" }} />Good</span><span><i style={{ background: "#4A4D55" }} />Okay</span><span><i style={{ background: "var(--c-red)" }} />Leak</span></div>
+        </section>
+      )}
+
+      </div>
+      <div className="co-col">
+      <div style={{ order: 3 }}>
       <SectionLabel right="Score out of 100">Breakdown</SectionLabel>
       <section className="co-card co-list">
         {comps.map((c) => {
@@ -3421,16 +3475,8 @@ function CoachScreen({ data }) {
         })}
       </section>
 
-      {recent.length > 1 && (
-        <section className="co-card">
-          <div className="co-headrow"><h2 className="co-h">Last {recent.length} hands</h2><span>Newest on the right</span></div>
-          <div className="co-bars" aria-label="Decision quality by hand, oldest to newest">
-            {recent.map((q, i) => <span key={i} title={pctStr(q)} style={{ height: `${Math.max(12, q * 100)}%`, background: q >= 0.7 ? "var(--c-green)" : q >= 0.5 ? "#4A4D55" : "var(--c-red)" }} />)}
-          </div>
-          <div className="co-legend"><span><i style={{ background: "var(--c-green)" }} />Good</span><span><i style={{ background: "#4A4D55" }} />Okay</span><span><i style={{ background: "var(--c-red)" }} />Leak</span></div>
-        </section>
-      )}
-
+      </div>
+      <div style={{ order: 5 }}>
       <SectionLabel right={<b className="co-pts num">{idx.toLocaleString()} pts</b>}>Tournament index</SectionLabel>
       <section className="co-card co-list">
         {tourneys.length === 0 ? (
@@ -3443,6 +3489,9 @@ function CoachScreen({ data }) {
           </div>
         ))}
       </section>
+      </div>
+      </div>
+      </div>
       <div className="co-foot">Every decision is graded against your real odds at that moment. All-in pots count the equity you had when the chips went in, so bad beats don't hurt your rating and lucky rivers don't help it. Only paid tournament finishes score, and they fade after a week.</div>
     </div>
   );
@@ -3492,7 +3541,7 @@ function ShopScreen({ data, onClaimChips, onBuyAvatar, onClaimDaily, onBuyCosmet
   }).find((x) => x && !ownsCosmetic(cos, x.type === "felt" ? "felts" : "backs", x.item, pr));
   const tt = data.titles || defaultTitles();
   return (
-    <div className="screen screen-fade">
+    <div className="screen screen-fade scr-mid">
       <header className="home-head">
         <div className="wordmark">Shop</div>
         <div className="home-chips"><b className="num">{data.chips.toLocaleString()}</b><span>CHIPS</span></div>
@@ -3681,7 +3730,7 @@ function LeaderboardScreen({ data, account, online = {}, onOpenAuth }) {
   );
   if (tab === "friends") {
     return (
-      <div className="screen screen-fade">
+      <div className="screen screen-fade scr-narrow">
         {head}
         {seg}
         <FriendsSection account={account} online={online} onOpenAuth={onOpenAuth} bare />
@@ -3691,7 +3740,7 @@ function LeaderboardScreen({ data, account, online = {}, onOpenAuth }) {
   const note = live ? (pool.length <= 1 ? (scope === "local" ? `No one else in ${tzLabel(tz)} time yet. Get your friends on felt.` : "No one else is on the board yet. Get your friends on felt.") : scope === "local" ? `Everyone in ${tzLabel(tz)} time. Tap a player to see their profile.` : "Everyone with a felt account. Tap a player to see their profile.")
     : realList === undefined && cloudEnabled() ? "Loading players…" : "Other players are samples until online play is added.";
   return (
-    <div ref={scrollRef} className="screen screen-fade" style={{ display: "flex", flexDirection: "column" }}>
+    <div ref={scrollRef} className="screen screen-fade scr-narrow" style={{ display: "flex", flexDirection: "column" }}>
       {head}
       {seg}
       <div className="lb-note">{isRanked ? `${month} season, ends in ${daysLeftInSeason()} days.` : "Best 8 tournament cashes, fading over 90 days."}{scope === "local" && cloudEnabled() ? ` Players in ${tzLabel(tz)} time.` : ""}</div>
@@ -3822,6 +3871,8 @@ function OnlineTable({ tableId, account, data, sound, soundOn, setSoundOn, onExi
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [row && row.version]);
 
+  const okeyRef = useRef(null);
+  useEffect(() => { const h = (e) => okeyRef.current && okeyRef.current(e); window.addEventListener("keydown", h); return () => window.removeEventListener("keydown", h); }, []);
   if (!row || !st) {
     return (<div className="table-wrap online"><div className="table-top"><button className="iconbtn" onClick={() => onExit()} aria-label="Back"><Icon name="back" size={15} /></button><div className="tt-title">Friends table</div><span style={{ width: 42 }} /></div><div className="empty" style={{ marginTop: 80 }}>{err || "Joining the table…"}</div></div>);
   }
@@ -3850,15 +3901,15 @@ function OnlineTable({ tableId, account, data, sound, soundOn, setSoundOn, onExi
     const s = st.seats[i];
     if (!s) {
       return mySeat < 0
-        ? <button key={i} className="seat seat-open" onClick={() => openSit(i)} aria-label={`Sit in seat ${i + 1}`}><span className="disp" style={{ fontSize: 20 }}>+</span><span className="lbl" style={{ color: "var(--t-text)" }}>Sit here</span></button>
-        : <div key={i} className="seat seat-open" aria-label="Open seat"><span className="lbl">Open</span></div>;
+        ? <button key={i} className="seat seat-open" style={seatPos(k, order.length)} onClick={() => openSit(i)} aria-label={`Sit in seat ${i + 1}`}><span className="disp" style={{ fontSize: 20 }}>+</span><span className="lbl" style={{ color: "var(--t-text)" }}>Sit here</span></button>
+        : <div key={i} className="seat seat-open" style={seatPos(k, order.length)} aria-label="Open seat"><span className="lbl">Open</span></div>;
     }
     const active = betting && st.turn === i; const inHand = s.inHand && st.stage !== "waiting";
     const em = s.emote && serverNow - s.emote.at < 3500 ? s.emote.e : null;
     const fmt = compact ? shortNum : (x) => x.toLocaleString();
     const col = AVATAR_COLORS[i % AVATAR_COLORS.length];
     return (
-      <div key={i} className={`seat${active ? " active" : ""}`} style={{ "--seat-c": col, opacity: s.out ? 0.45 : s.folded && inHand ? 0.5 : 1 }}>
+      <div key={i} className={`seat${active ? " active" : ""}`} style={{ ...seatPos(k, order.length), "--seat-c": col, opacity: s.out ? 0.45 : s.folded && inHand ? 0.5 : 1 }}>
         {em && <div key={s.emote.at} className="emote-bubble">{em}</div>}
         <div className="seat-top">
           <div className="seat-av">
@@ -3903,6 +3954,19 @@ function OnlineTable({ tableId, account, data, sound, soundOn, setSoundOn, onExi
 
   const statusLine = st.stage === "waiting" ? (nextIn != null && st.nextAt ? `Dealing in ${nextIn}` : st.seats.filter(Boolean).length < 2 ? "Waiting for someone to sit down" : "Waiting for players") : st.stage === "showdown" ? "" : turnName ? (st.turn === mySeat ? "Your turn" : `${turnName} to act`) : "";
   const iWonUncontested = st.stage === "showdown" && st.result && st.result.uncontested && st.result.winners[0] && st.result.winners[0].seat === mySeat && !st.result.shown;
+
+  okeyRef.current = (e) => {
+    if (e.metaKey || e.ctrlKey || e.altKey || e.repeat) return;
+    const t = e.target; const tg = (t && t.tagName) || "";
+    if ((tg === "INPUT" && t.type !== "range") || tg === "TEXTAREA" || tg === "SELECT") return;
+    if (document.querySelector(".scrim, .fs-page")) return;
+    if (!myTurn || !me) return;
+    const k = e.key.toLowerCase();
+    if (k === "f") { e.preventDefault(); setShowRaise(false); send("act", { move: "fold" }); }
+    else if (k === "c" || k === "k") { e.preventDefault(); send("act", { move: toCall <= 0 ? "check" : "call" }); }
+    else if ((k === "r" || k === "b") && me.stack > toCall) { e.preventDefault(); setShowRaise(true); }
+    else if (k === "escape" && showRaise) { e.preventDefault(); setShowRaise(false); setCustom(false); }
+  };
 
   return (
     <div data-felt={felt.key} data-back={back.key} className={`table-wrap online${order.length >= 7 ? " crowded" : ""}`} style={{ "--rail-c": "#00A560", "--back-a": back.a, "--back-b": back.b, "--back-ring": back.ring, ...(back.img ? { "--back-img": back.img, "--back-size": back.size } : {}), "--felt1": felt.c1, "--felt2": felt.c2, "--felt3": felt.c3, "--rail": felt.rail, ...(felt.tex ? { "--felt-tex": felt.tex, "--felt-tex-size": felt.texSize } : {}), ...(felt.line ? { "--felt-line": felt.line } : {}) }}>
@@ -3983,10 +4047,10 @@ function OnlineTable({ tableId, account, data, sound, soundOn, setSoundOn, onExi
         {showRaise && myTurn && raisePanel()}
         {myTurn ? (
           <div className="act-row">
-            <button className="btn btn-fold" onClick={() => { vibrate(20); setShowRaise(false); send("act", { move: "fold" }); }}>Fold</button>
-            {toCall <= 0 ? <button className="btn btn-go" onClick={() => { vibrate(15); send("act", { move: "check" }); }}>Check</button>
-              : <button className="btn btn-go" onClick={() => { vibrate(15); send("act", { move: "call" }); }}>Call {Math.min(toCall, me.stack).toLocaleString()}</button>}
-            {!showRaise ? <button className="btn btn-raise" disabled={me.stack <= toCall} onClick={() => setShowRaise(true)}>{st.currentBet ? "Raise" : "Bet"}</button> : <button className="btn" onClick={() => { setShowRaise(false); setCustom(false); }}>Cancel</button>}
+            <button className="btn btn-fold" onClick={() => { vibrate(20); setShowRaise(false); send("act", { move: "fold" }); }}>Fold<kbd className="kh" aria-hidden="true">F</kbd></button>
+            {toCall <= 0 ? <button className="btn btn-go" onClick={() => { vibrate(15); send("act", { move: "check" }); }}>Check<kbd className="kh" aria-hidden="true">C</kbd></button>
+              : <button className="btn btn-go" onClick={() => { vibrate(15); send("act", { move: "call" }); }}>Call {Math.min(toCall, me.stack).toLocaleString()}<kbd className="kh" aria-hidden="true">C</kbd></button>}
+            {!showRaise ? <button className="btn btn-raise" disabled={me.stack <= toCall} onClick={() => setShowRaise(true)}>{st.currentBet ? "Raise" : "Bet"}<kbd className="kh" aria-hidden="true">R</kbd></button> : <button className="btn" onClick={() => { setShowRaise(false); setCustom(false); }}>Cancel</button>}
           </div>
         ) : me && me.out ? (
           <div style={{ display: "flex", width: "100%", gap: 8, alignItems: "center" }}>
@@ -4577,7 +4641,7 @@ function ProfileScreen({ data, account, online, legendNo, pushOn, pushBusy, onEn
   const shortRank = (r) => rankName(r).replace("Platinum", "Plat").replace("Diamond", "Dia").replace("Champion", "Champ");
 
   return (
-    <div className="screen screen-fade">
+    <div className="screen screen-fade scr-narrow">
       <header className="home-head">
         <div className="wordmark">Me</div>
         <button className="iconbtn" onClick={() => settingsRef.current && settingsRef.current.scrollIntoView({ behavior: "smooth", block: "start" })} aria-label="Settings"><Icon name="settings" size={17} stroke={2} /></button>
@@ -5379,7 +5443,7 @@ export default function App() {
       <style>{GLOBAL_STYLE}</style>
       {!bootDone && <LoadingScreen fadingOut={loaded} />}
       <main className="app-main">
-        <div key={tab} style={{ width: "100%", maxWidth: 460, height: "100%" }}>
+        <div key={tab} className="app-col">
           {tab === "shop" && <ShopScreen data={data} onClaimChips={handleClaimChips} onBuyAvatar={handleBuyAvatar} onClaimDaily={handleClaimDaily} onBuyCosmetic={handleBuyCosmetic} onEquipCosmetic={handleEquipCosmetic} onBuyTitle={handleBuyTitle} />}
           {tab === "home" && <HomeMenu topCards={<>
             {!isStandalone() && !hideInstall && (installPrompt || isIOS()) && <div style={{ marginBottom: 14 }}><InstallCard prompt={installPrompt ? async () => { installPrompt.prompt(); try { await installPrompt.userChoice; } catch (e) { /* closed */ } setInstallPrompt(null); } : null} onDismiss={() => dismiss("felt-hide-install", setHideInstall)} /></div>}
@@ -5390,7 +5454,7 @@ export default function App() {
           {tab === "profile" && <ProfileScreen data={data} account={account} online={online} legendNo={legendNo} pushOn={pushOn} pushBusy={pushBusy} onEnablePush={turnOnPush} isAdmin={isAdmin} onOpenAdmin={() => setAdminOpen(true)} onOpenAuth={setAuthOpen} onSignOut={handleSignOut} sound={sound} onUpdateName={handleUpdateName} onSelectAvatar={handleSelectAvatar} onSetPhoto={handleSetPhoto} onUsePhoto={handleUsePhoto} onSelectFrame={handleSelectFrame} onAddFriend={handleAddFriend} onUpdateSettings={handleUpdateSettings} onExportData={handleExportData} onImportData={handleImportData} onResetProfile={handleResetProfile} onEquipTitle={handleEquipTitle} onPrestige={handlePrestige} />}
         </div>
       </main>
-      <BottomNav tab={tab} setTab={(t) => { sound.tap(); setTab(t); }} />
+      <BottomNav tab={tab} chips={data.chips} setTab={(t) => { sound.tap(); setTab(t); }} />
       {invites.length > 0 && !inTable && (
         <div className="invite-banner" role="status">
           <div style={{ flex: 1, minWidth: 0 }}><div style={{ fontSize: 13, fontWeight: 700 }}>{inviteNames[invites[0].from_user] || "A friend"} invited you</div><div style={{ fontSize: 11.5, color: "var(--t-sub)" }}>Table {invites[0].code}</div></div>
@@ -5416,11 +5480,14 @@ export default function App() {
   );
 }
 
-function BottomNav({ tab, setTab }) {
+// A tab bar on phones. On a computer the same buttons stack into a sidebar with the logo and your chips.
+function BottomNav({ tab, setTab, chips }) {
   const items = [{ key: "shop", label: "Shop" }, { key: "leaderboard", label: "Ranks" }, { key: "home", label: "Play" }, { key: "coach", label: "Coach" }, { key: "profile", label: "Me" }];
   return (
     <nav className="bottom-nav" aria-label="Main">
-      {items.map((it) => <button key={it.key} className="navbtn" aria-current={tab === it.key ? "page" : undefined} onClick={() => setTab(it.key)}>{it.label}</button>)}
+      <FeltLogo className="side-logo" />
+      {items.map((it) => <button key={it.key} data-k={it.key} className="navbtn" aria-current={tab === it.key ? "page" : undefined} onClick={() => setTab(it.key)}>{it.label}</button>)}
+      {chips != null && <div className="side-foot"><b className="num">{chips.toLocaleString()}</b><span>Chips</span></div>}
     </nav>
   );
 }
@@ -6217,6 +6284,86 @@ input[type=range] { accent-color: var(--t-accent); height: 28px; }
 .brand-logo { display: inline-flex; align-items: baseline; font-family: var(--t-body); font-weight: 700; line-height: 1; letter-spacing: -0.045em; text-transform: none; color: var(--t-text); }
 .brand-logo svg { width: 0.21em; height: 0.21em; margin-left: 0.035em; flex-shrink: 0; }
 .home-logo { font-size: 48px; margin-bottom: -6px; }
+/* ---------- computer layout ---------- */
+.app-col { width: 100%; max-width: 460px; height: 100%; }
+.side-logo, .side-foot { display: none !important; }
+.home-main, .home-side, .co-col { display: contents; }
+.co-cols { display: flex; flex-direction: column; }
+.hs-item:empty { display: none; }
+.kh { display: none; }
+@media (min-width: 1024px) {
+  .app { flex-direction: row; align-items: stretch; }
+  .bottom-nav { order: -1; width: 232px; max-width: none; height: 100%; flex-shrink: 0; display: flex; flex-direction: column; justify-content: flex-start; align-items: stretch; gap: 4px; padding: 30px 14px 26px 0; border-top: none; border-right: 1px solid var(--rule); background: #0B0C0E; }
+  .bottom-nav .side-logo { display: inline-flex !important; order: -2; font-size: 44px; margin: 0 0 30px 26px; }
+  .navbtn { flex: none; flex-direction: row; justify-content: flex-start; align-items: center; min-height: 54px; padding: 0 22px; border-top: none; border-left: 4px solid transparent; border-radius: 0 14px 14px 0; font-size: 21px; text-align: left; cursor: pointer; }
+  .navbtn[data-k="home"] { order: -1; }
+  .navbtn[aria-current="page"] { font-size: 21px; border-top: none; border-left-color: var(--t-accent); background: var(--t-panel); }
+  .navbtn:hover { color: var(--t-text); }
+  .side-foot { display: flex !important; flex-direction: column; order: 10; margin-top: auto; padding: 0 26px; }
+  .side-foot b { font-family: var(--t-display); font-weight: 900; font-size: 30px; line-height: 1; }
+  .side-foot span { font-size: 11px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: var(--t-mid); margin-top: 4px; }
+  .app-main { padding-top: 0; }
+  .app-col { max-width: 1200px; }
+  .screen { max-width: none; padding: 30px 40px 60px; }
+  .screen.scr-wide { padding-left: max(40px, calc((100% - 1120px) / 2)); padding-right: max(40px, calc((100% - 1120px) / 2)); }
+  .screen.scr-mid { padding-left: max(40px, calc((100% - 940px) / 2)); padding-right: max(40px, calc((100% - 940px) / 2)); }
+  .screen.scr-narrow { padding-left: max(40px, calc((100% - 760px) / 2)); padding-right: max(40px, calc((100% - 760px) / 2)); }
+  .home-logo { display: none; }
+  .home-head { margin-top: 4px; }
+  .home-stack { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+  .home-main, .home-side { display: flex; flex-direction: column; gap: 14px; }
+  .mode-chip .mc-disc { width: 118px; height: 118px; border-width: 11px; }
+  .mode-chip .mc-core { width: 64px; height: 64px; font-size: 26px; }
+  .co-cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0 22px; align-items: start; }
+  .co-col { display: block; }
+  .sh-scroll { flex-wrap: wrap; overflow: visible; margin: 0 0 26px; padding: 0; }
+  .sh-scroll > .sh-tile { flex: 0 0 140px; }
+  .sh-scroll.sh-avs { gap: 14px; padding: 6px 0; }
+  .sh-tile:hover:not(:disabled) { box-shadow: inset 0 0 0 2px #3A3D44; }
+  .btn:hover:not(:disabled) { filter: brightness(1.08); }
+  .fr-row:hover, .lb-item.tap:hover, .co-row:hover { background: rgba(255,255,255,0.025); }
+}
+/* the table on a computer: players around the oval, you and your buttons along the bottom */
+@media (min-width: 1024px) and (min-height: 600px) {
+  .table-wrap { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: auto auto minmax(0, 1fr) auto auto; grid-template-areas: "top top" "status status" "table table" "coach coach" "hero controls"; column-gap: 18px; max-width: 1240px; margin: 0 auto; padding: 18px 28px 22px; align-items: end; }
+  .table-wrap > * { grid-column: 1 / -1; }
+  .table-wrap .table-top { grid-area: top; max-width: none; }
+  .table-wrap .status { grid-area: status; max-width: none; font-size: 12px; }
+  .table-wrap .seats { grid-area: table; display: block; position: relative; z-index: 2; max-width: none; width: 100%; height: 100%; margin: 0; padding: 0 !important; pointer-events: none; }
+  .table-wrap .seats .seat { position: absolute; left: var(--sx, 50%); top: var(--sy, 10%); width: 172px; transform: translate(-50%, -50%); pointer-events: auto; padding: 12px 10px 8px; }
+  .table-wrap.crowded .seats .seat { width: 150px; }
+  .table-wrap .seats .seat-name { font-size: 14px; }
+  .table-wrap .seats .seat-stack { font-size: 22px; }
+  .table-wrap .seats .seat .bot-av { width: 26px !important; height: 26px !important; font-size: 13px !important; }
+  .table-wrap .seats .card.mini { width: 28px; height: 40px; font-size: 13px; }
+  .table-wrap .seats .seat-cards { height: 42px; }
+  .table-wrap .seats .seat-open { min-height: 110px; }
+  .table-wrap .felt-center { grid-area: table; z-index: 1; position: relative; max-width: none; width: 100%; height: 100%; padding-top: 5%; box-sizing: border-box; }
+  .table-wrap .felt-oval { width: 62%; max-width: 820px; height: 58%; min-height: 220px; max-height: 400px; justify-content: center; gap: 14px; padding: 20px 40px; }
+  .table-wrap .felt-oval .card, .table-wrap .felt-oval .card-slot { width: 60px; height: 84px; font-size: 30px; border-radius: 9px; }
+  .table-wrap .felt-logo { font-size: 120px; }
+  .table-wrap .felt-center .banner { position: absolute; left: 50%; bottom: 1%; transform: translateX(-50%); width: 440px; max-width: 46%; z-index: 4; }
+  .table-wrap .coach-panel, .table-wrap .tip { grid-area: coach; justify-self: center; width: 100%; max-width: 900px; margin: 8px 0 10px; }
+  .table-wrap .hero-seat { grid-area: hero; max-width: none; align-self: stretch; padding: 16px 18px; }
+  .table-wrap .hero-seat .card.big { width: 84px; height: 118px; font-size: 34px; border-radius: 11px; }
+  .table-wrap .hero-seat .card.big.o4 { width: 64px; height: 90px; font-size: 26px; }
+  .table-wrap .controls { grid-area: controls; max-width: none; align-self: end; padding-top: 0; }
+  .table-wrap .controls .btn { min-height: 64px; }
+  .kh { display: inline-block; margin-left: 8px; padding: 2px 6px; border-radius: 5px; background: rgba(0,0,0,0.18); font-family: var(--t-body); font-size: 11px; font-weight: 700; letter-spacing: 0.04em; line-height: 1.3; vertical-align: middle; opacity: 0.75; }
+  .btn-go .kh, .btn-raise .kh { background: rgba(0,0,0,0.12); }
+  .preset-btn .kh { margin-left: 6px; padding: 1px 5px; font-size: 10px; }
+}
+@media (min-width: 1024px) and (min-height: 600px) and (max-height: 820px) {
+  .table-wrap .seats .seat { padding: 9px 8px 6px; gap: 2px; }
+  .table-wrap .seats .seat-cards { height: 34px; }
+  .table-wrap .seats .card.mini { width: 24px; height: 34px; font-size: 11px; }
+  .table-wrap .felt-oval .card, .table-wrap .felt-oval .card-slot { width: 50px; height: 70px; font-size: 25px; }
+  .table-wrap .hero-seat .card.big { width: 72px; height: 100px; font-size: 29px; }
+}
+@media (min-width: 1024px) and (min-height: 600px) and (max-height: 820px) {
+  .table-wrap .felt-center { padding-top: 9%; }
+  .table-wrap .felt-oval { height: 50%; min-height: 190px; }
+}
 `;
 const GLOBAL_STYLE = `
 :root { --t-bg: #09142A; --t-panel: #102243; --t-panel2: #1F3868; --t-text: #F4F7FC; --t-text2: #C8D3E6; --t-sub: #A5B8D6; --t-mid: #8BA1C6; --t-mut: #7187AE; --t-faint: #59719F; --t-accent: #FCB600; --t-good: #00D596; --t-bad: #FF585C; --t-display: 'Fraunces', Georgia, serif; --t-body: 'Inter', -apple-system, sans-serif; }
