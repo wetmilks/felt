@@ -1254,6 +1254,17 @@ function TitlePill({ k, style }) {
   return <span className="title-pill" style={{ color: leg ? "#111214" : common ? "var(--t-text)" : c, background: leg ? "#EDB000" : common ? "#2E3036" : `${c}2E`, ...style }}>{t.label}</span>;
 }
 const SHOP_FEATURED = [["felt", "blackout", "Black hex weave with a gold rail."], ["back", "midnight", "A gold sunburst on midnight navy."], ["felt", "crimson", "Deep red lattice with gold thread."], ["felt", "royal", "Blue herringbone, old card room style."], ["back", "crimson", "Red rosette, cut like a banknote."], ["back", "emerald", "Green suits for the regulars."]];
+// The felt wordmark: lowercase, with a red diamond for the period
+const LOGO_RED = "#E8202A";
+const DIAMOND_PATH = "M50 3 C60 21 72 37 87 50 C72 63 60 79 50 97 C40 79 28 63 13 50 C28 37 40 21 50 3 Z";
+function FeltLogo({ className = "" }) {
+  return (
+    <span className={`brand-logo${className ? ` ${className}` : ""}`} role="img" aria-label="felt">
+      <span aria-hidden="true">felt</span>
+      <svg viewBox="0 0 100 100" aria-hidden="true"><path fill={LOGO_RED} d={DIAMOND_PATH} /></svg>
+    </span>
+  );
+}
 function Modal({ title, onClose, children, width = 380, className = "", stripe }) {
   return (
     <div className={`scrim${className ? ` ${className}-scrim` : ""}`} onClick={onClose}>
@@ -2393,8 +2404,8 @@ function drawShareImage(hand) {
   const hw = hand.hero.length > 2 ? 132 : 168, hh = hand.hero.length > 2 ? 184 : 236;
   row(hand.hero, 868, hw, hh, 20);
   // words
-  g.textAlign = "left"; g.fillStyle = "#F2F2EE"; g.font = `900 104px ${disp}`; g.fillText("FELT", 72, 140);
-  for (let i = 0; i < 6; i++) { g.fillStyle = i % 2 ? "#F2F2EE" : "#EDB000"; g.fillRect(72 + i * 26, 158, i % 2 ? 12 : 26, 12); }
+  g.textAlign = "left"; g.fillStyle = "#F2F2EE"; g.font = `700 112px 'Familjen Grotesk Variable', ${sans}`; g.fillText("felt", 70, 150);
+  { const wd = g.measureText("felt").width; g.save(); g.translate(70 + wd + 4, 150 - 24); g.scale(0.24, 0.24); g.fillStyle = LOGO_RED; g.fill(new Path2D(DIAMOND_PATH)); g.restore(); }
   g.textAlign = "right"; g.fillStyle = "#A3A6AD"; g.font = `600 30px ${sans}`;
   g.fillText(`${VARIANTS[hand.variant] ? VARIANTS[hand.variant].label : "Hold'em"}, ${new Date(hand.at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`, W - 72, 122);
   g.textAlign = "center";
@@ -3134,7 +3145,8 @@ function SpinModal({ ready, onSpin, onClose, sound }) {
           })}
           <circle cx={cx} cy={cy} r={r - 6} fill="none" stroke="#F2F2EE" strokeWidth="12" strokeDasharray="17.4 11.6" />
           <circle cx={cx} cy={cy} r="34" fill="#111214" stroke="var(--t-accent)" strokeWidth="5" strokeDasharray="8.9 6" />
-          <text x={cx} y={cy + 8} textAnchor="middle" fontSize="22" fontWeight="900" letterSpacing="1" fill="#F2F2EE" fontFamily="'Big Shoulders Display', Impact, sans-serif">FELT</text>
+          <text x={cx + 9} y={cy + 6} textAnchor="end" fontSize="21" fontWeight="700" letterSpacing="-1" fill="#F2F2EE" fontFamily="'Familjen Grotesk Variable', -apple-system, sans-serif">felt</text>
+          <path transform={`translate(${cx + 10} ${cy + 1}) scale(0.05)`} fill={LOGO_RED} d={DIAMOND_PATH} />
         </svg>
       </div>
       {result ? (
@@ -3195,7 +3207,7 @@ function HomeMenu({ onPlayAI, onFriendsTable, onEquipPass, topCards, data, chips
   return (
     <div className="screen screen-fade">
       <header className="home-head">
-        <div className="wordmark">felt</div>
+        <FeltLogo className="home-logo" />
         <div style={{ display: "flex", alignItems: "flex-end", gap: 14 }}>
           {streakCount > 0 && <div className="streak-pill num" title="Login streak"><Icon name="flame" size={14} stroke={2.4} />{streakCount}</div>}
           <div className="home-chips"><b className="num">{chips.toLocaleString()}</b><span>CHIPS</span></div>
@@ -4283,7 +4295,7 @@ function AuthModal({ mode, setMode, onClose, onAuthed, account, data, welcome = 
     <FullScreen label={pick ? "Pick a username" : signup ? "Create your account" : "Sign in"} onClose={onClose} className="auth-page">
       <div className="auth-chips" aria-hidden="true"><span style={{ "--cc": "#F51E1D" }} /><span style={{ "--cc": "#196EFE" }} /><span style={{ "--cc": "#00A560" }} /></div>
       <div className="auth-hero">
-        <div className="auth-logo">FELT</div>
+        <FeltLogo className="auth-logo" />
         <p className="auth-blurb">{pick ? "Pick the name your friends will find you by." : "Keep your chips safe, climb the ranks and play your friends."}</p>
       </div>
       {!pick && (
@@ -4812,7 +4824,7 @@ const LOADING_MS = 2800;
 function LoadingScreen({ fadingOut }) {
   return (
     <div className="loading" style={{ opacity: fadingOut ? 0 : 1, pointerEvents: fadingOut ? "none" : "auto" }}>
-      <div className="loading-word">felt</div>
+      <FeltLogo className="loading-word" />
       <div className="loading-suits" aria-hidden="true">
         {["s", "h", "d", "c"].map((s, i) => <span key={s} style={{ color: s === "h" || s === "d" ? "var(--t-bad)" : "var(--t-text)", animationDelay: `${0.25 + i * 0.22}s` }}>{SUIT_GLYPH[s]}</span>)}
       </div>
@@ -5506,7 +5518,7 @@ button.row:active:not(:disabled) { background: #2F3238; }
 .navbtn .badge-dot { position: absolute; top: 8px; right: 8px; min-width: 16px; height: 16px; font-size: 10px; }
 
 /* loading */
-.loading-word { font-family: var(--t-display); font-weight: 900; font-size: 96px; line-height: 0.8; letter-spacing: 0.02em; text-transform: uppercase; }
+.loading-word { font-size: 88px; }
 .loading-suits { gap: 10px; }
 .loading-bar { height: 8px; width: 150px; border-radius: 4px; background: var(--t-track); }
 .loading-bar div { background: repeating-linear-gradient(90deg, var(--t-accent) 0 16px, #F2F2EE 16px 24px); }
@@ -5654,7 +5666,7 @@ button.row:active:not(:disabled) { background: #2F3238; }
 .felt-oval { border: 11px solid transparent !important; border-radius: 999px; padding: 26px 14px 20px; background: var(--felt-tex, linear-gradient(transparent, transparent)) padding-box, radial-gradient(ellipse at 50% 35%, var(--felt1, #00A963) 0%, var(--felt2, #008146) 55%, var(--felt3, #005D31) 100%) padding-box, repeating-linear-gradient(90deg, var(--rail-c, #F51E1D) 0 22px, #F2F2EE 22px 32px) border-box !important; background-size: var(--felt-tex-size, auto), auto, auto !important; box-shadow: inset 0 0 0 3px #111214, inset 0 8px 24px rgba(0,0,0,0.3), 0 20px 40px rgba(0,0,0,0.5) !important; }
 .felt-oval::before { top: 6px; right: 6px; bottom: 6px; left: 6px; }
 .felt-oval.drama { box-shadow: inset 0 0 0 3px #111214, 0 0 0 3px var(--t-accent), 0 0 50px rgba(237,176,0,0.35) !important; }
-.felt-logo { font-family: var(--t-display); font-weight: 900; text-transform: uppercase; letter-spacing: 0.06em; color: rgba(255,255,255,0.05); }
+.felt-logo { font-family: var(--t-body); font-weight: 700; text-transform: none; letter-spacing: -0.045em; color: rgba(255,255,255,0.06); }
 .card { background: #F2F2EE; font-family: var(--t-display); font-weight: 900; border-radius: 7px; box-shadow: 0 3px 0 rgba(0,0,0,0.35); line-height: 0.95; }
 .card > div:last-child { font-family: -apple-system, system-ui, sans-serif; }
 .card.big { font-size: clamp(24px,7vw,32px); border-radius: 9px; box-shadow: 0 4px 0 rgba(0,0,0,0.4); }
@@ -6139,7 +6151,7 @@ input[type=range] { accent-color: var(--t-accent); height: 28px; }
 .auth-chips span:nth-child(2) { left: 70px; top: 0; }
 .auth-chips span:nth-child(3) { left: 80px; top: 88px; }
 .auth-hero { margin-top: 150px; }
-.auth-logo { font-family: var(--t-display); font-weight: 900; font-size: 124px; line-height: 0.8; letter-spacing: 0.01em; }
+.auth-logo { font-size: 112px; margin-left: -4px; }
 .auth-blurb { margin: 22px 0 0; font-size: 15px; line-height: 1.5; color: var(--t-sub); max-width: 330px; }
 .auth-seg { display: flex; margin: 26px 0 18px; }
 .auth-seg .segbtn { flex: 1; min-height: 46px; font-size: 18px; }
@@ -6149,7 +6161,7 @@ input[type=range] { accent-color: var(--t-accent); height: 28px; }
 .auth-page .input:focus { border-color: #5A5E66; outline: none; }
 .auth-page .auth-form .big-cta { margin-top: 4px; }
 .auth-guest { background: none; border: none; color: var(--t-text); font-size: 14.5px; font-weight: 700; text-decoration: underline; text-underline-offset: 4px; cursor: pointer; padding: 8px; font-family: inherit; }
-@media (max-height: 740px) { .auth-hero { margin-top: 108px; } .auth-logo { font-size: 100px; } .auth-chips { transform: scale(0.8); transform-origin: top right; } }
+@media (max-height: 740px) { .auth-hero { margin-top: 108px; } .auth-logo { font-size: 92px; } .auth-chips { transform: scale(0.8); transform-origin: top right; } }
 /* play friends sheet */
 .ftc { border-radius: 16px; background: var(--t-raise); padding: 14px; margin-bottom: 10px; }
 .ft-mine { display: flex; align-items: center; gap: 12px; }
@@ -6201,6 +6213,10 @@ input[type=range] { accent-color: var(--t-accent); height: 28px; }
 .lb-me .lb-item { border-bottom: none; }
 .lb-me .lb-pl { color: var(--t-accent); }
 .pod-av { box-shadow: none !important; }
+/* the felt wordmark: lowercase, a red diamond for the period */
+.brand-logo { display: inline-flex; align-items: baseline; font-family: var(--t-body); font-weight: 700; line-height: 1; letter-spacing: -0.045em; text-transform: none; color: var(--t-text); }
+.brand-logo svg { width: 0.21em; height: 0.21em; margin-left: 0.035em; flex-shrink: 0; }
+.home-logo { font-size: 48px; margin-bottom: -6px; }
 `;
 const GLOBAL_STYLE = `
 :root { --t-bg: #09142A; --t-panel: #102243; --t-panel2: #1F3868; --t-text: #F4F7FC; --t-text2: #C8D3E6; --t-sub: #A5B8D6; --t-mid: #8BA1C6; --t-mut: #7187AE; --t-faint: #59719F; --t-accent: #FCB600; --t-good: #00D596; --t-bad: #FF585C; --t-display: 'Fraunces', Georgia, serif; --t-body: 'Inter', -apple-system, sans-serif; }
