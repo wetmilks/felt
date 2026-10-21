@@ -4262,7 +4262,7 @@ function PlayerAvatar({ p, size = 40, live = false, tier = null }) {
   );
 }
 const presenceLine = (p, online) => (online && online[p.id] ? online[p.id] : p.updated_at ? `Seen ${timeAgo(new Date(p.updated_at).getTime())}` : "Offline");
-function AuthModal({ mode, setMode, onClose, onAuthed, account, data }) {
+function AuthModal({ mode, setMode, onClose, onAuthed, account, data, welcome = false }) {
   const [username, setUsername] = useState(""); const [email, setEmail] = useState(""); const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false); const [err, setErr] = useState("");
   const signup = mode === "signup", pick = mode === "username";
@@ -4307,8 +4307,8 @@ function AuthModal({ mode, setMode, onClose, onAuthed, account, data }) {
         <button type="submit" className="btn btn-raise big-cta" disabled={busy || !can}>{busy ? "One sec" : pick ? "Save username" : signup ? "Create account" : "Sign in"}</button>
       </form>
       <div className="fs-bottom">
-        <button type="button" className="auth-guest" onClick={onClose}>{pick ? "Not now" : account ? "Close" : "Keep playing as a guest"}</button>
-        {!pick && !account && <div className="fs-foot">Your guest chips move into your account when you sign up.</div>}
+        <button type="button" className="auth-guest" onClick={onClose}>{pick ? "Not now" : account ? "Close" : welcome ? "Play as a guest" : "Keep playing as a guest"}</button>
+        {!pick && !account && <div className="fs-foot">{welcome ? "You can make an account later from your profile. Your chips come with you." : "Your guest chips move into your account when you sign up."}</div>}
       </div>
     </FullScreen>
   );
@@ -4865,6 +4865,7 @@ export default function App() {
   const [toast, setToast] = useState(null);
   const [account, setAccount] = useState(null); // { id, email, username } when signed in
   const [authOpen, setAuthOpen] = useState(null); // "signup" | "signin" | "username"
+  const [welcome, setWelcome] = useState(false); // first open without an account: sign up, sign in or play as a guest
   const [online, setOnline] = useState({}); // user id -> what they're doing, for everyone in the app right now
   const [onlineTable, setOnlineTable] = useState(null); // id of the friends table you're at
   const [ftOpen, setFtOpen] = useState(false);
@@ -4970,7 +4971,14 @@ export default function App() {
   }, [account]);
   const statusRef = useRef(myStatus); statusRef.current = myStatus;
   useEffect(() => { if (presenceRef.current && !document.hidden) presenceRef.current.set(myStatus); }, [myStatus]);
+  // first time you open felt without an account, you pick: make one, sign in, or play as a guest
+  useEffect(() => {
+    if (!loaded || !bootDone || account || !cloudEnabled() || data.welcomed || authOpen) return;
+    setWelcome(true); setAuthOpen("signup");
+  }, [loaded, bootDone, account, data.welcomed]); // eslint-disable-line react-hooks/exhaustive-deps
+  const closeAuth = () => { setAuthOpen(null); if (welcome) { setWelcome(false); persist({ ...data, welcomed: true }); } };
   const handleAuthed = async (me, mode) => {
+    setWelcome(false);
     setAccount(me); setAuthOpen(me.username ? null : "username");
     if (mode === "signin") {
       try {
@@ -5385,7 +5393,7 @@ export default function App() {
         return <SeasonEndScreen se={se} onClose={close} />;
       })()}
       {ftOpen && <FriendsTableModal account={account} data={data} onClose={() => setFtOpen(false)} onOpenTable={openTable} onOpenAuth={setAuthOpen} onDebit={handleDebit} />}
-      {authOpen && <AuthModal mode={authOpen} setMode={setAuthOpen} onClose={() => setAuthOpen(null)} onAuthed={handleAuthed} account={account} data={data} />}
+      {authOpen && <AuthModal mode={authOpen} setMode={setAuthOpen} onClose={closeAuth} onAuthed={handleAuthed} account={account} data={data} welcome={welcome} />}
       {toast && (
         <div className="toast" role="status">
           <div style={{ fontSize: 12, fontWeight: 700, color: "var(--t-accent)" }}>{toast.title}</div>
