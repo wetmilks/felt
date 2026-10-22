@@ -63,7 +63,33 @@ async function mutate(db, tableId, fn, actor = null) {
   return fail("The table's busy. Try again.", 409);
 }
 
+/* ---------- error reports from phones: guests can send them too, kept short, newest 100 ---------- */
+const clip = (v, n) => String(v == null ? "" : v).slice(0, n);
+export function mergeErrorLog(list, e, now) {
+  const sig = `${e.message}|${(e.stack.split("\n")[1] || "").trim()}`.slice(0, 400);
+  const out = (Array.isArray(list) ? list : []).filter(Boolean);
+  const hit = out.find((x) => x.sig === sig);
+  if (hit) {
+    hit.count = (hit.count || 1) + 1; hit.last = now;
+    for (const k of ["where", "build", "ua", "url", "kind"]) if (e[k]) hit[k] = e[k];
+    if (e.user && !(hit.users || []).includes(e.user)) hit.users = [...(hit.users || []), e.user].slice(-5);
+  } else out.push({ sig, ...e, user: undefined, users: e.user ? [e.user] : [], count: 1, first: now, last: now });
+  return out.sort((a, b) => b.last - a.last).slice(0, 100);
+}
+async function report(a, token, db) {
+  const r = a.error || {};
+  const message = clip(r.message, 300).trim();
+  if (!message) return fail("Nothing to report.");
+  let user = null;
+  try { const u = token ? await db.getUser(token) : null; if (u) { const p = await db.getProfile(u.id); user = p && p.username ? p.username : String(u.id).slice(0, 8); } } catch (e) { /* guests report too */ }
+  const entry = { message, stack: clip(r.stack, 2000), where: clip(r.where, 60), kind: clip(r.kind, 20), url: clip(r.url, 120), ua: clip(r.ua, 200), build: clip(r.build, 20), user };
+  const log = await db.getConfig("client_errors");
+  await db.setConfig("client_errors", { list: mergeErrorLog(log && log.list, entry, Date.now()) });
+  return { status: 200, body: { ok: true } };
+}
+
 export async function handle(body, token, db) {
+  if (body && body.action === "report") return report(body, token, db);
   const user = token ? await db.getUser(token) : null;
   if (!user) return fail("Sign in first.", 401);
   const uid = user.id; const a = body || {};
@@ -219,6 +245,8 @@ async function admin(a, uid, db) {
     return { status: 200, body: { ok: true, count: 1, player: p.username } };
   }
   if (a.op === "tables") return { status: 200, body: { ok: true, tables: await db.openTables() } };
+  if (a.op === "errors") { const log = await db.getConfig("client_errors"); return { status: 200, body: { ok: true, errors: (log && log.list) || [] } }; }
+  if (a.op === "clearErrors") { await db.setConfig("client_errors", { list: [] }); return { status: 200, body: { ok: true } }; }
   if (a.op === "close") {
     const r = await mutate(db, a.tableId, async (st, cfg, now, fx) => {
       st.seats.forEach((s, i) => { if (s) { fx.cashouts.push({ uid: s.uid, amount: s.stack + s.bet }); st.seats[i] = null; } });

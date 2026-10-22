@@ -36,6 +36,9 @@ const db = {
   async getSaveData(uid) { const { data } = await client().from("saves").select("data").eq("user_id", uid).maybeSingle(); return data ? data.data : null; },
   async putSave(uid, d) { const { error } = await client().from("saves").upsert({ user_id: uid, data: d, updated_at: new Date().toISOString() }); if (error) throw new Error(error.message); },
   async updateProfile(uid, fields) { const { error } = await client().from("profiles").update(fields).eq("id", uid); if (error) throw new Error(error.message); },
+  // ---- small settings and logs kept in server_config ----
+  async getConfig(key) { const { data } = await client().from("server_config").select("value").eq("key", key).maybeSingle(); return data ? data.value : null; },
+  async setConfig(key, value) { const { error } = await client().from("server_config").upsert({ key, value }, { onConflict: "key" }); if (error) throw new Error(error.message); },
   // ---- notifications ----
   async vapid() {
     if (vapidKeys) return vapidKeys;

@@ -6,5 +6,8 @@ import "@fontsource/big-shoulders-display/latin-800";
 import "@fontsource/big-shoulders-display/latin-900";
 import "@fontsource-variable/familjen-grotesk";
 import App from "./App.jsx";
+import { ErrorBoundary } from "./app/ErrorBoundary.jsx";
+import { installErrorHandlers } from "./app/errors.js";
 
-createRoot(document.getElementById("root")).render(<App />);
+installErrorHandlers();
+createRoot(document.getElementById("root")).render(<ErrorBoundary><App /></ErrorBoundary>);

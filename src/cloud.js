@@ -240,6 +240,9 @@ const be = () => (isMock() ? mock : real);
 let syncListener = null;
 
 // every move at an online table goes to the game server, signed with your login
+// the signed-in token if there is one, null for guests; never throws
+export async function sessionToken() { try { return await be().token(); } catch (e) { return null; } }
+
 export async function api(action, payload = {}) {
   const token = await be().token();
   if (!token) throw new Error("Sign in first.");
