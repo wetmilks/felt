@@ -1,7 +1,8 @@
 import { AVATAR_CATALOG } from "../game/helpers.js";
 import { CARD_BACKS, CHIP_SETS, FELTS, WIN_FX, defaultCosmetics, ownsCosmetic } from "../game/progression.js";
 import { TITLES, defaultTitles, findTitle } from "../game/titles.jsx";
-import { SHOP_FEATURED, SectionLabel, TitlePill } from "../ui/primitives.jsx";
+import { useState } from "react";
+import { Icon, SHOP_FEATURED, SectionLabel, TitlePill } from "../ui/primitives.jsx";
 
 /* =========================================================================
    SHOP TAB
@@ -38,6 +39,55 @@ function CosmeticTile({ item, owned, equipped, chips, onBuy, onEquip, children }
   );
 }
 
+// The Vault: the priciest things in felt. A second tap buys, so nobody drops 250K by accident.
+const kShort = (v) => (v >= 1e6 ? `${v / 1e6}M` : `${Math.round(v / 1000)}K`);
+function Vault({ data, onBuyCosmetic, onEquipCosmetic, onBuyTitle }) {
+  const [arm, setArm] = useState(null);
+  const cos = data.cosmetics || defaultCosmetics(); const tt = data.titles || defaultTitles(); const pr = data.ranked.prestige;
+  const items = [
+    { type: "felt", item: FELTS.find((f) => f.key === "diamond"), kind: "Table felt" },
+    { type: "back", item: CARD_BACKS.find((b) => b.key === "platinum"), kind: "Card back" },
+    { type: "chipset", item: CHIP_SETS.find((c) => c.key === "diamond"), kind: "Chip set" },
+    { type: "back", item: CARD_BACKS.find((b) => b.key === "blackgold"), kind: "Card back" },
+    { type: "title", item: TITLES.find((t) => t.key === "millionaire"), kind: "Title" },
+  ].filter((v) => v.item);
+  return (
+    <section className="vault" aria-label="The Vault">
+      <div className="vault-head">
+        <div><div className="lbl" style={{ color: "#EDB000" }}>For the big stacks</div><div className="disp vault-title">The Vault</div></div>
+        <span className="vault-lock" aria-hidden="true"><Icon name="lock" size={22} stroke={2} /></span>
+      </div>
+      <div className="vault-grid">
+        {items.map(({ type, item, kind }) => {
+          const field = { felt: "felts", back: "backs", chipset: "chipsets" }[type];
+          const owned = type === "title" ? tt.owned.includes(item.key) : ownsCosmetic(cos, field, item, pr);
+          const equipped = type === "title" ? tt.equipped === item.key : type === "felt" ? cos.felt === item.key : type === "back" ? cos.cardBack === item.key : (cos.chipset || "classic") === item.key;
+          const can = data.chips >= item.cost; const armed = arm === `${type}:${item.key}`;
+          const tap = () => {
+            if (owned) { if (!equipped && type !== "title") onEquipCosmetic(type, item.key); return; }
+            if (!can) return;
+            if (!armed) { setArm(`${type}:${item.key}`); return; }
+            setArm(null); if (type === "title") onBuyTitle(item); else onBuyCosmetic(type, item);
+          };
+          const pct = Math.min(100, (data.chips / item.cost) * 100);
+          return (
+            <button key={`${type}-${item.key}`} className={`vt${equipped ? " on" : ""}${armed ? " armed" : ""}${type === "title" ? " wide" : ""}`} onClick={tap} disabled={!owned && !can} aria-label={`${item.label}, ${owned ? (equipped ? "equipped" : "owned") : `${item.cost.toLocaleString()} chips`}`}>
+              <span className="vt-prev">{type === "felt" ? <FeltSwatch f={item} /> : type === "back" ? <BackSwatch b={item} w={46} /> : type === "chipset" ? <ChipSetSwatch c={item} /> : <TitlePill k={item.key} />}</span>
+              <span className="vt-kind">{kind}</span>
+              <span className="vt-name">{item.label}</span>
+              {owned ? <span className="vt-st own">{equipped ? "Equipped" : type === "title" ? "Owned" : "Owned · tap to use"}</span>
+                : armed ? <span className="vt-st buy">Tap again to buy</span>
+                : can ? <span className="vt-st buy num">{kShort(item.cost)}</span>
+                : <span className="vt-need"><span className="vt-bar"><i style={{ width: `${pct}%` }} /></span><span className="num">{kShort(item.cost)}</span></span>}
+            </button>
+          );
+        })}
+      </div>
+      <div className="vault-note">The rarest gear in felt. No pass, no prestige, just chips.</div>
+    </section>
+  );
+}
+
 function ShopScreen({ data, onClaimChips, onBuyAvatar, onClaimDaily, onBuyCosmetic, onEquipCosmetic, onBuyTitle }) {
   const cos = data.cosmetics || defaultCosmetics();
   const pr = data.ranked.prestige;
@@ -65,9 +115,11 @@ function ShopScreen({ data, onClaimChips, onBuyAvatar, onClaimDaily, onBuyCosmet
         </section>
       )}
 
+      <Vault data={data} onBuyCosmetic={onBuyCosmetic} onEquipCosmetic={onEquipCosmetic} onBuyTitle={onBuyTitle} />
+
       <SectionLabel right="Tap to equip">Table felts</SectionLabel>
       <div className="sh-scroll">
-        {FELTS.map((f) => (
+        {FELTS.filter((f) => !f.vault).map((f) => (
           <CosmeticTile key={f.key} item={f} owned={ownsCosmetic(cos, "felts", f, pr)} equipped={cos.felt === f.key} chips={data.chips} onBuy={() => onBuyCosmetic("felt", f)} onEquip={() => onEquipCosmetic("felt", f.key)}>
             <FeltSwatch f={f} />
           </CosmeticTile>
@@ -76,7 +128,7 @@ function ShopScreen({ data, onClaimChips, onBuyAvatar, onClaimDaily, onBuyCosmet
 
       <SectionLabel right="Tap to equip">Card backs</SectionLabel>
       <div className="sh-scroll">
-        {CARD_BACKS.map((b) => (
+        {CARD_BACKS.filter((b) => !b.vault).map((b) => (
           <CosmeticTile key={b.key} item={b} owned={ownsCosmetic(cos, "backs", b, pr)} equipped={cos.cardBack === b.key} chips={data.chips} onBuy={() => onBuyCosmetic("back", b)} onEquip={() => onEquipCosmetic("back", b.key)}>
             <BackSwatch b={b} w={50} />
           </CosmeticTile>
@@ -85,7 +137,7 @@ function ShopScreen({ data, onClaimChips, onBuyAvatar, onClaimDaily, onBuyCosmet
 
       <SectionLabel right="From the season pass">Chip sets</SectionLabel>
       <div className="sh-grid">
-        {CHIP_SETS.map((c) => (
+        {CHIP_SETS.filter((c) => !c.vault).map((c) => (
           <CosmeticTile key={c.key} item={c} owned={ownsCosmetic(cos, "chipsets", c, pr)} equipped={(cos.chipset || "classic") === c.key} chips={data.chips} onEquip={() => onEquipCosmetic("chipset", c.key)}>
             <ChipSetSwatch c={c} />
           </CosmeticTile>
@@ -103,7 +155,7 @@ function ShopScreen({ data, onClaimChips, onBuyAvatar, onClaimDaily, onBuyCosmet
 
       <SectionLabel right="Shows under your name">Titles</SectionLabel>
       <section className="sh-titles">
-        {TITLES.filter((t) => t.cost).map((t) => {
+        {TITLES.filter((t) => t.cost && !t.vault).map((t) => {
           const owned = tt.owned.includes(t.key); const eq = tt.equipped === t.key; const can = data.chips >= t.cost;
           return (
             <div key={t.key} className="sh-trow">

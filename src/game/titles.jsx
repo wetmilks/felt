@@ -18,6 +18,10 @@ const TITLES = [
   { key: "champion", label: "Champion", rarity: "legendary", how: "Reach Champion in ranked", earn: (d) => (d.ranked.peakRating || 0) >= 1500 },
   { key: "royal", label: "Royal Club", rarity: "legendary", how: "Win with a royal flush", earn: (d) => ((d.history && d.history.best) || []).some((b) => b.kind === 8 && b.s && b.s[1] === 14) },
   { key: "maxed", label: "Maxed Out", rarity: "legendary", how: "Finish the season pass", earn: (d) => d.pass && d.pass.xp >= PASS_LEVELS * PASS_XP },
+  { key: "founder", label: "Founder", rarity: "rare", how: "Start a club", earn: (d) => !!d.clubFounder },
+  { key: "podium", label: "Podium", rarity: "epic", how: "Finish top 3 on a weekly board", earn: (d) => (d.medals || []).length > 0 },
+  { key: "topearner", label: "Top Earner", rarity: "legendary", how: "Finish 1st on a weekly board", earn: (d) => (d.medals || []).some((m) => m.place === 1) },
+  { key: "majorwin", label: "Major Winner", rarity: "legendary", how: "Win the Sunday Major", earn: (d) => ((d.skill && d.skill.tourneys) || []).some((t) => t.major && t.place === 1) },
   // season pass
   { key: "nightshift", label: "Night Shift", rarity: "rare", how: "Season pass level 4" },
   { key: "cardshark", label: "Card Shark", rarity: "epic", how: "Season pass level 17" },
@@ -30,6 +34,7 @@ const TITLES = [
   { key: "bigstack", label: "Big Stack", rarity: "epic", cost: 7500 },
   { key: "highroller", label: "High Roller", rarity: "epic", cost: 10000 },
   { key: "legend", label: "Living Legend", rarity: "legendary", cost: 40000 },
+  { key: "millionaire", label: "Millionaire", rarity: "legendary", cost: 1000000, vault: true },
 ];
 const findTitle = (k) => TITLES.find((t) => t.key === k) || TITLES[0];
 function defaultTitles() { return { owned: ["rookie"], equipped: "rookie" }; }

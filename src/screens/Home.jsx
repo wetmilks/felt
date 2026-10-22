@@ -1,10 +1,12 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { isSundayNY, msToSunday, msToMonday } from "../../api/_week.js";
 import { cloudEnabled } from "../cloud.js";
 import { STAKES_TIERS, TABLE_SIZES } from "../game/helpers.js";
 import { streakState } from "../game/progression.js";
 import { PLACEMENT_MATCHES, RANKED_BUYIN, RANKED_MATCH_HANDS, RANKED_STAKES, isPlaced, rankName, tierForRating, tierOf } from "../game/ranked.js";
 import { HIGH_ROLLER_MIN, HIGH_ROLLER_TABLES, matchRating, spinReady } from "../game/rewards.jsx";
-import { PAYOUTS, TOURNEY_BUYINS, TOURNEY_STACK } from "../game/skill.js";
+import { MAJOR, PAYOUTS, TOURNEY_BUYINS, TOURNEY_STACK } from "../game/skill.js";
+import { resetIn, shortIn } from "../ui/ClubTag.jsx";
 import { ChallengesCard, PassCard, PassModal, StreakBanner } from "./home/Progress.jsx";
 import { RankLadderModal, RankedCard, SizePicker, TurboRow } from "./home/RankedCard.jsx";
 import { SpinCard, SpinModal, VipCard } from "./home/SpinVip.jsx";
@@ -14,6 +16,30 @@ import { FeltLogo, Icon, Modal } from "../ui/primitives.jsx";
 
 const STAKE_CHIP = { micro: "#F2F2EE", low: "#F51E1D", high: "#196EFE" };
 const PODIUM = [["#EDB000", "#CD9300"], ["#C9D4E2", "#A9B4C2"], ["#E6812D", "#C56019"]];
+// The Sunday Major card: counts down all week, opens on Sunday (New York time)
+function useClock(ms = 30000) { const [, setT] = useState(0); useEffect(() => { const t = setInterval(() => setT((x) => x + 1), ms); return () => clearInterval(t); }, [ms]); }
+function MajorCard({ chips, onOpen }) {
+  useClock();
+  const live = isSundayNY();
+  const rich = chips >= MAJOR.buyIn;
+  const pct = Math.min(100, (chips / MAJOR.buyIn) * 100);
+  return (
+    <button className="mj-card" onClick={onOpen}>
+      <span className="mj-stripe" />
+      <span className="mj-body">
+        <span className="mj-crest"><Icon name="trophy" size={24} stroke={2.2} /></span>
+        <span style={{ flex: 1, minWidth: 0 }}>
+          <span className="mj-kicker">{live ? <><i className="mj-live" />Live now · {shortIn(msToMonday())} left</> : `Opens Sunday · ${shortIn(msToSunday())}`}</span>
+          <span className="mj-title">Sunday Major</span>
+          <span className="mj-sub num">{(MAJOR.buyIn / 1000).toLocaleString()}K buy-in · {(MAJOR.buyIn * MAJOR.field / 1000).toLocaleString()}K prize pool</span>
+        </span>
+        {live && rich && <span className="mj-enter">ENTER</span>}
+      </span>
+      {!rich && <span className="mj-bar"><span style={{ width: `${pct}%` }} /></span>}
+    </button>
+  );
+}
+
 function HomeMenu({ onPlayAI, onFriendsTable, onEquipPass, topCards, data, chips, ranked, legendNo, onClaimDaily, onClaimChallenge, onSpin, onPrestige, sound }) {
   const [modal, setModal] = useState(null); // "ranked" | "cash" | "tournament" | "pass"
   const [passFocus, setPassFocus] = useState(null);
@@ -54,6 +80,7 @@ function HomeMenu({ onPlayAI, onFriendsTable, onEquipPass, topCards, data, chips
         </div>
         {cloudEnabled() && onFriendsTable && <div className="hs-item" style={{ order: 6 }}><FriendsTableCard onOpen={onFriendsTable} /></div>}
         <div className="hs-item" style={{ order: 7 }}><VipCard chips={chips} onOpen={() => setModal("vip")} /></div>
+        <div className="hs-item" style={{ order: 7 }}><MajorCard chips={chips} onOpen={() => setModal("major")} /></div>
         </div>
         <div className="home-side">
         <div className="hs-item" style={{ order: 1 }}>{topCards}</div>
@@ -99,6 +126,32 @@ function HomeMenu({ onPlayAI, onFriendsTable, onEquipPass, topCards, data, chips
           </div>
         </Modal>
       )}
+
+      {modal === "major" && (() => {
+        const live = isSundayNY(); const rich = chips >= MAJOR.buyIn;
+        const pays = PAYOUTS[MAJOR.field]; const pool = MAJOR.buyIn * MAJOR.field;
+        return (
+          <Modal title="Sunday Major" onClose={close} stripe="#196EFE" className="mj-sheet">
+            <div style={{ fontSize: 13, color: "var(--t-mid)", margin: "-8px 0 14px" }}>{live ? `Open all day. Closes in ${resetIn(msToMonday())}.` : `Opens Sunday, in ${resetIn(msToSunday())}. New York time.`}</div>
+            <div className="prize-box">
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 10 }}><span className="lbl">Prize pool</span><span style={{ fontSize: 12.5, color: "var(--t-mid)" }}>{MAJOR.field} players · {TOURNEY_STACK.toLocaleString()} stacks</span></div>
+              <div className="disp num" style={{ fontSize: 48, marginTop: 4 }}>{pool.toLocaleString()}</div>
+              <div className="prize-bars">
+                {pays.map((x, i) => (
+                  <div key={i}><i style={{ height: 20 + x * 60, background: `repeating-linear-gradient(180deg, ${PODIUM[i][0]} 0 8px, ${PODIUM[i][1]} 8px 10px)` }} /><span className="num">{ordinal(i + 1).toUpperCase()} · {Math.round(x * pool / 1000).toLocaleString()}K</span></div>
+                ))}
+              </div>
+            </div>
+            <div className="spec-grid">
+              <div className="spec"><span className="lbl">Buy-in</span><b className="num">100K</b></div>
+              <div className="spec"><span className="lbl">Players</span><b className="num">{MAJOR.field}</b></div>
+              <div className="spec"><span className="lbl">Bots</span><b>Sharp</b></div>
+            </div>
+            <p className="sheet-body">The biggest game of the week. Win it for the Major Winner title. Your result counts on the weekly board, so a deep run can take the whole week.</p>
+            <button className="btn btn-raise big-cta" style={{ marginTop: 0 }} disabled={!live || !rich} onClick={() => onPlayAI({ mode: "tournament", major: true, tableSize: TABLE_SIZES[3], stakes: { sb: 10, bb: 20 }, buyIn: MAJOR.buyIn })}>{!live ? "Opens Sunday" : rich ? "Buy in for 100,000" : `Need ${(MAJOR.buyIn - chips).toLocaleString()} more`}</button>
+          </Modal>
+        );
+      })()}
 
       {modal === "ranked" && (
         <Modal title={placed ? "Ranked match" : `Placement ${(ranked.placementGames || []).length + 1} of ${PLACEMENT_MATCHES}`} onClose={close} stripe={placed ? tier.color : "#A3A6AD"}>

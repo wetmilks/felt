@@ -72,7 +72,7 @@ export function sit(st, seat, player, stack, now) {
   if (seat < 0 || seat >= st.seats.length) return "No such seat.";
   if (st.seats[seat]) return "That seat's taken.";
   if (seatOf(st, player.uid) >= 0) return "You're already sitting here.";
-  st.seats[seat] = { uid: player.uid, name: player.name, avatar: player.avatar || "🙂", photo: player.photo || null, prestige: player.prestige || 0, stack, bought: stack, bet: 0, total: 0, folded: true, allIn: false, acted: false, inHand: false, out: false, left: false, timeouts: 0, peekAt: null, last: null, emote: null, awaySince: null };
+  st.seats[seat] = { uid: player.uid, name: player.name, avatar: player.avatar || "🙂", photo: player.photo || null, prestige: player.prestige || 0, club: player.club || null, stack, bought: stack, bet: 0, total: 0, folded: true, allIn: false, acted: false, inHand: false, out: false, left: false, timeouts: 0, peekAt: null, last: null, emote: null, awaySince: null };
   log(st, `${player.name} sits down`);
   if (st.stage === "waiting" && st.seats.filter(eligible).length >= 2 && !st.nextAt) st.nextAt = now + START_MS;
   return null;

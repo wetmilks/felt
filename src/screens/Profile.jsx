@@ -1,3 +1,5 @@
+import { ClubTag, MedalPills } from "../ui/ClubTag.jsx";
+import { medalCounts } from "../app/boot.jsx";
 import { useState, useRef } from "react";
 import { isIOS, isStandalone, cloudEnabled } from "../cloud.js";
 import { ACHIEVEMENTS, SUIT_COLOR, SUIT_COLOR_CB } from "../game/helpers.js";
@@ -152,7 +154,7 @@ function ProfileScreen({ data, account, online, legendNo, pushOn, pushBusy, onEn
           </div>
         ) : (
           <div style={{ flex: 1, minWidth: 0 }}>
-            <button onClick={() => setEditingName(true)} className="name-btn"><span className={pnameCls(rk.prestige)}>{data.name}</span><PrestigeBadge n={rk.prestige} size={20} /><Icon name="edit" size={13} style={{ color: "var(--t-mid)", marginLeft: 6 }} /></button>
+            <button onClick={() => setEditingName(true)} className="name-btn"><span className={pnameCls(rk.prestige)}>{data.name}</span><PrestigeBadge n={rk.prestige} size={20} />{account && data.club && <ClubTag club={data.club} big style={{ marginLeft: 8 }} />}<Icon name="edit" size={13} style={{ color: "var(--t-mid)", marginLeft: 6 }} /></button>
             {account && account.username && <div style={{ fontSize: 13, color: "var(--t-mid)", marginTop: 2 }}>@{account.username}</div>}
             <button className="title-btn" onClick={() => setPickingTitle(true)} aria-label="Change title"><TitleTag k={tt.equipped} size={13} /><Icon name="chevron" size={11} style={{ color: "var(--t-mid)", transform: "rotate(90deg)" }} /></button>
           </div>
@@ -162,6 +164,7 @@ function ProfileScreen({ data, account, online, legendNo, pushOn, pushBusy, onEn
           <span className="chip-pill num"><span className="chip-dot" />{data.chips.toLocaleString()}</span>
           <span className="chip-pill" style={{ color: tier.color }}><TierBadge tier={tier} size={16} />{placed ? legendLabel(rk, legendNo) || rankName(rk.rating) : "Unranked"}</span>
           {skillNow && data.skill.hands >= 10 && <span className="chip-pill num">SR {skillNow.sr}</span>}
+          {(data.medals || []).length > 0 && <MedalPills c={medalCounts(data.medals)} />}
         </div>
       </section>
 

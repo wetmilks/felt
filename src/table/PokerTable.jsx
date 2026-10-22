@@ -20,7 +20,7 @@ import { Icon, Modal, TierBadge, seatPos, shortNum } from "../ui/primitives.jsx"
 /* =========================================================================
    POKER TABLE
    ========================================================================= */
-function PokerTable({ startStack, name, avatar, photo = null, soundOn, setSoundOn, onExit, onHandResolved, stakes, tableSize, tournament, ranked, rankedState, skill, tourneyBuyIn = 0, bankroll, botSkill = 0.4, opponentRating = null, frameColor, tutorial, variant = "holdem", turbo = false, runTwice = false, squeeze = false, cardBack = null, felt = null, title = null, vip = false, prestige = 0, chipSet = "classic", winFx = "confetti", colorblind, cardSize, animSpeed, showWinTip, onDismissWinTip }) {
+function PokerTable({ startStack, name, avatar, photo = null, soundOn, setSoundOn, onExit, onHandResolved, stakes, tableSize, tournament, ranked, rankedState, skill, tourneyBuyIn = 0, bankroll, botSkill = 0.4, opponentRating = null, frameColor, tutorial, variant = "holdem", turbo = false, runTwice = false, squeeze = false, cardBack = null, felt = null, title = null, vip = false, prestige = 0, chipSet = "classic", winFx = "confetti", colorblind, cardSize, animSpeed, showWinTip, onDismissWinTip, eventName = null }) {
   const suitColor = colorblind ? SUIT_COLOR_CB : SUIT_COLOR;
   const cardScale = cardSize === "large" ? 1.18 : 1;
   const speedMult = animSpeed === "fast" ? 0.55 : 1;
@@ -678,9 +678,9 @@ function PokerTable({ startStack, name, avatar, photo = null, soundOn, setSoundO
 
   const gameTag = [variant !== "holdem" && VARIANTS[variant] ? VARIANTS[variant].label : null, turbo ? "Turbo" : null].filter(Boolean).join(" ");
   // Chip Stack header: a big title and a small line under it
-  const modeTitle = tournament ? (tournamentOver ? "Tourney over" : "Tourney") : ranked ? (placementNo ? `Placement ${placementNo}/${PLACEMENT_MATCHES}` : "Ranked") : tutorial ? "Practice" : vip ? (stakes?.label || "High Roller") : `Cash ${SB}/${BB}`;
+  const modeTitle = tournament ? (tournamentOver ? (eventName ? `${eventName} over` : "Tourney over") : eventName || "Tourney") : ranked ? (placementNo ? `Placement ${placementNo}/${PLACEMENT_MATCHES}` : "Ranked") : tutorial ? "Practice" : vip ? (stakes?.label || "High Roller") : `Cash ${SB}/${BB}`;
   const modeSub = tournament ? (tournamentOver ? "" : `Level ${blindLevel + 1} · ${SB}/${BB}${gameTag ? ` · ${gameTag}` : ""}`) : ranked ? `${handsCount === 0 ? `${RANKED_MATCH_HANDS} hand match` : handsCount >= RANKED_MATCH_HANDS ? "Final hand" : `Hand ${handsCount} of ${RANKED_MATCH_HANDS}`} · ${SB}/${BB}` : tutorial ? "Nothing at stake" : vip ? `Blinds ${SB.toLocaleString()}/${BB.toLocaleString()}` : `${gameTag ? `${gameTag} · ` : ""}${tableSize?.label || ""}`;
-  const railColor = vip ? "#EDB000" : ranked ? (isPlaced(rankedState) ? tierForRating(rankedState.rating).color : "#A3A6AD") : tournament ? "#196EFE" : tutorial ? "#00A560" : "#F51E1D";
+  const railColor = vip || eventName ? "#EDB000" : ranked ? (isPlaced(rankedState) ? tierForRating(rankedState.rating).color : "#A3A6AD") : tournament ? "#196EFE" : tutorial ? "#00A560" : "#F51E1D";
   const modeLine = tournament
     ? (tournamentOver ? "Tournament over" : `${gameTag || "Tournament"}, level ${blindLevel + 1}, blinds ${SB}/${BB}`)
     : ranked

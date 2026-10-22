@@ -4,6 +4,7 @@ import { rankName } from "../game/ranked.js";
 import { timeAgo } from "../social/Friends.jsx";
 import { SettingRow, Toggle } from "../ui/controls.jsx";
 import { Modal, shortNum } from "../ui/primitives.jsx";
+import { ClubTag } from "../ui/ClubTag.jsx";
 
 // Only shows for accounts on the server's admin list, and the server checks again on every action.
 function AdminModal({ onClose }) {
@@ -11,6 +12,7 @@ function AdminModal({ onClose }) {
   const [username, setUsername] = useState(""); const [amount, setAmount] = useState(10000); const [note, setNote] = useState(""); const [everyone, setEveryone] = useState(false);
   const [player, setPlayer] = useState(null); const [msg, setMsg] = useState(null); const [busy, setBusy] = useState(false); const [tables, setTables] = useState(null);
   const [errors, setErrors] = useState(null); const [openErr, setOpenErr] = useState(null);
+  const [clubs, setClubs] = useState(null); const [dropArm, setDropArm] = useState(null);
   const run = async (fn) => { setBusy(true); setMsg(null); try { await fn(); } catch (e) { setMsg({ ok: false, text: e.message }); } setBusy(false); };
   const lookup = () => run(async () => { const r = await api("admin", { op: "lookup", username }); setPlayer(r.player); });
   const give = (sign) => run(async () => {
@@ -20,7 +22,8 @@ function AdminModal({ onClose }) {
   });
   const loadTables = () => run(async () => { const r = await api("admin", { op: "tables" }); setTables(r.tables); });
   const loadErrors = () => run(async () => { const r = await api("admin", { op: "errors" }); setErrors(r.errors); });
-  useEffect(() => { if (tab === "tables" && tables === null) loadTables(); if (tab === "errors" && errors === null) loadErrors(); }, [tab]); // eslint-disable-line react-hooks/exhaustive-deps
+  const loadClubs = () => run(async () => { const r = await api("admin", { op: "clubs" }); setClubs(r.clubs); });
+  useEffect(() => { if (tab === "tables" && tables === null) loadTables(); if (tab === "errors" && errors === null) loadErrors(); if (tab === "clubs" && clubs === null) loadClubs(); }, [tab]); // eslint-disable-line react-hooks/exhaustive-deps
   return (
     <Modal title="Admin" onClose={onClose} width={400}>
       <div className="seg" style={{ marginBottom: 12 }}>
@@ -28,6 +31,7 @@ function AdminModal({ onClose }) {
         <button className={`segbtn${tab === "player" ? " on" : ""}`} onClick={() => setTab("player")}>Look up</button>
         <button className={`segbtn${tab === "tables" ? " on" : ""}`} onClick={() => setTab("tables")}>Tables</button>
         <button className={`segbtn${tab === "errors" ? " on" : ""}`} onClick={() => setTab("errors")}>Errors</button>
+        <button className={`segbtn${tab === "clubs" ? " on" : ""}`} onClick={() => setTab("clubs")}>Clubs</button>
       </div>
       {tab === "chips" && (<div className="auth-form">
         <SettingRow label="Everyone" sub="Send to every player with an account"><Toggle on={everyone} onClick={() => setEveryone((x) => !x)} label="Everyone" /></SettingRow>
@@ -88,6 +92,20 @@ function AdminModal({ onClose }) {
           <button className="btn" disabled={busy || !errors || errors.length === 0} onClick={() => run(async () => { await api("admin", { op: "clearErrors" }); setErrors([]); })}>Clear all</button>
         </div>
         <div style={{ fontSize: 11, color: "var(--t-faint)", marginTop: 10 }}>Crashes and errors from everyone's phones, newest first. The same error counts up instead of repeating.</div>
+      </div>)}
+      {tab === "clubs" && (<div>
+        {msg && !msg.ok && <div className="auth-err" style={{ marginBottom: 8 }}>{msg.text}</div>}
+        {clubs === null ? <div className="empty">Loading…</div> : clubs.length === 0 ? <div className="empty">No clubs yet.</div> : (
+          <div className="list" style={{ gap: 6, maxHeight: "50vh", overflowY: "auto" }}>
+            {clubs.map((c) => (
+              <div key={c.id} className="friend-row">
+                <div style={{ flex: 1, minWidth: 0 }}><div style={{ fontSize: 13.5, fontWeight: 700, display: "flex", alignItems: "center", gap: 6 }}>{c.name}<ClubTag club={c} /></div><div className="num" style={{ fontSize: 11, color: "var(--t-mut)" }}>{c.members} members · {shortNum(c.xp)} in the vault</div></div>
+                <button className="btn btn-sm" disabled={busy} onClick={() => (dropArm === c.id ? run(async () => { await api("admin", { op: "dropClub", id: c.id }); setClubs((l) => l.filter((x) => x.id !== c.id)); setDropArm(null); }) : setDropArm(c.id))}>{dropArm === c.id ? "Sure?" : "Delete"}</button>
+              </div>
+            ))}
+          </div>
+        )}
+        <div style={{ fontSize: 11, color: "var(--t-faint)", marginTop: 10 }}>Deleting a club kicks everyone and wipes its vault. Use it for bad names.</div>
       </div>)}
     </Modal>
   );

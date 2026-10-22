@@ -3,6 +3,7 @@ import { api, cloud } from "../cloud.js";
 import { publicProfile } from "../app/boot.jsx";
 import { AVATAR_COLORS, SUIT_COLOR, SUIT_COLOR_CB, SUIT_GLYPH, rankLabel } from "../game/helpers.js";
 import { BASE_EMOTES, findBack, findFelt } from "../game/progression.js";
+import { ClubTag, clubFelt, clubHex } from "../ui/ClubTag.jsx";
 import { CrownMark, PrestigeBadge, pnameCls } from "../game/rewards.jsx";
 import { vibrate } from "../game/save.js";
 import { PlayerAvatar } from "../social/Friends.jsx";
@@ -40,7 +41,7 @@ function OnlineTable({ tableId, account, data, sound, soundOn, setSoundOn, onExi
   const [friends, setFriends] = useState(null); const [invited, setInvited] = useState({});
   const versionRef = useRef(-1); const offsetRef = useRef(0); const tickAt = useRef(0); const prevRef = useRef(null); const mounted = useRef(true); const errT = useRef(null);
   const suitColor = data.settings.colorblind ? SUIT_COLOR_CB : SUIT_COLOR;
-  const back = findBack((data.cosmetics || {}).cardBack); const felt = findFelt((data.cosmetics || {}).felt);
+  const back = findBack((data.cosmetics || {}).cardBack); const myFelt = findFelt((data.cosmetics || {}).felt);
   const chipSet = (data.cosmetics || {}).chipset || "classic"; const winFx = (data.cosmetics || {}).fx || "confetti";
   const [fxAt, setFxAt] = useState(null);
   const myEmotes = [...BASE_EMOTES, ...(data.emotes || [])];
@@ -79,6 +80,8 @@ function OnlineTable({ tableId, account, data, sound, soundOn, setSoundOn, onExi
   }, [tableId, apply]);
 
   const st = row && row.state;
+  const tclub = st && st.club; // a members-only club table
+  const felt = tclub && (tclub.lvl || 1) >= 2 ? clubFelt(tclub) : myFelt;
   const mySeat = st ? st.seats.findIndex((s) => s && s.uid === account.id) : -1;
   const me = mySeat >= 0 ? st.seats[mySeat] : null;
   const serverNow = now + offsetRef.current;
@@ -168,7 +171,7 @@ function OnlineTable({ tableId, account, data, sound, soundOn, setSoundOn, onExi
             {s.peekAt && inHand && !s.folded && <div className="peek-badge" aria-label={`${s.name} looks at their cards`}><Icon name="eye" size={11} stroke={2.4} /></div>}
             {(s.prestige || 0) >= 5 && <CrownMark size={12} top={-8} />}
           </div>
-          <span className="seat-name"><span className={pnameCls(s.prestige)} style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{s.name}</span><PrestigeBadge n={s.prestige} size={11} /></span>
+          <span className="seat-name"><span className={pnameCls(s.prestige)} style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{s.name}</span><PrestigeBadge n={s.prestige} size={11} /><ClubTag club={s.club} /></span>
         </div>
         {st.dealer === i && <div className="dealer-chip">D</div>}
         <div className="seat-stack num">{s.out ? (s.stack > 0 ? "AWAY" : "OUT") : fmt(s.stack)}</div>
@@ -220,12 +223,12 @@ function OnlineTable({ tableId, account, data, sound, soundOn, setSoundOn, onExi
   };
 
   return (
-    <div data-felt={felt.key} data-back={back.key} className={`table-wrap online${order.length >= 7 ? " crowded" : ""}`} style={{ "--rail-c": "#00A560", "--back-a": back.a, "--back-b": back.b, "--back-ring": back.ring, ...(back.img ? { "--back-img": back.img, "--back-size": back.size } : {}), "--felt1": felt.c1, "--felt2": felt.c2, "--felt3": felt.c3, "--rail": felt.rail, ...(felt.tex ? { "--felt-tex": felt.tex, "--felt-tex-size": felt.texSize } : {}), ...(felt.line ? { "--felt-line": felt.line } : {}) }}>
+    <div data-felt={felt.key} data-back={back.key} className={`table-wrap online${order.length >= 7 ? " crowded" : ""}`} style={{ "--rail-c": tclub ? clubHex(tclub.color) : "#00A560", "--back-a": back.a, "--back-b": back.b, "--back-ring": back.ring, ...(back.img ? { "--back-img": back.img, "--back-size": back.size } : {}), "--felt1": felt.c1, "--felt2": felt.c2, "--felt3": felt.c3, "--rail": felt.rail, ...(felt.tex ? { "--felt-tex": felt.tex, "--felt-tex-size": felt.texSize } : {}), ...(felt.line ? { "--felt-line": felt.line } : {}) }}>
       <div className="table-top">
         <button className="iconbtn" onClick={() => (mySeat >= 0 ? setSheet({ kind: "leave" }) : onExit())} aria-label="Leave table"><Icon name="back" size={15} /></button>
         <div style={{ textAlign: "center", minWidth: 0 }}>
           <div className="tt-title">Table {row.code}</div>
-          <div className="table-sub">{row.sb}/{row.bb} · {row.friendly ? "Friendly" : "Real chips"}</div>
+          <div className="table-sub">{tclub && <ClubTag club={tclub} style={{ marginRight: 6, marginLeft: 0 }} />}{row.sb}/{row.bb} · {row.friendly ? "Friendly" : "Real chips"}</div>
         </div>
         <div style={{ display: "flex", gap: 6 }}>
           <button className="iconbtn" onClick={openInvite} aria-label="Invite friends"><Icon name="user" size={14} /></button>
@@ -275,7 +278,7 @@ function OnlineTable({ tableId, account, data, sound, soundOn, setSoundOn, onExi
               {me.emote && serverNow - me.emote.at < 3500 && <div key={me.emote.at} className="emote-bubble">{me.emote.e}</div>}
             </div>
             <div style={{ minWidth: 0, flex: 1 }}>
-              <div className="hero-name"><span className={pnameCls(me.prestige)} style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{me.name}</span>{myTurn && <span className="turn-tag">YOUR TURN</span>}</div>
+              <div className="hero-name"><span className={pnameCls(me.prestige)} style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{me.name}</span><ClubTag club={me.club} />{myTurn && <span className="turn-tag">YOUR TURN</span>}</div>
               <div className="hero-stack num">{me.stack.toLocaleString()}</div>
               {me.bet > 0 && <div className="chip-badge" style={{ marginTop: 4, display: "inline-flex" }}><ChipStack amount={me.bet} small set={chipSet} />{me.bet.toLocaleString()}</div>}
             </div>

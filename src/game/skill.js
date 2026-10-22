@@ -42,6 +42,8 @@ function addHandToSkill(k0, h) {
 const TOURNEY_BUYINS = [{ key: "free", label: "Freeroll", buyIn: 0 }, { key: "t250", label: "250", buyIn: 250 }, { key: "t1k", label: "1,000", buyIn: 1000 }, { key: "t5k", label: "5,000", buyIn: 5000 }];
 const PAYOUTS = { 2: [1], 3: [1], 4: [0.7, 0.3], 5: [0.7, 0.3], 6: [0.5, 0.3, 0.2], 7: [0.5, 0.3, 0.2], 8: [0.5, 0.3, 0.2], 9: [0.5, 0.3, 0.2] };
 const TOURNEY_STACK = 1500;
+// the Sunday Major: one day a week, a full table and a 100K buy-in
+const MAJOR = { buyIn: 100000, field: 9 };
 function tourneyPrize(field, place, buyIn) { const p = PAYOUTS[field] || [1]; return place <= p.length ? Math.round(p[place - 1] * buyIn * field) : 0; }
 function tourneyPoints(r, now = Date.now()) {
   const paid = (PAYOUTS[r.field] || [1]).length;
@@ -146,4 +148,4 @@ function matchQuality(hands) {
   return w > 0 ? s / w : null;
 }
 
-export { IDEAL_VPIP, PAYOUTS, TOURNEY_BUYINS, TOURNEY_STACK, addHandToSkill, computeSkill, defaultSkill, matchQuality, pctStr, placementFromSkill, skillReport, tournamentIndex, tourneyPoints, tourneyPrize };
+export { IDEAL_VPIP, MAJOR, PAYOUTS, TOURNEY_BUYINS, TOURNEY_STACK, addHandToSkill, computeSkill, defaultSkill, matchQuality, pctStr, placementFromSkill, skillReport, tournamentIndex, tourneyPoints, tourneyPrize };

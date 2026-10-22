@@ -1,4 +1,5 @@
 import { currentSeasonId } from "./season.js";
+import { boardWeek } from "../../api/_week.js";
 import { defaultTitles, findTitle } from "./titles.jsx";
 
 /* =========================================================================
@@ -30,6 +31,12 @@ const PAT = (() => {
     prestigeFelt: svgBg(30, 30, `<path d='M15 0L30 15L15 30L0 15Z' fill='none' stroke='#FBBE00' stroke-opacity='0.07'/><path d='M15 11L16.2 13.8L19 15L16.2 16.2L15 19L13.8 16.2L11 15L13.8 13.8Z' fill='#FBBE00' fill-opacity='0.08'/>`),
     holoQuilt: svgBg(8, 8, `<path d='M4 0L8 4L4 8L0 4Z' fill='none' stroke='#FFFFFF' stroke-opacity='0.35' stroke-width='0.6'/>`),
     holoMark: svgBg(40, 56, `<path d='M20 17L27 28L20 39L13 28Z' fill='#FFFFFF' fill-opacity='0.55'/><path d='M20 17L27 28L20 39L13 28Z' fill='none' stroke='#FFFFFF' stroke-opacity='0.9' stroke-width='0.7'/><ellipse cx='20' cy='28' rx='11' ry='15' fill='none' stroke='#FFFFFF' stroke-opacity='0.55' stroke-width='0.6'/>`),
+    // the vault: the most expensive things in felt
+    platMark: svgBg(40, 56, `<rect x='4' y='4' width='32' height='48' rx='3' fill='none' stroke='#5E6773' stroke-opacity='0.55' stroke-width='0.6'/><g transform='translate(20 28)'><path d='M-9 -3L-5 -8H5L9 -3L0 9Z' fill='${W}' fill-opacity='0.6' stroke='#5E6773' stroke-opacity='0.85' stroke-width='0.6'/><path d='M-9 -3H9M-5 -8L-2 -3L0 9L2 -3L5 -8M-2 -3L0 -8L2 -3' fill='none' stroke='#5E6773' stroke-opacity='0.75' stroke-width='0.5'/></g>`),
+    brushed: svgBg(4, 4, `<path d='M0 1H4M0 3H4' stroke='${W}' stroke-opacity='0.2' stroke-width='0.4'/>`),
+    decoMark: svgBg(40, 56, `<circle cx='20' cy='28' r='10.5' fill='#0B0B0D'/><circle cx='20' cy='28' r='10.5' fill='none' stroke='#E3B23C' stroke-width='0.9'/><circle cx='20' cy='28' r='8.4' fill='none' stroke='#E3B23C' stroke-opacity='0.55' stroke-width='0.5'/>${spade(16, 23.4, 0.8, "#E3B23C", 1)}`),
+    deco: svgBg(12, 12, `<path d='M0 12A6 6 0 0 1 12 12M2 12A4 4 0 0 1 10 12M4 12A2 2 0 0 1 8 12M-6 6A6 6 0 0 1 6 6M-4 6A4 4 0 0 1 4 6M6 6A6 6 0 0 1 18 6M8 6A4 4 0 0 1 16 6' fill='none' stroke='#E3B23C' stroke-opacity='0.4' stroke-width='0.5'/>`),
+    diamondFelt: svgBg(26, 26, `<path d='M13 0L26 13L13 26L0 13Z' fill='none' stroke='#E8ECF2' stroke-opacity='0.07' stroke-width='0.8'/><path d='M13 9.5L13.9 12.1L16.5 13L13.9 13.9L13 16.5L12.1 13.9L9.5 13L12.1 12.1Z' fill='${W}' fill-opacity='0.07'/>`),
     // felts
     herring: svgBg(16, 8, `<path d='M0 8L8 0M8 8L16 0' stroke='${W}' stroke-opacity='0.05' stroke-width='2.4'/><path d='M8 8L0 0M16 8L8 0' stroke='#000' stroke-opacity='0.05' stroke-width='2.4'/>`),
     lattice: svgBg(22, 22, `<path d='M11 0L22 11L11 22L0 11Z' fill='none' stroke='${W}' stroke-opacity='0.05'/>`),
@@ -46,6 +53,8 @@ const CARD_BACKS = [
   { key: "carbon", label: "Carbon", pass: 20, a: "#22262E", b: "#121418", ring: "#9AA4B2", img: PAT.carbon, size: "5px 5px" },
   { key: "prestige", label: "Prestige Gold", prestige: 1, a: "#2D0154", b: "#160230", ring: "#FBBE00", img: `${PAT.prestigeMark}, ${PAT.prestigeQuilt}`, size: "100% 100%, 7px 7px" },
   { key: "holo", label: "Holo", pass: 25, anim: true, a: "#282D5D", b: "#131639", ring: "#F4F7FF", img: `${PAT.holoMark}, ${PAT.holoQuilt}, linear-gradient(115deg, #FF7FC1, #FFD57C, #79FECA, #7EC2FF, #C392FF, #FF7FC1, #FFD57C)`, size: "100% 100%, 7px 7px, 300% 300%" },
+  { key: "platinum", label: "Platinum", cost: 400000, vault: true, a: "#D5DCE4", b: "#8A94A1", ring: "#FFFFFF", img: `${PAT.platMark}, ${PAT.brushed}, linear-gradient(135deg, #F6F8FB, #AEB8C4 48%, #E9EDF2 70%, #B9C2CD)`, size: "100% 100%, 4px 4px, 100% 100%" },
+  { key: "blackgold", label: "Black Gold", cost: 750000, vault: true, a: "#0E0E10", b: "#050506", ring: "#E3B23C", img: `${PAT.decoMark}, ${PAT.deco}`, size: "100% 100%, 12px 12px" },
   { key: "foil", label: "Gold Foil", pass: 30, a: "#DFA200", b: "#9E6900", ring: "#FFF1BC", img: `${PAT.foilMark}, ${PAT.quilt}, linear-gradient(135deg, #FDD558, #CC8D00 50%, #FAC941)`, size: "100% 100%, 8px 8px, 100% 100%" },
 ];
 const FELTS = [
@@ -56,6 +65,7 @@ const FELTS = [
   { key: "ocean", label: "Lagoon", pass: 15, c1: "#00B6AF", c2: "#007E78", c3: "#00524E", rail: "#EADCB8", tex: PAT.ripple, texSize: "60px 60px" },
   { key: "prestige", label: "Prestige", prestige: 2, c1: "#600CB2", c2: "#3E007D", c3: "#23004D", rail: "#D1A021", tex: PAT.prestigeFelt, texSize: "30px 30px", line: "rgba(251,190,0,0.55)" },
   { key: "aurora", label: "Aurora", pass: 28, anim: true, c1: "#00475E", c2: "#002C3E", c3: "#051A23", rail: "#1B2433", tex: "linear-gradient(115deg, rgba(0,213,150,0.42), rgba(17,190,255,0.16) 25%, rgba(163,43,254,0.38) 50%, rgba(0,213,150,0.14) 75%, rgba(17,190,255,0.4))", texSize: "300% 300%", line: "rgba(121,254,202,0.35)" },
+  { key: "diamond", label: "Black Diamond", cost: 250000, vault: true, c1: "#3B414C", c2: "#23272F", c3: "#111318", rail: "#C9D1DC", tex: PAT.diamondFelt, texSize: "26px 26px", line: "rgba(232,236,242,0.45)" },
   { key: "blackout", label: "Onyx", cost: 4000, c1: "#2C323C", c2: "#191D24", c3: "#0D0F13", rail: "#D1A021", tex: PAT.hex, texSize: "14px 24px", line: "rgba(209,160,33,0.5)" },
 ];
 const findBack = (k) => CARD_BACKS.find((b) => b.key === k) || CARD_BACKS[0];
@@ -132,6 +142,7 @@ const passReward = (lvl) => ({ rarity: "common", ...(PASS_TRACK[lvl] || { type: 
 const CHIP_SETS = [
   { key: "classic", label: "Classic", cost: 0, colors: null },
   { key: "goldrush", label: "Gold Rush", pass: 7, colors: { 25000: "#FFEFB0", 5000: "#FBBE00", 1000: "#DD9800", 500: "#BE7000", 100: "#804700", 25: "#FFDC7A", 5: "#CC8900", 1: "#FFF8E0" } },
+  { key: "diamond", label: "Diamond", cost: 500000, vault: true, colors: { 25000: "#FFFFFF", 5000: "#BFEFFF", 1000: "#7FD8FF", 500: "#3FB5F0", 100: "#1E7FC2", 25: "#E0F7FF", 5: "#5CC8F5", 1: "#F4FCFF" } },
   { key: "obsidian", label: "Obsidian", pass: 18, colors: { 25000: "#E8ECF2", 5000: "#9AA4B2", 1000: "#5B6472", 500: "#2B3038", 100: "#15181D", 25: "#717B8A", 5: "#3A404A", 1: "#C9D1DC" } },
 ];
 const WIN_FX = [
@@ -183,7 +194,12 @@ function trackHistory(prev, next, best) {
     const cmp = (a, b) => { for (let i = 0; i < 6; i++) { const x = a.s[i] || 0, y = b.s[i] || 0; if (x !== y) return y - x; } return 0; };
     bestList = [...bestList, { ...best, at: Date.now() }].sort(cmp).slice(0, 5);
   }
-  return { ...next, history: { bankroll, best: bestList } };
+  // this week's winnings for the weekly board: every chip won or lost at a table (not rewards or shopping)
+  const wk = boardWeek();
+  let w = next.wk && next.wk.id === wk ? next.wk : { id: wk, net: 0 };
+  const moved = ((next.stats || {}).netChips || 0) - ((prev.stats || {}).netChips || 0);
+  if (moved) w = { ...w, net: w.net + moved };
+  return { ...next, history: { bankroll, best: bestList }, wk: w };
 }
 
 export { BASE_EMOTES, CARD_BACKS, CHALLENGE_REWARD, CHIP_SETS, FELTS, PASS_LEVELS, PASS_XP, STREAK_REWARDS, WIN_FX, applyChallengeEvent, challengeText, defaultCosmetics, ensureChallenges, ensurePass, findBack, findFelt, grantXp, hashStr, localDateStr, ownsCosmetic, passBackfill, passLevel, passReward, passRewardLabel, passTypeLabel, streakState, trackHistory, weekResetDays };

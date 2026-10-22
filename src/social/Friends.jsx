@@ -1,3 +1,4 @@
+import { ClubTag, MedalPills } from "../ui/ClubTag.jsx";
 import { useState, useEffect, useCallback } from "react";
 import { cloud, cleanUsername, cloudEnabled } from "../cloud.js";
 import { publicProfile } from "../app/boot.jsx";
@@ -107,8 +108,9 @@ function FriendProfileModal({ friendId, online = {}, onClose, onRemove, account 
       <div className="fp-hero">
         <div className="fp-av" style={{ "--rc": ring }}>{(p.prestige || 0) >= 5 && <CrownMark size={22} top={-20} />}<PlayerAvatar p={p} size={92} live={!!live} /></div>
         <div className="fp-big"><span className={pnameCls(p.prestige)}>{p.display_name}</span><PrestigeBadge n={p.prestige} size={24} /></div>
-        <div className="fp-at">@{p.username}</div>
+        <div className="fp-at">@{p.username}{st.club && <ClubTag club={st.club} style={{ marginLeft: 8 }} />}</div>
         {p.title && p.title !== "rookie" && <TitlePill k={p.title} style={{ marginTop: 8 }} />}
+        {st.medals && <div className="fp-medals"><MedalPills c={st.medals} /></div>}
       </div>
       <div className={`fp-pill${live ? " on" : ""}`}><i />{presenceLine(p, online)}</div>
       <div className="fp-grid">
@@ -168,7 +170,7 @@ function FriendsSection({ account, online = {}, onOpenAuth, sound, bare = false 
     <button key={p.id} className="fr-row" onClick={() => setOpen(p.id)}>
       <ChipAvatar p={p} size={36} live={live} tier={p.placed ? tierForRating(p.rating) : null} />
       <span style={{ flex: 1, minWidth: 0, textAlign: "left" }}>
-        <span className="fr-name"><span className={pnameCls(p.prestige)}>{p.display_name}</span><PrestigeBadge n={p.prestige} size={15} /></span>
+        <span className="fr-name"><span className={pnameCls(p.prestige)}>{p.display_name}</span><PrestigeBadge n={p.prestige} size={15} /><ClubTag club={(p.stats || {}).club} /></span>
         <span className="fr-sub" style={{ color: live ? "var(--t-good)" : "var(--t-mid)" }}>{presenceLine(p, online)}</span>
       </span>
       <span className="fr-rank" style={{ color: p.placed ? tierForRating(p.rating).color : "var(--t-mid)" }}>{shortRank(p)}{p.placed && <i className="num">{p.rating.toLocaleString()} RP</i>}</span>

@@ -46,14 +46,20 @@ function hydrate(d) {
 function myTimeZone() { try { return Intl.DateTimeFormat().resolvedOptions().timeZone || null; } catch (e) { return null; } }
 const tzLabel = (tz) => (tz ? tz.split("/").pop().replace(/_/g, " ") : "your area");
 // what other players can see about you
+// weekly board medals: how many golds, silvers and bronzes
+function medalCounts(list) {
+  if (!list || !list.length) return null;
+  const c = { g: 0, s: 0, b: 0 }; list.forEach((m) => { c[m.place === 1 ? "g" : m.place === 2 ? "s" : "b"]++; });
+  return c;
+}
 function publicProfile(d) {
   const rk = d.ranked || {}; const st = d.stats || {};
   return {
     display_name: (d.name || "Player").slice(0, 24), avatar: d.avatar || "🫵", photo: d.usePhoto && d.photo ? d.photo : null,
     title: (d.titles || {}).equipped || null, rating: Math.round(rk.rating || 0), peak: Math.round(rk.peakRating || rk.rating || 0),
     prestige: rk.prestige || 0, placed: isPlaced(rk), chips: Math.round(d.chips || 0),
-    stats: { handsPlayed: st.handsPlayed || 0, handsWon: st.handsWon || 0, biggestPot: st.biggestPot || 0, bestWinStreak: st.bestWinStreak || 0, rankedWins: rk.wins || 0, rankedLosses: rk.losses || 0, achievements: (d.achievements || []).length, tIndex: tournamentIndex((d.skill || {}).tourneys) || 0, tz: myTimeZone() },
+    stats: { handsPlayed: st.handsPlayed || 0, handsWon: st.handsWon || 0, biggestPot: st.biggestPot || 0, bestWinStreak: st.bestWinStreak || 0, rankedWins: rk.wins || 0, rankedLosses: rk.losses || 0, achievements: (d.achievements || []).length, tIndex: tournamentIndex((d.skill || {}).tourneys) || 0, tz: myTimeZone(), ...(medalCounts(d.medals) ? { medals: medalCounts(d.medals) } : {}) },
   };
 }
 
-export { LOADING_MS, LoadingScreen, hydrate, myTimeZone, publicProfile, tzLabel };
+export { LOADING_MS, LoadingScreen, hydrate, medalCounts, myTimeZone, publicProfile, tzLabel };

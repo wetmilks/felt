@@ -13,7 +13,55 @@ function client() {
 
 const db = {
   async getUser(token) { const { data, error } = await client().auth.getUser(token); return error ? null : data.user; },
-  async getProfile(uid) { const { data } = await client().from("profiles").select("username, display_name, avatar, prestige, peak").eq("id", uid).maybeSingle(); return data; },
+  async getProfile(uid) { const { data } = await client().from("profiles").select("username, display_name, avatar, prestige, peak, stats").eq("id", uid).maybeSingle(); return data; },
+  async getProfileStats(uid) { const { data } = await client().from("profiles").select("stats").eq("id", uid).maybeSingle(); return data ? data.stats : null; },
+  async profilesBasic(ids) {
+    if (!ids.length) return [];
+    const { data } = await client().from("profiles").select("id, username, display_name, avatar, title, prestige, rating, placed, stats").in("id", ids);
+    return data || [];
+  },
+  // ---- clubs ----
+  async memberOf(uid) {
+    const { data } = await client().from("club_members").select("club_id, role, donated, joined_at, club:clubs(*)").eq("user_id", uid).maybeSingle();
+    return data && data.club ? data : null;
+  },
+  async getClub(id) { if (!/^[0-9a-f-]{36}$/i.test(id)) return null; const { data } = await client().from("clubs").select("*").eq("id", id).maybeSingle(); return data; },
+  async findClubByCode(code) { const { data } = await client().from("clubs").select("*").eq("code", code).maybeSingle(); return data; },
+  async listClubs() { const { data } = await client().from("clubs").select("id, name, tag, color, about, open, xp, owner, created_at").order("xp", { ascending: false }).limit(300); return data || []; },
+  async createClub(row) {
+    const { data, error } = await client().from("clubs").insert(row).select("*").single();
+    if (error) { const m = error.message || ""; if (/duplicate|unique/i.test(m)) return { conflict: /tag/.test(m) ? "tag" : /name/.test(m) ? "name" : "code" }; throw new Error(m); }
+    return data;
+  },
+  async updateClub(id, fields) {
+    if (!Object.keys(fields).length) return null;
+    const { error } = await client().from("clubs").update(fields).eq("id", id);
+    if (error) { const m = error.message || ""; if (/duplicate|unique/i.test(m)) return /tag/.test(m) ? "tag" : /name/.test(m) ? "name" : "code"; throw new Error(m); }
+    return null;
+  },
+  async deleteClub(id) { await client().from("clubs").delete().eq("id", id); },
+  async addMember(uid, clubId, role) {
+    const { error } = await client().from("club_members").insert({ user_id: uid, club_id: clubId, role });
+    if (error) { if (/duplicate|unique/i.test(error.message)) return false; throw new Error(error.message); }
+    return true;
+  },
+  async removeMember(uid) { await client().from("club_members").delete().eq("user_id", uid); },
+  async setMemberRole(uid, role) { await client().from("club_members").update({ role }).eq("user_id", uid); },
+  async clubMembers(clubId) { if (!/^[0-9a-f-]{36}$/i.test(clubId)) return []; const { data } = await client().from("club_members").select("user_id, role, donated, joined_at").eq("club_id", clubId); return data || []; },
+  async clubDonate(clubId, uid, amount) { const { data, error } = await client().rpc("club_donate", { cid: clubId, uid, amt: Math.round(amount) }); if (error) throw new Error(error.message); return Number(data) || 0; },
+  async clubWeek(wk) { const { data, error } = await client().rpc("club_week", { wk }); if (error) throw new Error(error.message); return data || []; },
+  async clubTables(clubId) {
+    const { data } = await client().from("poker_tables").select("id, code, sb, bb, friendly, state").eq("closed", false).contains("state", { club: { id: clubId } }).limit(10);
+    return (data || []).map((t) => ({ id: t.id, code: t.code, sb: t.sb, bb: t.bb, friendly: t.friendly, seats: (t.state.seats || []).length, players: (t.state.seats || []).filter(Boolean).map((x) => x.name) }));
+  },
+  // ---- the weekly board ----
+  async weeklyAdd(wk, uid, dLive, dGain) { const { error } = await client().rpc("weekly_add", { wk, uid, d_live: Math.round(dLive), d_gain: Math.round(dGain) }); if (error) throw new Error(error.message); },
+  async weeklySetBot(wk, uid, bot) { const { error } = await client().rpc("weekly_set_bot", { wk, uid, b: Math.round(bot) }); if (error) throw new Error(error.message); },
+  async weeklyTop(wk, limit) { const { data } = await client().from("weekly_scores").select("user_id, net").eq("week", wk).order("net", { ascending: false }).limit(limit); return data || []; },
+  async weeklyFor(wk, ids) { if (!ids.length) return []; const { data } = await client().from("weekly_scores").select("user_id, net").eq("week", wk).in("user_id", ids); return data || []; },
+  async weeklyMine(wk, uid) { const { data } = await client().from("weekly_scores").select("net").eq("week", wk).eq("user_id", uid).maybeSingle(); return data; },
+  async weeklyAbove(wk, net) { const { count } = await client().from("weekly_scores").select("user_id", { count: "exact", head: true }).eq("week", wk).gt("net", net); return count || 0; },
+  async weeklyClaim(wk, uid) { const { data } = await client().from("weekly_scores").update({ claimed: true }).eq("week", wk).eq("user_id", uid).eq("claimed", false).select("user_id"); return !!(data && data.length); },
   async getChips(uid) {
     const w = await this.getWallet(uid); if (w && w.seeded) return Number(w.chips) || 0;
     const { data } = await client().from("saves").select("data").eq("user_id", uid).maybeSingle(); return data && data.data ? Number(data.data.chips) || 0 : null;

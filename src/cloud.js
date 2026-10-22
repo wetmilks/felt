@@ -254,6 +254,17 @@ export async function api(action, payload = {}) {
   return body;
 }
 
+// same as api(), for things guests can look at too, like the weekly board
+export async function apiPublic(action, payload = {}) {
+  const token = await sessionToken();
+  let res;
+  try { res = await fetch("/api/table", { method: "POST", headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) }, body: JSON.stringify({ action, ...payload }) }); }
+  catch (e) { throw new Error("Can't reach the server. Check your connection."); }
+  let body = {}; try { body = await res.json(); } catch (e) { /* empty */ }
+  if (!res.ok || body.error) throw new Error(body.error || `Server error (${res.status})`);
+  return body;
+}
+
 /* ---------------- what the app calls ---------------- */
 export const cloud = {
   current: () => be().current(),

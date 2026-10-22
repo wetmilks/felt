@@ -5,6 +5,7 @@ import { kNum } from "../screens/home/Progress.jsx";
 import { ONLINE_STAKES } from "../table/OnlineTable.jsx";
 import { Toggle } from "../ui/controls.jsx";
 import { Icon, Modal } from "../ui/primitives.jsx";
+import { ClubTag, clubHex } from "../ui/ClubTag.jsx";
 
 // Home screen entry: make a table, join one with a code, or get back to one you're sitting at
 function FriendsTableCard({ onOpen }) {
@@ -18,7 +19,8 @@ function FriendsTableCard({ onOpen }) {
     </button>
   );
 }
-function FriendsTableModal({ account, data, onClose, onOpenTable, onOpenAuth, onDebit }) {
+function FriendsTableModal({ account, data, onClose, onOpenTable, onOpenAuth, onDebit, club = null }) {
+  const [clubOnly, setClubOnly] = useState(!!club);
   const [stake, setStake] = useState(() => (data.chips >= 2500 ? 2 : data.chips >= 400 ? 1 : 0));
   const [seats, setSeats] = useState(6); const [friendly, setFriendly] = useState(false);
   const [buyIn, setBuyIn] = useState(0); const [code, setCode] = useState(""); const [busy, setBusy] = useState(null);
@@ -40,7 +42,7 @@ function FriendsTableModal({ account, data, onClose, onOpenTable, onOpenAuth, on
     setBusy("create"); setErr(null);
     try {
       if (!friendly) await cloud.pushSave(account, data, publicProfile(data));
-      const r = await api("create", { sb, bb, friendly, maxSeats: seats, buyIn });
+      const r = await api("create", { sb, bb, friendly, maxSeats: seats, buyIn, club: !!(club && clubOnly) });
       if (r.debit) onDebit(r.debit);
       onOpenTable(r.tableId);
     } catch (e) { setErr(e.message); }
@@ -54,7 +56,7 @@ function FriendsTableModal({ account, data, onClose, onOpenTable, onOpenAuth, on
   };
   const affordable = friendly || data.chips >= lo;
   return (
-    <Modal title="Play friends" onClose={onClose} width={400} stripe="#00A560" className="ft-sheet">
+    <Modal title={club ? "Club table" : "Play friends"} onClose={onClose} width={400} stripe={club ? clubHex(club.color) : "#00A560"} className="ft-sheet">
       {(mine || []).map((t) => (
         <div key={t.id} className="ftc ft-mine">
           <span className="ft-dot" />
@@ -62,7 +64,7 @@ function FriendsTableModal({ account, data, onClose, onOpenTable, onOpenAuth, on
           <button className="btn btn-go btn-sm" onClick={() => onOpenTable(t.id)}>Rejoin</button>
         </div>
       ))}
-      <section className="ftc">
+      {!club && <section className="ftc">
         <h3 className="ft-h">Join with a code</h3>
         <div className="ft-code">
           <label className="code-boxes">
@@ -72,10 +74,16 @@ function FriendsTableModal({ account, data, onClose, onOpenTable, onOpenAuth, on
           <button className="btn ft-join" disabled={!!busy || code.length !== 4} onClick={join}>{busy === "join" ? "…" : "Join"}</button>
         </div>
         {joinErr && <div className="auth-err" style={{ marginTop: 10 }}>{joinErr}</div>}
-      </section>
+      </section>}
       <section className="ftc">
         <h3 className="ft-h">Start a table</h3>
-        <div className="ft-sub">Pick the blinds, invite your friends</div>
+        <div className="ft-sub">{club ? `Everyone in ${club.name} hears about it` : "Pick the blinds, invite your friends"}</div>
+        {club && (
+          <div className="ft-friendly" style={{ marginTop: 12 }}>
+            <div style={{ flex: 1, minWidth: 0 }}><div className="disp" style={{ fontSize: 19, display: "flex", alignItems: "center", gap: 8 }}>Members only <ClubTag club={club} /></div><div className="ft-sub" style={{ marginTop: 2 }}>{clubOnly ? "Only your club can sit. Shows on the club page." : "Anyone with the code can sit"}</div></div>
+            <Toggle on={clubOnly} onClick={() => setClubOnly((f) => !f)} label="Members only" />
+          </div>
+        )}
         <div className="ft-line"><span className="lbl">Blinds</span>
           <div className="ft-opts scroll">{ONLINE_STAKES.map(([s, b], i) => <button key={b} className={`ft-opt num${stake === i ? " on" : ""}`} onClick={() => setStake(i)}>{kNum(s)}/{kNum(b)}</button>)}</div>
         </div>

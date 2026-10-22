@@ -2,6 +2,9 @@
 // changed, and the server only lets chips and RP climb as fast as a real player plausibly could.
 // Spending always goes through. Anything over the limit is held back and the account gets a flag.
 
+import { boardWeek } from "./_week.js";
+import { clubBadge } from "./_clubrules.js";
+
 export const CHIP_CAP = 800000;             // most you can bank in one burst (a monster whale-table session)
 const CHIP_RATE = 400000 / 3600000;         // refills at 400k an hour
 export const RP_CAP = 300;
@@ -61,7 +64,23 @@ export async function syncSave(db, uid, data, profile) {
   await db.updateWallet(uid, { rating, prestige, chip_bucket: Math.floor(chipBucket), rp_bucket: Math.floor(rpBucket), bucket_at: new Date(now).toISOString(), flags: n(w.flags) + (flagged ? 1 : 0) });
   const truth = { ...data, chips: balance, chipSync: { base: balance }, ranked: { ...rk, rating, prestige } };
   await db.putSave(uid, truth);
+  // the weekly board: the phone reports what it won this week, and it can't claim more than the chips that really came in
+  try {
+    const wk = boardWeek(now);
+    if (applied > 0) await db.weeklyAdd(wk, uid, 0, applied);
+    if (data.wk && data.wk.id === wk && Number.isFinite(Number(data.wk.net))) await db.weeklySetBot(wk, uid, Math.round(Number(data.wk.net)));
+  } catch (e) { /* the board is best effort, never block a save */ }
   const prev = await db.getProfile(uid);
-  if (prev) await db.updateProfile(uid, { ...cleanProfile(profile), chips: balance, rating, prestige, placed: !!rk.placed, peak: Math.max(n(prev.peak), rating), updated_at: new Date(now).toISOString() });
-  return { chips: balance, rating, prestige, sentChips: n(data.chips), sentRating: n(rk.rating), sentPrestige: n(rk.prestige), flagged };
+  let clubOut;
+  if (prev) {
+    const fields = cleanProfile(profile);
+    // your club tag comes from the server, never from the phone
+    if (fields.stats) {
+      let club = null; try { const m = await db.memberOf(uid); club = m && m.club ? clubBadge(m.club) : null; } catch (e) { club = (prev.stats && prev.stats.club) || null; }
+      fields.stats = { ...fields.stats }; if (club) fields.stats.club = club; else delete fields.stats.club;
+      clubOut = club;
+    }
+    await db.updateProfile(uid, { ...fields, chips: balance, rating, prestige, placed: !!rk.placed, peak: Math.max(n(prev.peak), rating), updated_at: new Date(now).toISOString() });
+  }
+  return { chips: balance, rating, prestige, sentChips: n(data.chips), sentRating: n(rk.rating), sentPrestige: n(rk.prestige), flagged, ...(clubOut !== undefined ? { club: clubOut } : {}) };
 }

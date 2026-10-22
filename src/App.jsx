@@ -12,6 +12,8 @@ import { useSound } from "./game/sound.js";
 import { setErrorContext } from "./app/errors.js";
 import { TITLES, defaultTitles, newlyEarnedTitles } from "./game/titles.jsx";
 import { AdminModal } from "./screens/Admin.jsx";
+import { ClubsScreen } from "./screens/Clubs.jsx";
+import { lastBoardWeek, weekLabel } from "../api/_week.js";
 import { CoachScreen } from "./screens/Coach.jsx";
 import { HomeMenu } from "./screens/Home.jsx";
 import { ProfileScreen } from "./screens/Profile.jsx";
@@ -41,7 +43,10 @@ export default function App() {
   const [welcome, setWelcome] = useState(false); // first open without an account: sign up, sign in or play as a guest
   const [online, setOnline] = useState({}); // user id -> what they're doing, for everyone in the app right now
   const [onlineTable, setOnlineTable] = useState(null); // id of the friends table you're at
-  const [ftOpen, setFtOpen] = useState(false);
+  const [ftOpen, setFtOpen] = useState(false); const [ftClub, setFtClub] = useState(null);
+  const [pendingClub, setPendingClub] = useState(null); // a club code from an invite link
+  // your club tag, for showing on your own stuff. The server is the real source; this just mirrors it.
+  const setClubBadge = (c) => setData((d) => { const same = JSON.stringify(d.club || null) === JSON.stringify(c || null); if (same) return d; const n = { ...d, club: c || null }; saveData(n); return n; });
   const [invites, setInvites] = useState([]);
   const [inviteNames, setInviteNames] = useState({});
   const [isAdmin, setIsAdmin] = useState(false); const [adminOpen, setAdminOpen] = useState(false);
@@ -119,6 +124,7 @@ export default function App() {
         saveData(n); return n;
       });
       if (r.flagged) setSyncFlag(true);
+      if ("club" in r) setClubBadge(r.club);
     });
     return () => cloud.onSync(null);
   }, []);
@@ -197,7 +203,9 @@ export default function App() {
   // a shared link like felt-coral.vercel.app/?table=ABCD drops you at that table
   useEffect(() => {
     if (!loaded) return;
-    let code = null; try { code = new URLSearchParams(window.location.search).get("table"); } catch (e) { /* no url */ }
+    let code = null, clubCode = null; try { const q = new URLSearchParams(window.location.search); code = q.get("table"); clubCode = q.get("club"); } catch (e) { /* no url */ }
+    // felt-coral.vercel.app/?club=ABCDE opens the Clubs tab ready to join
+    if (clubCode && /^[A-Za-z]{5}$/.test(clubCode)) { try { window.history.replaceState(null, "", window.location.pathname); } catch (e) { /* ignore */ } setPendingClub(clubCode.toUpperCase()); setTab("clubs"); if (!account) { setWelcome(false); persist({ ...dataRef.current, welcomed: true }); } return; }
     if (!code) return;
     try { window.history.replaceState(null, "", window.location.pathname); } catch (e) { /* ignore */ }
     if (!account) { showToast({ title: "Join your friend's table", label: "Make an account or sign in first" }, 3200); setAuthOpen("signup"); try { sessionStorage.setItem("felt-pending-table", code); } catch (e) { /* ignore */ } return; }
@@ -209,6 +217,26 @@ export default function App() {
     if (code) api("join", { code }).then((r) => openTable(r.tableId)).catch(() => {});
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [account]);
+  // a new week: if you finished top 3 on last week's board, collect your medal
+  useEffect(() => {
+    if (!account || !account.username || !loaded) return;
+    const lw = lastBoardWeek();
+    if (dataRef.current.medalWeek === lw) return;
+    let on = true;
+    const t = setTimeout(() => {
+      api("weekly", { op: "claim" }).then((r) => {
+        if (!on) return;
+        setData((d) => {
+          let next = { ...d, medalWeek: lw };
+          if (r.place) next = withTitles({ ...next, medals: [...(d.medals || []).filter((m) => m.week !== r.week), { week: r.week, place: r.place, net: r.net }].slice(-60) });
+          saveData(next); return next;
+        });
+        if (r.place) { sound.rankUp(); showToast({ title: `${ordinal(r.place)} on the weekly board`, label: `Week of ${weekLabel(r.week)}, +${(r.net || 0).toLocaleString()} won. Your medal is on your profile.` }, 4200); setTimeout(flushNotes, 4400); }
+      }).catch(() => {});
+    }, 1800);
+    return () => { on = false; clearTimeout(t); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [account, loaded]);
   const handleSignOut = async () => {
     try { await cloud.pushSave(account, data, publicProfile(data)); } catch (e) { showToast({ title: "Can't sign out yet", label: "Couldn't save to your account. Check your connection." }, 2800); return; }
     await cloud.signOut().catch(() => {}); setAccount(null);
@@ -280,11 +308,12 @@ export default function App() {
     else showToast({ title: "Reward claimed", label: `+${rw.chips.toLocaleString()} chips, +${rw.xp} XP` });
   };
   const handleBuyCosmetic = (type, item) => {
-    const cos = data.cosmetics || defaultCosmetics();
-    const field = type === "back" ? "backs" : "felts";
-    if (cos[field].includes(item.key) || !item.cost || data.chips < item.cost) return;
+    const cos = { ...defaultCosmetics(), ...(data.cosmetics || {}) };
+    const [field, slot] = { back: ["backs", "cardBack"], felt: ["felts", "felt"], chipset: ["chipsets", "chipset"] }[type] || [];
+    if (!field || (cos[field] || []).includes(item.key) || !item.cost || data.chips < item.cost) return;
     sound.coin(); vibrate(20);
-    persist({ ...data, chips: data.chips - item.cost, cosmetics: { ...cos, [field]: [...cos[field], item.key], [type === "back" ? "cardBack" : "felt"]: item.key } });
+    persist({ ...data, chips: data.chips - item.cost, cosmetics: { ...cos, [field]: [...(cos[field] || []), item.key], [slot]: item.key } });
+    if (item.vault) showToast({ title: "From the Vault", label: `${item.label} is yours` });
   };
   // the wheel's result is decided here and saved before the animation even starts
   const handleSpin = () => {
@@ -298,8 +327,8 @@ export default function App() {
     else {
       const cos = next.cosmetics || defaultCosmetics(); const tt = next.titles || defaultTitles();
       const pool = [
-        ...FELTS.filter((f) => f.cost && !cos.felts.includes(f.key)).map((f) => ({ kind: "felt", item: f })),
-        ...CARD_BACKS.filter((b) => b.cost && !cos.backs.includes(b.key)).map((b) => ({ kind: "back", item: b })),
+        ...FELTS.filter((f) => f.cost && !f.vault && !cos.felts.includes(f.key)).map((f) => ({ kind: "felt", item: f })),
+        ...CARD_BACKS.filter((b) => b.cost && !b.vault && !cos.backs.includes(b.key)).map((b) => ({ kind: "back", item: b })),
         ...TITLES.filter((t) => t.cost && t.cost <= 3000 && !tt.owned.includes(t.key)).map((t) => ({ kind: "title", item: t })),
       ];
       if (!pool.length) { next = { ...next, chips: next.chips + 3000 }; text = "3,000 chips"; }
@@ -447,7 +476,7 @@ export default function App() {
     }
     if (mode === "tournament" && tournamentResult) {
       const buyIn = session?.buyIn || 0;
-      const r = { at: Date.now(), field: tournamentResult.total, place: tournamentResult.placement, buyIn };
+      const r = { at: Date.now(), field: tournamentResult.total, place: tournamentResult.placement, buyIn, ...(session?.major ? { major: true } : {}) };
       const prize = tourneyPrize(r.field, r.place, buyIn);
       const pts = Math.round(tourneyPoints(r));
       setData((d) => {
@@ -459,7 +488,7 @@ export default function App() {
         return next;
       });
       setTimeout(flushNotes, 3200);
-      showToast({ title: tournamentResult.won ? "Tournament won" : `Finished ${ordinal(r.place)} of ${r.field}`, label: `${prize > 0 ? `Cashed ${prize.toLocaleString()} chips. ` : ""}${pts > 0 ? `+${pts} index points` : "No index points outside the money"}` }, 3000);
+      showToast({ title: r.major ? (tournamentResult.won ? "You won the Sunday Major" : `Sunday Major: ${ordinal(r.place)} of ${r.field}`) : tournamentResult.won ? "Tournament won" : `Finished ${ordinal(r.place)} of ${r.field}`, label: `${prize > 0 ? `Cashed ${prize.toLocaleString()} chips. ` : ""}${pts > 0 ? `+${pts} index points` : "No index points outside the money"}` }, 3000);
     }
     setInTable(false); setSession(null);
   };
@@ -517,7 +546,8 @@ export default function App() {
     const frameColor = data.ranked.frame ? RANK_TIERS.find((t) => t.key === data.ranked.frame)?.color : null;
     const placed = isPlaced(data.ranked);
     const isVip = !!session?.vip;
-    const botSkill = isRanked ? (placed ? tierForRating(matchRating(data.ranked)).botSkill : tierOf(data.ranked).botSkill) : isPractice ? 0.2 : isVip ? 0.72 : 0.4;
+    const isMajor = isTournament && !!session?.major;
+    const botSkill = isRanked ? (placed ? tierForRating(matchRating(data.ranked)).botSkill : tierOf(data.ranked).botSkill) : isPractice ? 0.2 : isVip || isMajor ? 0.72 : 0.4;
     const opponentRating = isRanked ? (placed ? matchRating(data.ranked) : 650) : null;
     return (
       <div className="app-table">
@@ -531,7 +561,7 @@ export default function App() {
           rankedState={data.ranked} skill={data.skill} tourneyBuyIn={session?.buyIn || 0} bankroll={data.chips} botSkill={botSkill} opponentRating={opponentRating} frameColor={frameColor} tutorial={isPractice}
           variant={session?.variant || "holdem"} turbo={!!session?.turbo} runTwice={!!data.settings.runTwice} squeeze={data.settings.squeeze !== false} cardBack={isVip ? VIP_BACK : findBack((data.cosmetics || {}).cardBack)} felt={isVip ? VIP_FELT : findFelt((data.cosmetics || {}).felt)} title={(data.titles || defaultTitles()).equipped} vip={isVip} prestige={data.ranked.prestige || 0} chipSet={(data.cosmetics || {}).chipset || "classic"} winFx={(data.cosmetics || {}).fx || "confetti"}
           colorblind={data.settings.colorblind} cardSize={data.settings.cardSize} animSpeed={data.settings.animSpeed}
-          showWinTip={!data.settings.winTipSeen} onDismissWinTip={handleDismissWinTip}
+          showWinTip={!data.settings.winTipSeen} onDismissWinTip={handleDismissWinTip} eventName={isMajor ? "Major" : null}
         />
       </div>
     );
@@ -550,6 +580,7 @@ export default function App() {
           </>} legendNo={legendNo} onEquipPass={handleEquipPass} onPlayAI={handlePlayAI} onFriendsTable={() => { sound.tap(); setFtOpen(true); }} data={data} chips={data.chips} ranked={data.ranked} onClaimDaily={handleClaimDaily} onClaimChallenge={handleClaimChallenge} onSpin={handleSpin} onPrestige={handlePrestige} sound={sound} goShop={() => setTab("shop")} />}
           {tab === "leaderboard" && <LeaderboardScreen data={data} account={account} online={online} onOpenAuth={setAuthOpen} />}
           {tab === "coach" && <CoachScreen data={data} />}
+          {tab === "clubs" && <ClubsScreen data={data} account={account} online={online} onOpenAuth={setAuthOpen} onDebit={handleDebit} onOpenTable={openTable} onStartTable={(c) => { sound.tap(); setFtClub(c); setFtOpen(true); }} onClub={setClubBadge} onFounder={() => { if (!dataRef.current.clubFounder) { persist(withTitles({ ...dataRef.current, clubFounder: true })); setTimeout(flushNotes, 2600); } }} toast={(t) => showToast(t, 2800)} pendingCode={pendingClub} onPendingDone={() => setPendingClub(null)} />}
           {tab === "profile" && <ProfileScreen data={data} account={account} online={online} legendNo={legendNo} pushOn={pushOn} pushBusy={pushBusy} onEnablePush={turnOnPush} isAdmin={isAdmin} onOpenAdmin={() => setAdminOpen(true)} onOpenAuth={setAuthOpen} onSignOut={handleSignOut} sound={sound} onUpdateName={handleUpdateName} onSelectAvatar={handleSelectAvatar} onSetPhoto={handleSetPhoto} onUsePhoto={handleUsePhoto} onSelectFrame={handleSelectFrame} onAddFriend={handleAddFriend} onUpdateSettings={handleUpdateSettings} onExportData={handleExportData} onImportData={handleImportData} onResetProfile={handleResetProfile} onEquipTitle={handleEquipTitle} onPrestige={handlePrestige} />}
         </div>
       </main>
@@ -567,7 +598,7 @@ export default function App() {
         const close = () => persist({ ...data, ranked: { ...data.ranked, seasonEnd: { ...se, seen: true } } });
         return <SeasonEndScreen se={se} onClose={close} />;
       })()}
-      {ftOpen && <FriendsTableModal account={account} data={data} onClose={() => setFtOpen(false)} onOpenTable={openTable} onOpenAuth={setAuthOpen} onDebit={handleDebit} />}
+      {ftOpen && <FriendsTableModal account={account} data={data} club={ftClub} onClose={() => { setFtOpen(false); setFtClub(null); }} onOpenTable={(id) => { setFtClub(null); openTable(id); }} onOpenAuth={setAuthOpen} onDebit={handleDebit} />}
       {authOpen && <AuthModal mode={authOpen} setMode={setAuthOpen} onClose={closeAuth} onAuthed={handleAuthed} account={account} data={data} welcome={welcome} />}
       {toast && (
         <div className="toast" role="status">
@@ -581,7 +612,7 @@ export default function App() {
 
 // A tab bar on phones. On a computer the same buttons stack into a sidebar with the logo and your chips.
 function BottomNav({ tab, setTab, chips }) {
-  const items = [{ key: "shop", label: "Shop" }, { key: "leaderboard", label: "Ranks" }, { key: "home", label: "Play" }, { key: "coach", label: "Coach" }, { key: "profile", label: "Me" }];
+  const items = [{ key: "shop", label: "Shop" }, { key: "leaderboard", label: "Ranks" }, { key: "home", label: "Play" }, { key: "clubs", label: "Clubs" }, { key: "coach", label: "Coach" }, { key: "profile", label: "Me" }];
   return (
     <nav className="bottom-nav" aria-label="Main">
       <FeltLogo className="side-logo" />

@@ -3,6 +3,7 @@
 import * as E from "./_engine.js";
 import { ensureWallet, syncSave } from "./_wallet.js";
 import { pushTo } from "./_push.js";
+import { announceClubTable, clubAction, setProfileClub, trackLive, weeklyAction } from "./_clubs.js";
 
 export const STAKES = [[5, 10], [10, 20], [25, 50], [50, 100], [100, 200], [250, 500], [500, 1000], [1000, 2000]];
 const MIN_BB = 20, MAX_BB = 100;
@@ -14,16 +15,18 @@ const fail = (error, status = 400) => ({ status, body: { error } });
 async function playerInfo(db, uid) {
   const p = await db.getProfile(uid);
   if (!p) throw new Error("Make your username first.");
-  return { uid, name: p.display_name || p.username, avatar: p.avatar, prestige: p.prestige }; // photos load separately so every update stays small
+  const club = p.stats && p.stats.club ? { tag: p.stats.club.tag, color: p.stats.club.color, lvl: p.stats.club.lvl } : null;
+  return { uid, name: p.display_name || p.username, avatar: p.avatar, prestige: p.prestige, club }; // photos load separately so every update stays small
 }
 // Take a buy-in out of the wallet up front. Returns an error message, or null when it's paid.
 async function debit(db, uid, amount) {
   const w = await ensureWallet(db, uid, null);
   const bal = await db.walletAdd(uid, -amount, false);
   if (bal == null) return `You need ${amount.toLocaleString()} chips for that. You have ${Math.max(0, Number(w.chips) || 0).toLocaleString()}.`;
+  await trackLive(db, uid, -amount); // real-chip buy-ins and cash-outs count on the weekly board
   return null;
 }
-const refund = (db, uid, amount) => db.walletAdd(uid, amount, true);
+async function refund(db, uid, amount) { await db.walletAdd(uid, amount, true); await trackLive(db, uid, amount); }
 function buyInRange(t) { return [t.bb * MIN_BB, t.bb * MAX_BB]; }
 
 // Load, change, save. If someone else saved first, start over with their version.
@@ -52,7 +55,7 @@ async function mutate(db, tableId, fn, actor = null) {
       const holes = {}; Object.entries(fx.newSec.holes).forEach(([seat, cards]) => { const s = st.seats[seat]; if (s) holes[s.uid] = cards; });
       await db.putHoles(tableId, st.handNo, holes);
     }
-    if (!row.friendly) for (const c of fx.cashouts) if (c.amount > 0) await db.payout(c.uid, c.amount, `Cashed out of table ${row.code}`);
+    if (!row.friendly) for (const c of fx.cashouts) if (c.amount > 0) { await db.payout(c.uid, c.amount, `Cashed out of table ${row.code}`); await trackLive(db, c.uid, c.amount); }
     // a nudge when it becomes your turn and you're not looking
     const betting = ["preflop", "flop", "turn", "river"].includes(st.stage);
     const was = row.state.turn >= 0 && row.state.seats[row.state.turn] ? `${row.state.handNo}:${row.state.seats[row.state.turn].uid}` : null;
@@ -91,8 +94,12 @@ async function report(a, token, db) {
 export async function handle(body, token, db) {
   if (body && body.action === "report") return report(body, token, db);
   const user = token ? await db.getUser(token) : null;
+  // the boards are open to guests too
+  if (body && (body.action === "club" || body.action === "weekly") && (body.op === "board" || body.op === "view")) return (body.action === "club" ? clubAction : weeklyAction)(body, user ? user.id : null, db);
   if (!user) return fail("Sign in first.", 401);
   const uid = user.id; const a = body || {};
+  if (a.action === "club") return clubAction(a, uid, db);
+  if (a.action === "weekly") return weeklyAction(a, uid, db);
 
   if (a.action === "create") {
     const stake = STAKES.find(([sb, bb]) => sb === a.sb && bb === a.bb);
@@ -103,13 +110,17 @@ export async function handle(body, token, db) {
     const buyIn = friendly ? bb * 100 : Math.floor(a.buyIn || 0);
     if (!friendly && (buyIn < lo || buyIn > hi)) return fail(`Buy in between ${lo.toLocaleString()} and ${hi.toLocaleString()}.`);
     const me = await playerInfo(db, uid);
+    // a club table: only members of your club can sit
+    let club = null;
+    if (a.club) { const m = await db.memberOf(uid); if (!m || !m.club) return fail("Join a club first."); club = { id: m.club.id, tag: m.club.tag, name: m.club.name, color: m.club.color, lvl: me.club ? me.club.lvl : 1 }; }
     if (!friendly) { const e = await debit(db, uid, buyIn); if (e) return fail(e); }
     const st = E.newState(maxSeats); const now = Date.now();
+    if (club) st.club = club;
     E.sit(st, 0, me, buyIn, now); st.at = now;
     for (let i = 0; i < 8; i++) {
       const code = newCode();
       const row = await db.createTable({ code, host: uid, sb, bb, friendly, max_seats: maxSeats, state: st });
-      if (row) return { status: 200, body: { ok: true, tableId: row.id, code, state: st, debit: friendly ? 0 : buyIn } };
+      if (row) { if (club) await announceClubTable(db, uid, code, sb, bb); return { status: 200, body: { ok: true, tableId: row.id, code, state: st, debit: friendly ? 0 : buyIn } }; }
     }
     if (!friendly) await refund(db, uid, buyIn);
     return fail("Couldn't make a table code. Try again.");
@@ -160,6 +171,7 @@ export async function handle(body, token, db) {
       const loaded = await db.load(tableId);
       if (!loaded || loaded.row.closed) return fail("That table has closed.");
       const t = loaded.row; const [lo, hi] = buyInRange(t);
+      if (t.state && t.state.club) { const m = await db.memberOf(uid); if (!m || m.club_id !== t.state.club.id) return fail(`This is a club table. Only ${t.state.club.tag} members can sit.`); }
       const buyIn = t.friendly ? t.bb * 100 : Math.floor(a.buyIn || 0);
       if (!t.friendly && (buyIn < lo || buyIn > hi)) return fail(`Buy in between ${lo.toLocaleString()} and ${hi.toLocaleString()}.`);
       if (!t.friendly) { const e = await debit(db, uid, buyIn); if (e) return fail(e); }
@@ -246,6 +258,8 @@ async function admin(a, uid, db) {
   }
   if (a.op === "tables") return { status: 200, body: { ok: true, tables: await db.openTables() } };
   if (a.op === "errors") { const log = await db.getConfig("client_errors"); return { status: 200, body: { ok: true, errors: (log && log.list) || [] } }; }
+  if (a.op === "clubs") { const [list, week] = await Promise.all([db.listClubs(), db.clubWeek("-")]); const cnt = Object.fromEntries((week || []).map((r) => [r.club_id, Number(r.members) || 0])); return { status: 200, body: { ok: true, clubs: list.map((c) => ({ id: c.id, name: c.name, tag: c.tag, color: c.color, xp: Number(c.xp) || 0, members: cnt[c.id] || 0, created_at: c.created_at })) } }; }
+  if (a.op === "dropClub") { const ms = await db.clubMembers(String(a.id || "")); await Promise.all(ms.map((m) => setProfileClub(db, m.user_id, null))); await db.deleteClub(String(a.id || "")); return { status: 200, body: { ok: true } }; }
   if (a.op === "clearErrors") { await db.setConfig("client_errors", { list: [] }); return { status: 200, body: { ok: true } }; }
   if (a.op === "close") {
     const r = await mutate(db, a.tableId, async (st, cfg, now, fx) => {
