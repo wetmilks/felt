@@ -880,10 +880,6 @@ input[type=range] { accent-color: var(--t-accent); height: 28px; }
 .err-stack { margin: 6px 0 0; padding: 8px 10px; border-radius: 8px; background: #111214; color: var(--t-sub); font-size: 10.5px; line-height: 1.45; white-space: pre-wrap; word-break: break-all; max-height: 220px; overflow-y: auto; }
 
 /* ===== clubs, the weekly board, the vault and the Sunday Major ===== */
-.bottom-nav { grid-template-columns: repeat(6, minmax(0, 1fr)); padding-left: 4px; padding-right: 4px; }
-.navbtn { font-size: 14.5px; letter-spacing: 0.05em; }
-.navbtn[aria-current="page"] { font-size: 16px; }
-@media (max-width: 360px) { .navbtn { font-size: 13px; letter-spacing: 0.03em; } .navbtn[aria-current="page"] { font-size: 14.5px; } }
 
 .club-tag { display: inline-flex; align-items: center; flex-shrink: 0; height: 17px; padding: 0 5px; margin-left: 2px; border-radius: 5px; background: var(--cc); color: var(--ct, #fff); font-family: var(--t-display); font-weight: 900; font-size: 12px; line-height: 1; letter-spacing: 0.06em; text-transform: uppercase; box-shadow: inset 0 -2px 0 rgba(0,0,0,0.2); vertical-align: middle; }
 .club-tag.big { height: 22px; padding: 0 7px; font-size: 15px; border-radius: 6px; }
@@ -1029,9 +1025,6 @@ input[type=range] { accent-color: var(--t-accent); height: 28px; }
 .mj-bar > span { display: block; height: 100%; background: repeating-linear-gradient(90deg, #196EFE 0 10px, #6FA6FF 10px 13px); }
 
 @media (min-width: 1024px) {
-  .bottom-nav { padding-left: 0; padding-right: 14px; }
-  .navbtn { font-size: 21px; }
-  .navbtn[aria-current="page"] { font-size: 21px; }
   .vault-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .vt.wide { grid-column: span 2; }
   .vt:hover:not(:disabled) { box-shadow: inset 0 0 0 1.5px rgba(237,176,0,0.7); }
@@ -1041,6 +1034,10 @@ input[type=range] { accent-color: var(--t-accent); height: 28px; }
 .cl-screen .lb-list.cl-board { margin-bottom: 8px; }
 .cl-step.on { box-shadow: inset 0 0 0 2.5px var(--t-accent); background: rgba(237,176,0,0.08); }
 .cl-steps + .auth-err + .big-cta, .cl-steps + .big-cta { margin-top: 14px; }
+.cl-entry { min-height: 76px; gap: 14px; }
+.cl-entry-chips { display: flex; flex-shrink: 0; width: 64px; }
+.cl-entry-chips .chip-ic { width: 32px; height: 32px; border-width: 4px; margin-right: -16px; box-shadow: 0 3px 8px rgba(0,0,0,0.4); }
+.cl-back { flex-shrink: 0; margin-bottom: 4px; }
 `;
 
 export { CHIP_STACK_CSS };

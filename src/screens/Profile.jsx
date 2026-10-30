@@ -1,4 +1,5 @@
 import { ClubTag, MedalPills } from "../ui/ClubTag.jsx";
+import { ClubEntry } from "./Clubs.jsx";
 import { medalCounts } from "../app/boot.jsx";
 import { useState, useRef } from "react";
 import { isIOS, isStandalone, cloudEnabled } from "../cloud.js";
@@ -99,7 +100,7 @@ function BestHands({ list, suitColor }) {
   );
 }
 
-function ProfileScreen({ data, account, online, legendNo, pushOn, pushBusy, onEnablePush, isAdmin, onOpenAdmin, onOpenAuth, onSignOut, sound, onUpdateName, onSelectAvatar, onSetPhoto, onUsePhoto, onSelectFrame, onAddFriend, onUpdateSettings, onExportData, onImportData, onResetProfile, onEquipTitle, onPrestige }) {
+function ProfileScreen({ data, account, online, legendNo, pushOn, pushBusy, onEnablePush, isAdmin, onOpenAdmin, onOpenAuth, onSignOut, sound, onUpdateName, onSelectAvatar, onSetPhoto, onUsePhoto, onSelectFrame, onAddFriend, onUpdateSettings, onExportData, onImportData, onResetProfile, onEquipTitle, onPrestige, onOpenClubs }) {
   const importRef = useRef(null);
   const [ladder, setLadder] = useState(false);
   const [transfer, setTransfer] = useState(false);
@@ -167,6 +168,11 @@ function ProfileScreen({ data, account, online, legendNo, pushOn, pushBusy, onEn
           {(data.medals || []).length > 0 && <MedalPills c={medalCounts(data.medals)} />}
         </div>
       </section>
+
+      {cloudEnabled() && onOpenClubs && <>
+        <SectionLabel>Club</SectionLabel>
+        <div style={{ marginBottom: 22 }}><ClubEntry account={account} club={data.club} onOpen={onOpenClubs} /></div>
+      </>}
 
       <SectionLabel right={<button className="rk-link" onClick={() => setLadder(true)}>{placed && rk.peakRating > rk.rating ? `Peak ${rankName(rk.peakRating)}, all ranks` : "All ranks"}</button>}>Ranked</SectionLabel>
       <section className="panel" style={{ marginBottom: 22 }}>

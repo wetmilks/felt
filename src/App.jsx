@@ -580,8 +580,8 @@ export default function App() {
           </>} legendNo={legendNo} onEquipPass={handleEquipPass} onPlayAI={handlePlayAI} onFriendsTable={() => { sound.tap(); setFtOpen(true); }} data={data} chips={data.chips} ranked={data.ranked} onClaimDaily={handleClaimDaily} onClaimChallenge={handleClaimChallenge} onSpin={handleSpin} onPrestige={handlePrestige} sound={sound} goShop={() => setTab("shop")} />}
           {tab === "leaderboard" && <LeaderboardScreen data={data} account={account} online={online} onOpenAuth={setAuthOpen} />}
           {tab === "coach" && <CoachScreen data={data} />}
-          {tab === "clubs" && <ClubsScreen data={data} account={account} online={online} onOpenAuth={setAuthOpen} onDebit={handleDebit} onOpenTable={openTable} onStartTable={(c) => { sound.tap(); setFtClub(c); setFtOpen(true); }} onClub={setClubBadge} onFounder={() => { if (!dataRef.current.clubFounder) { persist(withTitles({ ...dataRef.current, clubFounder: true })); setTimeout(flushNotes, 2600); } }} toast={(t) => showToast(t, 2800)} pendingCode={pendingClub} onPendingDone={() => setPendingClub(null)} />}
-          {tab === "profile" && <ProfileScreen data={data} account={account} online={online} legendNo={legendNo} pushOn={pushOn} pushBusy={pushBusy} onEnablePush={turnOnPush} isAdmin={isAdmin} onOpenAdmin={() => setAdminOpen(true)} onOpenAuth={setAuthOpen} onSignOut={handleSignOut} sound={sound} onUpdateName={handleUpdateName} onSelectAvatar={handleSelectAvatar} onSetPhoto={handleSetPhoto} onUsePhoto={handleUsePhoto} onSelectFrame={handleSelectFrame} onAddFriend={handleAddFriend} onUpdateSettings={handleUpdateSettings} onExportData={handleExportData} onImportData={handleImportData} onResetProfile={handleResetProfile} onEquipTitle={handleEquipTitle} onPrestige={handlePrestige} />}
+          {tab === "clubs" && <ClubsScreen data={data} account={account} online={online} onOpenAuth={setAuthOpen} onDebit={handleDebit} onOpenTable={openTable} onStartTable={(c) => { sound.tap(); setFtClub(c); setFtOpen(true); }} onClub={setClubBadge} onFounder={() => { if (!dataRef.current.clubFounder) { persist(withTitles({ ...dataRef.current, clubFounder: true })); setTimeout(flushNotes, 2600); } }} toast={(t) => showToast(t, 2800)} pendingCode={pendingClub} onPendingDone={() => setPendingClub(null)} onBack={() => { sound.tap(); setTab("profile"); }} />}
+          {tab === "profile" && <ProfileScreen data={data} account={account} online={online} legendNo={legendNo} pushOn={pushOn} pushBusy={pushBusy} onEnablePush={turnOnPush} isAdmin={isAdmin} onOpenAdmin={() => setAdminOpen(true)} onOpenAuth={setAuthOpen} onSignOut={handleSignOut} sound={sound} onUpdateName={handleUpdateName} onSelectAvatar={handleSelectAvatar} onSetPhoto={handleSetPhoto} onUsePhoto={handleUsePhoto} onSelectFrame={handleSelectFrame} onAddFriend={handleAddFriend} onUpdateSettings={handleUpdateSettings} onExportData={handleExportData} onImportData={handleImportData} onResetProfile={handleResetProfile} onEquipTitle={handleEquipTitle} onPrestige={handlePrestige} onOpenClubs={() => { sound.tap(); setTab("clubs"); }} />}
         </div>
       </main>
       <BottomNav tab={tab} chips={data.chips} setTab={(t) => { sound.tap(); setTab(t); }} />
@@ -612,11 +612,12 @@ export default function App() {
 
 // A tab bar on phones. On a computer the same buttons stack into a sidebar with the logo and your chips.
 function BottomNav({ tab, setTab, chips }) {
-  const items = [{ key: "shop", label: "Shop" }, { key: "leaderboard", label: "Ranks" }, { key: "home", label: "Play" }, { key: "clubs", label: "Clubs" }, { key: "coach", label: "Coach" }, { key: "profile", label: "Me" }];
+  const items = [{ key: "shop", label: "Shop" }, { key: "leaderboard", label: "Ranks" }, { key: "home", label: "Play" }, { key: "coach", label: "Coach" }, { key: "profile", label: "Me" }];
+  const lit = tab === "clubs" ? "profile" : tab; // the club page lives under Me
   return (
     <nav className="bottom-nav" aria-label="Main">
       <FeltLogo className="side-logo" />
-      {items.map((it) => <button key={it.key} data-k={it.key} className="navbtn" aria-current={tab === it.key ? "page" : undefined} onClick={() => setTab(it.key)}>{it.label}</button>)}
+      {items.map((it) => <button key={it.key} data-k={it.key} className="navbtn" aria-current={lit === it.key ? "page" : undefined} onClick={() => setTab(it.key)}>{it.label}</button>)}
       {chips != null && <div className="side-foot"><b className="num">{chips.toLocaleString()}</b><span>Chips</span></div>}
     </nav>
   );

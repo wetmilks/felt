@@ -87,7 +87,29 @@ function ClubRow({ c, mineId, canJoin, onView, onJoin }) {
   );
 }
 
-function ClubsScreen({ data, account, online = {}, onOpenAuth, onDebit, onOpenTable, onStartTable, onFounder, onClub, toast, pendingCode, onPendingDone }) {
+// The club card on the Me tab: your club at a glance, tap for the full club page
+function ClubEntry({ account, club, onOpen }) {
+  const [info, setInfo] = useState(null);
+  useEffect(() => {
+    if (!account) { setInfo(null); return; }
+    let on = true;
+    api("club", { op: "mine" }).then((r) => on && setInfo(r.club || false)).catch(() => on && setInfo(false));
+    return () => { on = false; };
+  }, [account, club && club.id]);
+  const c = info || (club && account ? club : null);
+  return (
+    <button className="edge-card cl-entry" onClick={onOpen} style={{ "--sc": c ? clubHex(c.color) : "var(--t-accent)" }}>
+      {c ? <ClubCrest club={c} size={46} /> : <span className="cl-entry-chips" aria-hidden="true">{["red", "blue", "green"].map((k) => <span key={k} className="chip-ic" style={{ "--cc": CLUB_COLORS[k] }} />)}</span>}
+      <span style={{ flex: 1, minWidth: 0 }}>
+        <span className="ec-title" style={{ display: "flex", alignItems: "center", gap: 8 }}><span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c ? c.name || c.tag : "Join a club"}</span>{c && <ClubTag club={c} />}</span>
+        <span className="ec-sub num">{c ? (info ? `LV ${info.level} · ${info.members}/${info.cap} members · ${shortSigned(info.score)} this week${info.rank ? ` · #${info.rank}` : ""}` : "Your club") : account ? "Start one or join your friends" : "Make an account to join one"}</span>
+      </span>
+      <Icon name="chevron" size={16} stroke={2.4} style={{ color: "var(--t-mid)", flexShrink: 0 }} />
+    </button>
+  );
+}
+
+function ClubsScreen({ data, account, online = {}, onOpenAuth, onDebit, onOpenTable, onStartTable, onFounder, onClub, toast, pendingCode, onPendingDone, onBack }) {
   const [mine, setMine] = useState(undefined); // undefined while loading, null when you're not in one
   const [board, setBoard] = useState(null);
   const [err, setErr] = useState(null);
@@ -261,7 +283,10 @@ function ClubsScreen({ data, account, online = {}, onOpenAuth, onDebit, onOpenTa
   return (
     <div className="screen screen-fade scr-narrow cl-screen">
       <header className="home-head">
-        <div className="wordmark">Clubs</div>
+        <div style={{ display: "flex", alignItems: "flex-end", gap: 12, minWidth: 0 }}>
+          {onBack && <button className="iconbtn cl-back" onClick={onBack} aria-label="Back to Me"><Icon name="back" size={16} stroke={2.2} /></button>}
+          <div className="wordmark">Clubs</div>
+        </div>
         <div className="home-chips"><b className="num">{data.chips.toLocaleString()}</b><span>CHIPS</span></div>
       </header>
       {body}
@@ -417,4 +442,4 @@ function ClubViewSheet({ id, canJoin, busy, err, online, onClose, onJoin, onPlay
   );
 }
 
-export { ClubsScreen };
+export { ClubEntry, ClubsScreen };
