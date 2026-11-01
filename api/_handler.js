@@ -31,26 +31,34 @@ function buyInRange(t) { return [t.bb * MIN_BB, t.bb * MAX_BB]; }
 
 // Load, change, save. If someone else saved first, start over with their version.
 async function mutate(db, tableId, fn, actor = null) {
-  for (let attempt = 0; attempt < 6; attempt++) {
+  for (let attempt = 0; attempt < 10; attempt++) {
     const loaded = await db.load(tableId);
     if (!loaded) return fail("That table doesn't exist.", 404);
     const { row, secrets } = loaded;
     if (row.closed) return fail("That table has closed.");
     const st = JSON.parse(JSON.stringify(row.state));
     const sec = st.dealId ? secrets[st.dealId] || null : null;
-    if (st.dealId && !sec && ["preflop", "flop", "turn", "river"].includes(st.stage)) { await wait(150); continue; } // the deal is still being written
     const now = Date.now();
+    // A hand with no deck behind it: either the winning request is still saving it (wait a beat),
+    // or it got lost, and then the hand is a misdeal so the table never freezes.
+    let misdealt = false;
+    if (st.dealId && !sec && ["preflop", "flop", "turn", "river"].includes(st.stage)) {
+      if (now - (st.dealtAt || st.at || 0) < 5000) { await wait(200); continue; }
+      E.misdeal(st, now); misdealt = true;
+    }
     const cfg = { sb: row.sb, bb: row.bb, sec };
     const fx = { cashouts: [], newSec: null, debit: 0 };
     const err = await fn(st, cfg, now, fx, row);
-    if (err === "nothing") return { status: 200, body: { ok: true, noop: true } };
-    if (err) return fail(err);
+    if (!misdealt && err === "nothing") return { status: 200, body: { ok: true, noop: true } };
+    if (!misdealt && err) return fail(err);
     st.at = now; // lets phones line their clocks up with the server's
     if (st.refunds && st.refunds.length) { fx.cashouts.push(...st.refunds); st.refunds = []; }
-    if (fx.newSec) await db.putSecret(tableId, fx.newSec);
     const closed = st.seats.every((s) => !s);
     const saved = await db.save(tableId, row.version, st, closed);
     if (!saved) { await wait(40 + Math.random() * 120); continue; }
+    // only the request that won the save writes the deck, so two phones dealing at once can't wipe each other's
+    if (fx.newSec) await db.putSecret(tableId, fx.newSec);
+    if (misdealt && err && err !== "nothing") return fail("That hand got lost, so it's a misdeal. Everyone got their chips back and a new hand is coming.");
     if (fx.newSec) {
       const holes = {}; Object.entries(fx.newSec.holes).forEach(([seat, cards]) => { const s = st.seats[seat]; if (s) holes[s.uid] = cards; });
       await db.putHoles(tableId, st.handNo, holes);

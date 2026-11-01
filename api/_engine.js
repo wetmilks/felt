@@ -98,7 +98,7 @@ export function startHand(st, now, cfg) {
   const players = st.seats.map((s, i) => [s, i]).filter(([s]) => eligible(s)).map(([, i]) => i);
   st.result = null; st.board = []; st.pot = 0; st.turn = -1; st.nextAt = 0;
   if (players.length < 2) { st.stage = "waiting"; st.seats.forEach((s) => { if (s) { s.inHand = false; s.folded = true; s.bet = 0; s.total = 0; s.allIn = false; s.last = null; } }); return null; }
-  st.handNo += 1; st.dealId = randomBytes(6).toString("hex");
+  st.handNo += 1; st.dealId = randomBytes(6).toString("hex"); st.dealtAt = now;
   st.dealer = nextIdx(st, st.dealer < 0 ? -1 : st.dealer, (s) => eligible(s));
   st.seats.forEach((s, i) => { if (!s) return; const inn = players.includes(i); Object.assign(s, { bet: 0, total: 0, folded: !inn, allIn: false, acted: false, inHand: inn, last: null, peekAt: null, emote: s.emote && now - s.emote.at < 3000 ? s.emote : null }); });
   const heads = players.length === 2;
@@ -119,6 +119,21 @@ export function startHand(st, now, cfg) {
   if (actors.length === 0 || (actors.length === 1 && st.seats[actors[0]].bet >= st.currentBet)) { finishRound(st, sec, now, cfg); return sec; }
   st.turn = nextIdx(st, bbSeat, canAct); st.deadline = now + TURN_MS;
   return sec;
+}
+
+// The deck for this hand never got saved (a server hiccup). Call it a misdeal: everyone gets back
+// exactly what they put in, and a new hand gets dealt a few seconds later.
+export function misdeal(st, now) {
+  st.seats.forEach((s, i) => {
+    if (!s) return;
+    const back = s.total || 0;
+    if (s.left) { if (back > 0) st.refunds = [...(st.refunds || []), { uid: s.uid, amount: back }]; st.seats[i] = null; return; }
+    s.stack += back;
+    Object.assign(s, { bet: 0, total: 0, folded: true, allIn: false, acted: false, inHand: false, last: null });
+  });
+  st.pot = 0; st.currentBet = 0; st.minRaise = 0; st.board = []; st.turn = -1; st.deadline = 0; st.result = null; st.dealId = null;
+  st.stage = "waiting"; st.nextAt = now + START_MS;
+  log(st, "Misdeal. Everyone got their chips back");
 }
 
 export function act(st, sec, seat, type, amount, now, cfg, auto = false) {
