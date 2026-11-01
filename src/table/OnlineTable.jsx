@@ -3,7 +3,7 @@ import { api, cloud } from "../cloud.js";
 import { publicProfile } from "../app/boot.jsx";
 import { AVATAR_COLORS, SUIT_COLOR, SUIT_COLOR_CB, SUIT_GLYPH, rankLabel } from "../game/helpers.js";
 import { BASE_EMOTES, findBack, findFelt } from "../game/progression.js";
-import { ClubTag, clubFelt, clubHex } from "../ui/ClubTag.jsx";
+import { ClubTag, NameTag, clubFelt, clubHex } from "../ui/ClubTag.jsx";
 import { CrownMark, PrestigeBadge, pnameCls } from "../game/rewards.jsx";
 import { vibrate } from "../game/save.js";
 import { PlayerAvatar } from "../social/Friends.jsx";
@@ -171,7 +171,7 @@ function OnlineTable({ tableId, account, data, sound, soundOn, setSoundOn, onExi
             {s.peekAt && inHand && !s.folded && <div className="peek-badge" aria-label={`${s.name} looks at their cards`}><Icon name="eye" size={11} stroke={2.4} /></div>}
             {(s.prestige || 0) >= 5 && <CrownMark size={12} top={-8} />}
           </div>
-          <span className="seat-name"><span className={pnameCls(s.prestige)} style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{s.name}</span><PrestigeBadge n={s.prestige} size={11} /><ClubTag club={s.club} /></span>
+          <span className="seat-name"><span className={pnameCls(s.prestige)} style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{s.name}</span><PrestigeBadge n={s.prestige} size={11} /><ClubTag club={s.club} /><NameTag text={s.nametag} /></span>
         </div>
         {st.dealer === i && <div className="dealer-chip">D</div>}
         <div className="seat-stack num">{s.out ? (s.stack > 0 ? "AWAY" : "OUT") : fmt(s.stack)}</div>
@@ -278,7 +278,7 @@ function OnlineTable({ tableId, account, data, sound, soundOn, setSoundOn, onExi
               {me.emote && serverNow - me.emote.at < 3500 && <div key={me.emote.at} className="emote-bubble">{me.emote.e}</div>}
             </div>
             <div style={{ minWidth: 0, flex: 1 }}>
-              <div className="hero-name"><span className={pnameCls(me.prestige)} style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{me.name}</span><ClubTag club={me.club} />{myTurn && <span className="turn-tag">YOUR TURN</span>}</div>
+              <div className="hero-name"><span className={pnameCls(me.prestige)} style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{me.name}</span><ClubTag club={me.club} /><NameTag text={me.nametag} />{myTurn && <span className="turn-tag">YOUR TURN</span>}</div>
               <div className="hero-stack num">{me.stack.toLocaleString()}</div>
               {me.bet > 0 && <div className="chip-badge" style={{ marginTop: 4, display: "inline-flex" }}><ChipStack amount={me.bet} small set={chipSet} />{me.bet.toLocaleString()}</div>}
             </div>

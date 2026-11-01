@@ -144,7 +144,7 @@ const db = {
     const { error } = await client().from("chip_payouts").insert({ user_id: uid, amount, reason }); if (error) throw new Error(error.message);
   },
   async invite(to, from, tableId, code) { await client().from("table_invites").insert({ to_user: to, from_user: from, table_id: tableId, code }); },
-  async findProfile(username) { const { data } = await client().from("profiles").select("id, username, display_name, rating, placed, prestige").eq("username", username).maybeSingle(); return data; },
+  async findProfile(username) { const { data } = await client().from("profiles").select("id, username, display_name, rating, placed, prestige, stats").eq("username", username).maybeSingle(); return data; },
   async payoutAll(amount, reason) {
     const { data } = await client().from("profiles").select("id");
     for (const p of data || []) await this.payout(p.id, amount, reason);

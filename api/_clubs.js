@@ -18,7 +18,7 @@ function pubClub(c, extra = {}) {
 }
 function playerRow(p, extra = {}) {
   const st = p.stats || {};
-  return { id: p.id, username: p.username, name: p.display_name || p.username, avatar: p.avatar, title: p.title, prestige: p.prestige || 0, rating: p.rating || 0, placed: !!p.placed, club: st.club || null, medals: st.medals || null, ...extra };
+  return { id: p.id, username: p.username, name: p.display_name || p.username, avatar: p.avatar, title: p.title, prestige: p.prestige || 0, rating: p.rating || 0, placed: !!p.placed, club: st.club || null, nametag: st.nametag || null, medals: st.medals || null, ...extra };
 }
 
 // keep the tag on someone's profile in step with their club

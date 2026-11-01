@@ -4,7 +4,7 @@ import { rankName } from "../game/ranked.js";
 import { timeAgo } from "../social/Friends.jsx";
 import { SettingRow, Toggle } from "../ui/controls.jsx";
 import { Modal, shortNum } from "../ui/primitives.jsx";
-import { ClubTag } from "../ui/ClubTag.jsx";
+import { ClubTag, NameTag } from "../ui/ClubTag.jsx";
 
 // Only shows for accounts on the server's admin list, and the server checks again on every action.
 function AdminModal({ onClose }) {
@@ -13,6 +13,8 @@ function AdminModal({ onClose }) {
   const [player, setPlayer] = useState(null); const [msg, setMsg] = useState(null); const [busy, setBusy] = useState(false); const [tables, setTables] = useState(null);
   const [errors, setErrors] = useState(null); const [openErr, setOpenErr] = useState(null);
   const [clubs, setClubs] = useState(null); const [dropArm, setDropArm] = useState(null);
+  const [tagText, setTagText] = useState("");
+  const setTag = (text) => run(async () => { const r = await api("admin", { op: "nametag", username: player.username, text }); setPlayer((p) => ({ ...p, stats: { ...(p.stats || {}), nametag: r.nametag } })); setTagText(""); setMsg({ ok: true, text: r.nametag ? `@${r.player} now shows "${r.nametag}"` : `Took the tag off @${r.player}` }); });
   const run = async (fn) => { setBusy(true); setMsg(null); try { await fn(); } catch (e) { setMsg({ ok: false, text: e.message }); } setBusy(false); };
   const lookup = () => run(async () => { const r = await api("admin", { op: "lookup", username }); setPlayer(r.player); });
   const give = (sign) => run(async () => {
@@ -57,6 +59,17 @@ function AdminModal({ onClose }) {
             <div><b className="num">{player.chips == null ? "no save" : player.chips.toLocaleString()}</b><span>Chips</span></div>
             <div><b>{player.placed ? rankName(player.rating) : "Unranked"}</b><span>{player.placed ? `${player.rating} RP` : "Rank"}</span></div>
             <div><b className="num">{player.prestige || 0}</b><span>Prestige</span></div>
+          </div>
+        )}
+      {player && (
+          <div className="nt-admin">
+            <div className="lbl" style={{ marginBottom: 6 }}>Name tag {player.stats && player.stats.nametag ? <NameTag text={player.stats.nametag} style={{ marginLeft: 6 }} /> : <span style={{ textTransform: "none", letterSpacing: 0, color: "var(--t-faint)", fontWeight: 600 }}>none</span>}</div>
+            <div style={{ display: "flex", gap: 8 }}>
+              <input className="input" style={{ flex: 1, minWidth: 0 }} value={tagText} maxLength={20} onChange={(e) => setTagText(e.target.value)} placeholder="Shows next to their name" aria-label="Name tag" />
+              <button className="btn btn-sm btn-raise" disabled={busy || !tagText.trim()} onClick={() => setTag(tagText)}>Set</button>
+            </div>
+            {player.stats && player.stats.nametag && <button className="cl-link" style={{ margin: "10px 0 0" }} disabled={busy} onClick={() => setTag("")}>Take it off</button>}
+            {msg && msg.ok && <div className="friend-msg ok" style={{ marginTop: 8 }}>{msg.text}</div>}
           </div>
         )}
       </div>)}

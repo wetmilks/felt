@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { cloudEnabled, cloud, apiPublic } from "../cloud.js";
-import { ClubTag, resetIn, shortSigned, signed } from "../ui/ClubTag.jsx";
+import { ClubTag, NameTag, resetIn, shortSigned, signed } from "../ui/ClubTag.jsx";
 import { weekLabel } from "../../api/_week.js";
 import { myTimeZone, publicProfile, tzLabel } from "../app/boot.jsx";
 import { MOCK_PLAYERS } from "../game/helpers.js";
@@ -39,7 +39,7 @@ function WeeklyBoard({ account, data, online, onOpen, onOpenAuth, head, seg }) {
         <span className="lb-pl num">{pinned ? (i != null ? `#${i + 1}` : "-") : i + 1}</span>
         {avatar(p, 38)}
         <span style={{ flex: 1, minWidth: 0 }}>
-          <span className="lb-nm"><span className={pnameCls(p.prestige)} style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{you && pinned ? "You" : p.name}</span>{p.prestige ? <PrestigeBadge n={p.prestige} size={15} /> : null}<ClubTag club={p.club} />{you && !pinned && <span className="lb-tag">You</span>}</span>
+          <span className="lb-nm"><span className={pnameCls(p.prestige)} style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{you && pinned ? "You" : p.name}</span>{p.prestige ? <PrestigeBadge n={p.prestige} size={15} /> : null}<ClubTag club={p.club} /><NameTag text={p.nametag} />{you && !pinned && <span className="lb-tag">You</span>}</span>
           <span className="lb-tier" style={{ color: "var(--t-mid)" }}>@{p.username}</span>
         </span>
         <span className={`lb-val num${p.net > 0 ? " wk-val" : ""}`}>{shortSigned(p.net)}</span>
@@ -82,7 +82,7 @@ function WeeklyBoard({ account, data, online, onOpen, onOpenAuth, head, seg }) {
       {!account ? (
         <div className="lb-me lb-dock"><div className="lb-item"><span style={{ flex: 1, fontSize: 13, color: "var(--t-sub)" }}>Make an account to get on the weekly board</span><button className="btn btn-sm btn-raise" onClick={() => onOpenAuth("signup")}>Sign up</button></div></div>
       ) : meRow && !inList ? (
-        <div className="lb-me lb-dock">{row({ id: myId, name: data.name, username: account.username, prestige: data.ranked.prestige || 0, avatar: data.avatar, photo: data.usePhoto ? data.photo : null, placed: false, net: meRow.net, club: data.club || null }, meRow.place != null ? meRow.place - 1 : null, true)}</div>
+        <div className="lb-me lb-dock">{row({ id: myId, name: data.name, username: account.username, prestige: data.ranked.prestige || 0, avatar: data.avatar, photo: data.usePhoto ? data.photo : null, placed: false, net: meRow.net, club: data.club || null, nametag: data.nametag || null }, meRow.place != null ? meRow.place - 1 : null, true)}</div>
       ) : null}
       {meRow && meRow.net <= 0 && <div className="lb-empty">You're at {signed(meRow.net)} this week. Get positive to get on the board.</div>}
     </div>
@@ -141,7 +141,7 @@ function LeaderboardScreen({ data, account, online = {}, onOpenAuth }) {
         <span className="lb-pl num">{pinned ? `#${i + 1}` : i + 1}</span>
         {avatar(p, 38)}
         <span style={{ flex: 1, minWidth: 0 }}>
-          <span className="lb-nm"><span className={pnameCls(p.prestige)} style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{p.isYou ? (pinned ? "You" : p.name) : p.name}</span>{p.prestige ? <PrestigeBadge n={p.prestige} size={15} /> : null}<ClubTag club={p.isYou ? (account ? data.club : null) : p.profile && p.profile.stats && p.profile.stats.club} />{p.isYou && !pinned && <span className="lb-tag">You</span>}{!p.isYou && friendIds.has(p.id) && <span className="lb-tag friend">Friend</span>}</span>
+          <span className="lb-nm"><span className={pnameCls(p.prestige)} style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{p.isYou ? (pinned ? "You" : p.name) : p.name}</span>{p.prestige ? <PrestigeBadge n={p.prestige} size={15} /> : null}<ClubTag club={p.isYou ? (account ? data.club : null) : p.profile && p.profile.stats && p.profile.stats.club} /><NameTag text={p.isYou ? (account ? data.nametag : null) : p.profile && p.profile.stats && p.profile.stats.nametag} />{p.isYou && !pinned && <span className="lb-tag">You</span>}{!p.isYou && friendIds.has(p.id) && <span className="lb-tag friend">Friend</span>}</span>
           <span className="lb-tier" style={{ color: tier ? tier.color : "var(--t-mid)" }}>{isRanked ? tierLine(p, i) : "Tournament index"}</span>
         </span>
         <span className="lb-val num">{isRanked ? p.rating.toLocaleString() : p.index.toLocaleString()}</span>

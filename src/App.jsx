@@ -125,6 +125,7 @@ export default function App() {
       });
       if (r.flagged) setSyncFlag(true);
       if ("club" in r) setClubBadge(r.club);
+      if ("nametag" in r) setData((d) => { if ((d.nametag || null) === (r.nametag || null)) return d; const n = { ...d, nametag: r.nametag || null }; saveData(n); return n; });
     });
     return () => cloud.onSync(null);
   }, []);

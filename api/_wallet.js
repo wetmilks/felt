@@ -71,7 +71,7 @@ export async function syncSave(db, uid, data, profile) {
     if (data.wk && data.wk.id === wk && Number.isFinite(Number(data.wk.net))) await db.weeklySetBot(wk, uid, Math.round(Number(data.wk.net)));
   } catch (e) { /* the board is best effort, never block a save */ }
   const prev = await db.getProfile(uid);
-  let clubOut;
+  let clubOut, tagOut;
   if (prev) {
     const fields = cleanProfile(profile);
     // your club tag comes from the server, never from the phone
@@ -79,8 +79,11 @@ export async function syncSave(db, uid, data, profile) {
       let club = null; try { const m = await db.memberOf(uid); club = m && m.club ? clubBadge(m.club) : null; } catch (e) { club = (prev.stats && prev.stats.club) || null; }
       fields.stats = { ...fields.stats }; if (club) fields.stats.club = club; else delete fields.stats.club;
       clubOut = club;
+      const tag = prev.stats && prev.stats.nametag; // set by an admin, only the server touches it
+      if (tag) fields.stats.nametag = tag; else delete fields.stats.nametag;
+      tagOut = tag || null;
     }
     await db.updateProfile(uid, { ...fields, chips: balance, rating, prestige, placed: !!rk.placed, peak: Math.max(n(prev.peak), rating), updated_at: new Date(now).toISOString() });
   }
-  return { chips: balance, rating, prestige, sentChips: n(data.chips), sentRating: n(rk.rating), sentPrestige: n(rk.prestige), flagged, ...(clubOut !== undefined ? { club: clubOut } : {}) };
+  return { chips: balance, rating, prestige, sentChips: n(data.chips), sentRating: n(rk.rating), sentPrestige: n(rk.prestige), flagged, ...(clubOut !== undefined ? { club: clubOut, nametag: tagOut } : {}) };
 }

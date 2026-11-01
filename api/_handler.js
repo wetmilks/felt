@@ -16,7 +16,8 @@ async function playerInfo(db, uid) {
   const p = await db.getProfile(uid);
   if (!p) throw new Error("Make your username first.");
   const club = p.stats && p.stats.club ? { tag: p.stats.club.tag, color: p.stats.club.color, lvl: p.stats.club.lvl } : null;
-  return { uid, name: p.display_name || p.username, avatar: p.avatar, prestige: p.prestige, club }; // photos load separately so every update stays small
+  const nametag = p.stats && p.stats.nametag ? String(p.stats.nametag) : null;
+  return { uid, name: p.display_name || p.username, avatar: p.avatar, prestige: p.prestige, club, nametag }; // photos load separately so every update stays small
 }
 // Take a buy-in out of the wallet up front. Returns an error message, or null when it's paid.
 async function debit(db, uid, amount) {
@@ -266,6 +267,16 @@ async function admin(a, uid, db) {
   }
   if (a.op === "tables") return { status: 200, body: { ok: true, tables: await db.openTables() } };
   if (a.op === "errors") { const log = await db.getConfig("client_errors"); return { status: 200, body: { ok: true, errors: (log && log.list) || [] } }; }
+  // a name tag that sits next to someone's name everywhere, until an admin takes it off
+  if (a.op === "nametag") {
+    const p = await db.findProfile(String(a.username || "").trim().toLowerCase().replace(/^@/, ""));
+    if (!p) return fail("No player with that username.");
+    const text = String(a.text || "").replace(/\s+/g, " ").trim().slice(0, 20);
+    const stats = { ...((await db.getProfileStats(p.id)) || {}) };
+    if (text) stats.nametag = text; else delete stats.nametag;
+    await db.updateProfile(p.id, { stats });
+    return { status: 200, body: { ok: true, player: p.username, nametag: text || null } };
+  }
   if (a.op === "clubs") { const [list, week] = await Promise.all([db.listClubs(), db.clubWeek("-")]); const cnt = Object.fromEntries((week || []).map((r) => [r.club_id, Number(r.members) || 0])); return { status: 200, body: { ok: true, clubs: list.map((c) => ({ id: c.id, name: c.name, tag: c.tag, color: c.color, xp: Number(c.xp) || 0, members: cnt[c.id] || 0, created_at: c.created_at })) } }; }
   if (a.op === "dropClub") { const ms = await db.clubMembers(String(a.id || "")); await Promise.all(ms.map((m) => setProfileClub(db, m.user_id, null))); await db.deleteClub(String(a.id || "")); return { status: 200, body: { ok: true } }; }
   if (a.op === "clearErrors") { await db.setConfig("client_errors", { list: [] }); return { status: 200, body: { ok: true } }; }

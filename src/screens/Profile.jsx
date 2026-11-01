@@ -1,4 +1,4 @@
-import { ClubTag, MedalPills } from "../ui/ClubTag.jsx";
+import { ClubTag, MedalPills, NameTag } from "../ui/ClubTag.jsx";
 import { ClubEntry } from "./Clubs.jsx";
 import { medalCounts } from "../app/boot.jsx";
 import { useState, useRef } from "react";
@@ -155,7 +155,7 @@ function ProfileScreen({ data, account, online, legendNo, pushOn, pushBusy, onEn
           </div>
         ) : (
           <div style={{ flex: 1, minWidth: 0 }}>
-            <button onClick={() => setEditingName(true)} className="name-btn"><span className={pnameCls(rk.prestige)}>{data.name}</span><PrestigeBadge n={rk.prestige} size={20} />{account && data.club && <ClubTag club={data.club} big style={{ marginLeft: 8 }} />}<Icon name="edit" size={13} style={{ color: "var(--t-mid)", marginLeft: 6 }} /></button>
+            <button onClick={() => setEditingName(true)} className="name-btn"><span className={pnameCls(rk.prestige)}>{data.name}</span><PrestigeBadge n={rk.prestige} size={20} />{account && data.club && <ClubTag club={data.club} big style={{ marginLeft: 8 }} />}{account && data.nametag && <NameTag text={data.nametag} style={{ marginLeft: 6 }} />}<Icon name="edit" size={13} style={{ color: "var(--t-mid)", marginLeft: 6 }} /></button>
             {account && account.username && <div style={{ fontSize: 13, color: "var(--t-mid)", marginTop: 2 }}>@{account.username}</div>}
             <button className="title-btn" onClick={() => setPickingTitle(true)} aria-label="Change title"><TitleTag k={tt.equipped} size={13} /><Icon name="chevron" size={11} style={{ color: "var(--t-mid)", transform: "rotate(90deg)" }} /></button>
           </div>

@@ -5,7 +5,7 @@ import { CLUB_COLORS, CLUB_COST, CLUB_LEVELS, DONATE_STEPS, LEVEL_PERKS, checkCl
 import { PrestigeBadge, pnameCls } from "../game/rewards.jsx";
 import { tierForRating } from "../game/ranked.js";
 import { ChipAvatar, FriendProfileModal } from "../social/Friends.jsx";
-import { ClubCrest, ClubTag, clubHex, resetIn, shortSigned, signed } from "../ui/ClubTag.jsx";
+import { ClubCrest, ClubTag, NameTag, clubHex, resetIn, shortSigned, signed } from "../ui/ClubTag.jsx";
 import { Toggle } from "../ui/controls.jsx";
 import { Icon, Modal, SectionLabel, TitlePill } from "../ui/primitives.jsx";
 
@@ -246,7 +246,7 @@ function ClubsScreen({ data, account, online = {}, onOpenAuth, onDebit, onOpenTa
                 <span className="lb-pl num">{i + 1}</span>
                 <ChipAvatar p={m} letter={m.name} size={38} tier={tier} live={!you && !!online[m.id]} />
                 <span style={{ flex: 1, minWidth: 0 }}>
-                  <span className="lb-nm"><span className={pnameCls(m.prestige)} style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{m.name}</span>{m.prestige ? <PrestigeBadge n={m.prestige} size={15} /> : null}{ROLE[m.role] && <span className={`cl-role ${m.role}`}>{ROLE[m.role]}</span>}{you && <span className="lb-tag">You</span>}</span>
+                  <span className="lb-nm"><span className={pnameCls(m.prestige)} style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{m.name}</span>{m.prestige ? <PrestigeBadge n={m.prestige} size={15} /> : null}<NameTag text={m.nametag} />{ROLE[m.role] && <span className={`cl-role ${m.role}`}>{ROLE[m.role]}</span>}{you && <span className="lb-tag">You</span>}</span>
                   <span className="lb-tier" style={{ color: online[m.id] && !you ? "var(--t-good)" : "var(--t-mid)" }}>{online[m.id] && !you ? online[m.id] : m.donated ? `${kShort(m.donated)} in the vault` : `@${m.username}`}</span>
                 </span>
                 <span className={`lb-val num cl-score${m.net > 0 ? " up" : m.net < 0 ? " down" : ""}`}>{shortSigned(m.net)}</span>
@@ -351,7 +351,7 @@ function ClubsScreen({ data, account, online = {}, onOpenAuth, onDebit, onOpenTa
               <ChipAvatar p={m} letter={m.name} size={64} tier={m.placed ? tierForRating(m.rating) : null} live={!you && !!online[m.id]} />
               <div style={{ minWidth: 0 }}>
                 <div className="disp cl-mname">{m.name}</div>
-                <div className="cl-mline">@{m.username}{ROLE[m.role] && <span className={`cl-role ${m.role}`}>{ROLE[m.role]}</span>}</div>
+                <div className="cl-mline">@{m.username}<NameTag text={m.nametag} />{ROLE[m.role] && <span className={`cl-role ${m.role}`}>{ROLE[m.role]}</span>}</div>
                 {m.title && m.title !== "rookie" && <TitlePill k={m.title} style={{ marginTop: 6 }} />}
               </div>
             </div>
@@ -427,7 +427,7 @@ function ClubViewSheet({ id, canJoin, busy, err, online, onClose, onJoin, onPlay
             {(v.members || []).slice(0, 8).map((m) => (
               <button key={m.id} className="lb-item tap" onClick={() => onPlayer(m.id)}>
                 <ChipAvatar p={m} letter={m.name} size={32} tier={m.placed ? tierForRating(m.rating) : null} live={!!online[m.id]} />
-                <span style={{ flex: 1, minWidth: 0 }}><span className="lb-nm"><span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{m.name}</span>{ROLE[m.role] && <span className={`cl-role ${m.role}`}>{ROLE[m.role]}</span>}</span></span>
+                <span style={{ flex: 1, minWidth: 0 }}><span className="lb-nm"><span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{m.name}</span><NameTag text={m.nametag} />{ROLE[m.role] && <span className={`cl-role ${m.role}`}>{ROLE[m.role]}</span>}</span></span>
                 <span className={`num cl-score${m.net > 0 ? " up" : m.net < 0 ? " down" : ""}`} style={{ fontFamily: "var(--t-display)", fontWeight: 800, fontSize: 17 }}>{shortSigned(m.net)}</span>
               </button>
             ))}

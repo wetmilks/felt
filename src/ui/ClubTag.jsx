@@ -12,6 +12,12 @@ export function ClubTag({ club, big = false, style }) {
   return <span className={`club-tag${big ? " big" : ""}${lvl >= 5 ? " foil" : lvl >= 3 ? " rim" : ""}`} style={{ "--cc": clubHex(club.color), "--ct": clubInk(club.color), ...style }} title={`${club.tag} club`}>{club.tag}</span>;
 }
 
+// A tag an admin pinned on someone. It sits next to their name everywhere.
+export function NameTag({ text, style }) {
+  if (!text) return null;
+  return <span className="name-tag" style={style}>{text}</span>;
+}
+
 // A club's crest: a poker chip in the club color with the tag stamped in the middle
 export function ClubCrest({ club, size = 64 }) {
   const lvl = (club && (club.level || club.lvl)) || 1;
