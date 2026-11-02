@@ -108,7 +108,7 @@ function OnlineTable({ tableId, account, data, sound, soundOn, setSoundOn, onExi
   // anyone at the table keeps it moving: auto-acts on the clock and deals the next hand
   useEffect(() => {
     if (!st) return;
-    const due = (betting && st.turn >= 0 && serverNow > st.deadline + 900) || ((st.stage === "showdown" || st.stage === "waiting") && st.nextAt && serverNow > st.nextAt + 250) || (st.stage === "waiting" && !st.nextAt && st.seats.filter((s) => s && !s.out && s.stack > 0).length >= 2);
+    const due = (betting && st.turn >= 0 && serverNow > st.deadline + 900) || ((st.stage === "showdown" || st.stage === "waiting") && st.nextAt && serverNow > st.nextAt + 250) || (st.stage === "waiting" && !st.nextAt && st.started !== false && st.seats.filter((s) => s && !s.out && s.stack > 0).length >= 2);
     if (due && Date.now() - tickAt.current > 1500) { tickAt.current = Date.now(); send("tick", {}, true); }
   });
 
@@ -206,7 +206,13 @@ function OnlineTable({ tableId, account, data, sound, soundOn, setSoundOn, onExi
     );
   };
 
-  const statusLine = st.stage === "waiting" ? (nextIn != null && st.nextAt ? `Dealing in ${nextIn}` : st.seats.filter(Boolean).length < 2 ? "Waiting for someone to sit down" : "Waiting for players") : st.stage === "showdown" ? "" : turnName ? (st.turn === mySeat ? "Your turn" : `${turnName} to act`) : "";
+  // before the first hand, the host decides when to deal
+  const lobby = st.stage === "waiting" && st.started === false;
+  const hostSeat = st.seats.find((s) => s && s.uid === row.host);
+  const canStart = lobby && (account.id === row.host || !hostSeat);
+  const readyCount = st.seats.filter((s) => s && !s.out && s.stack > 0).length;
+  const statusLine = lobby ? (st.seats.filter(Boolean).length < 2 ? "Waiting for someone to sit down" : canStart ? `${readyCount} players in. Start when you're ready` : `Waiting for ${hostSeat ? hostSeat.name : "the host"} to start`)
+    : st.stage === "waiting" ? (nextIn != null && st.nextAt ? `Dealing in ${nextIn}` : st.seats.filter(Boolean).length < 2 ? "Waiting for someone to sit down" : "Waiting for players") : st.stage === "showdown" ? "" : turnName ? (st.turn === mySeat ? "Your turn" : `${turnName} to act`) : "";
   const iWonUncontested = st.stage === "showdown" && st.result && st.result.uncontested && st.result.winners[0] && st.result.winners[0].seat === mySeat && !st.result.shown;
 
   okeyRef.current = (e) => {
@@ -314,6 +320,13 @@ function OnlineTable({ tableId, account, data, sound, soundOn, setSoundOn, onExi
           </div>
         ) : iWonUncontested ? (
           <div className="show-choice"><div className="disp">Show your cards?</div><div style={{ fontSize: 12.5, color: "var(--t-mid)", marginTop: 4 }}>Nobody called. Show them or let the next hand deal.</div><button className="btn btn-raise show-btn" style={{ width: "100%", marginTop: 12 }} onClick={() => send("show")}>Show</button></div>
+        ) : me && lobby && canStart ? (
+          <div className="start-row">
+            <div className="start-copy"><b className="num">{readyCount} {readyCount === 1 ? "player" : "players"} in</b><span>{readyCount < 2 ? "Need one more to start" : "Deal when everyone's here"}</span></div>
+            <button className="btn btn-raise start-btn" disabled={readyCount < 2} onClick={() => send("start")}>Start game</button>
+          </div>
+        ) : me && lobby ? (
+          <div className="lbl" style={{ padding: "20px 0", textAlign: "center" }}>{hostSeat ? `Waiting for ${hostSeat.name} to start` : "Waiting for the host to start"}</div>
         ) : me ? (
           <div className="lbl" style={{ padding: "20px 0", textAlign: "center" }}>{st.stage === "waiting" ? (st.seats.filter(Boolean).length < 2 ? "Invite friends to start" : "Starting soon") : st.stage === "showdown" ? (nextIn ? `Next hand in ${nextIn}` : "Next hand coming") : me.folded ? "You folded. Waiting for the hand to finish." : turnName ? `Waiting on ${turnName}` : "Waiting"}</div>
         ) : (

@@ -225,6 +225,13 @@ export async function handle(body, token, db) {
       if (!r.changed) return "nothing";
       fx.newSec = r.newSec; fx.cashouts.push(...r.cashouts); return null;
     });
+    case "start": return mutate(db, tableId, async (st, cfg, now, fx, row) => {
+      const seat = E.seatOf(st, uid);
+      const hostSeated = st.seats.some((s) => s && s.uid === row.host);
+      if (uid !== row.host && hostSeated) return "Only the host can start the game.";
+      if (seat < 0 && uid !== row.host) return "Sit down first.";
+      return E.start(st, now, seat >= 0 ? st.seats[seat].name : "The host");
+    }, uid);
     case "back": return mutate(db, tableId, async (st, cfg, now) => { const seat = E.seatOf(st, uid); return seat < 0 ? "You're not at this table." : E.back(st, seat, now); });
     case "peek": return mutate(db, tableId, async (st, cfg, now) => { const seat = E.seatOf(st, uid); if (seat < 0) return "nothing"; st.seats[seat].peekAt = a.on ? now : null; return null; });
     case "emote": return mutate(db, tableId, async (st, cfg, now) => { const seat = E.seatOf(st, uid); if (seat < 0) return "nothing"; st.seats[seat].emote = { e: String(a.e || "").slice(0, 16), at: now }; return null; });

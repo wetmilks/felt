@@ -50,7 +50,7 @@ export function describeScore(s) {
 
 /* ---------- table state ---------- */
 export function newState(maxSeats) {
-  return { seats: Array(maxSeats).fill(null), handNo: 0, dealId: null, dealer: -1, stage: "waiting", board: [], pot: 0, currentBet: 0, minRaise: 0, turn: -1, deadline: 0, nextAt: 0, result: null, log: [], sbSeat: -1, bbSeat: -1 };
+  return { seats: Array(maxSeats).fill(null), handNo: 0, dealId: null, dealer: -1, stage: "waiting", started: false, board: [], pot: 0, currentBet: 0, minRaise: 0, turn: -1, deadline: 0, nextAt: 0, result: null, log: [], sbSeat: -1, bbSeat: -1 };
 }
 const BETTING = ["preflop", "flop", "turn", "river"];
 const isBetting = (st) => BETTING.includes(st.stage);
@@ -74,7 +74,7 @@ export function sit(st, seat, player, stack, now) {
   if (seatOf(st, player.uid) >= 0) return "You're already sitting here.";
   st.seats[seat] = { uid: player.uid, name: player.name, avatar: player.avatar || "🙂", photo: player.photo || null, prestige: player.prestige || 0, club: player.club || null, nametag: player.nametag || null, stack, bought: stack, bet: 0, total: 0, folded: true, allIn: false, acted: false, inHand: false, out: false, left: false, timeouts: 0, peekAt: null, last: null, emote: null, awaySince: null };
   log(st, `${player.name} sits down`);
-  if (st.stage === "waiting" && st.seats.filter(eligible).length >= 2 && !st.nextAt) st.nextAt = now + START_MS;
+  if (st.stage === "waiting" && st.started !== false && st.seats.filter(eligible).length >= 2 && !st.nextAt) st.nextAt = now + START_MS;
   return null;
 }
 
@@ -246,7 +246,7 @@ export function tick(st, sec, now, cfg) {
     out.changed = true;
   } else if ((st.stage === "showdown" || st.stage === "waiting") && st.nextAt && now >= st.nextAt) {
     out.newSec = startHand(st, now, cfg); out.changed = true;
-  } else if (st.stage === "waiting" && !st.nextAt && st.seats.filter(eligible).length >= 2) {
+  } else if (st.stage === "waiting" && !st.nextAt && st.started !== false && st.seats.filter(eligible).length >= 2) {
     st.nextAt = now + START_MS; out.changed = true;
   }
   // gone for ten minutes and not in a hand: send their chips home and free the seat
@@ -260,11 +260,20 @@ export function tick(st, sec, now, cfg) {
   return out;
 }
 
+// The host deals the first hand when everyone's in. After that, hands keep coming on their own.
+export function start(st, now, name) {
+  if (st.started !== false) return "The game's already going.";
+  if (st.seats.filter(eligible).length < 2) return "Get at least 2 players sitting first.";
+  st.started = true; st.nextAt = now + 1500;
+  log(st, `${name} started the game`);
+  return null;
+}
+
 export function back(st, seat, now) {
   const s = st.seats[seat]; if (!s || s.left) return "Not seated.";
   if (s.stack <= 0) return "Rebuy first.";
   s.out = false; s.timeouts = 0; s.awaySince = null;
-  if (st.stage === "waiting" && st.seats.filter(eligible).length >= 2 && !st.nextAt) st.nextAt = now + START_MS;
+  if (st.stage === "waiting" && st.started !== false && st.seats.filter(eligible).length >= 2 && !st.nextAt) st.nextAt = now + START_MS;
   return null;
 }
 export function rebuy(st, seat, amount, now) {
@@ -272,6 +281,6 @@ export function rebuy(st, seat, amount, now) {
   if (isBetting(st) && s.inHand && !s.folded) return "Wait for this hand to end.";
   s.stack += amount; s.bought += amount; s.out = false; s.timeouts = 0; s.awaySince = null;
   log(st, `${s.name} rebuys for ${amount.toLocaleString()}`);
-  if (st.stage === "waiting" && st.seats.filter(eligible).length >= 2 && !st.nextAt) st.nextAt = now + START_MS;
+  if (st.stage === "waiting" && st.started !== false && st.seats.filter(eligible).length >= 2 && !st.nextAt) st.nextAt = now + START_MS;
   return null;
 }

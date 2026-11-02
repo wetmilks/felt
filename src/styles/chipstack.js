@@ -1040,6 +1040,11 @@ input[type=range] { accent-color: var(--t-accent); height: 28px; }
 .cl-back { flex-shrink: 0; margin-bottom: 4px; }
 .name-tag { display: inline-flex; align-items: center; flex-shrink: 0; height: 17px; padding: 0 6px; margin-left: 4px; border-radius: 5px; background: #F2F2EE; color: #111214; font-family: var(--t-display); font-weight: 900; font-size: 12px; line-height: 1; letter-spacing: 0.05em; text-transform: uppercase; white-space: nowrap; box-shadow: inset 0 -2px 0 rgba(0,0,0,0.18); vertical-align: middle; }
 .nt-admin { margin-top: 14px; padding: 12px; border-radius: 12px; background: #111214; }
+.start-row { display: flex; align-items: center; gap: 12px; width: 100%; }
+.start-copy { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.start-copy b { font-family: var(--t-display); font-weight: 900; font-size: 22px; line-height: 1; text-transform: uppercase; letter-spacing: 0.02em; }
+.start-copy span { font-size: 12.5px; color: var(--t-mid); }
+.start-btn { flex: none; min-height: 54px; padding: 0 22px; font-size: 22px; }
 `;
 
 export { CHIP_STACK_CSS };
